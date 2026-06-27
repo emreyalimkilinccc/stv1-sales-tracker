@@ -1,13 +1,58 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+enum Role {
+  STAFF
+  MANAGER
+  ADMIN
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(STAFF)
+  store     Store?   @relation(fields: [storeId], references: [id])
+  storeId   String?
+  sales     Sale[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Store {
+  id        String   @id @default(uuid())
+  name      String
+  address   String?
+  phone     String?
+  users     User[]
+  sales     Sale[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Sale {
+  id            String   @id @default(uuid())
+  user          User     @relation(fields: [userId], references: [id])
+  userId        String
+  store         Store    @relation(fields: [storeId], references: [id])
+  storeId       String
+  date          DateTime
+  hour          Int
+  amount        Decimal  @db.Decimal(10, 2)
+  itemCount     Int      @default(0)
+  customerCount Int      @default(0)
+  category      String?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId, date])
+  @@index([storeId, date])
+  @@index([date])
 }
