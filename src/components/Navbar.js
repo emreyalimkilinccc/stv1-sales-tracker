@@ -1,68 +1,114 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
-import { useSession, signOut } from 'next-auth/react'
+import { useAuth } from '@/lib/auth-context'
 import { usePathname } from 'next/navigation'
 
 export default function Navbar() {
-  const { data: session } = useSession()
+  const { user, signOut } = useAuth()
   const pathname = usePathname()
+  const [menuOpen, setMenuOpen] = useState(false)
 
   const isActive = (path) => pathname === path
 
-  if (!session) return null
+  if (!user) return null
 
   const navItems = [
-    { href: '/dashboard', label: 'Dashboard', roles: ['STAFF', 'MANAGER', 'ADMIN'] },
-    { href: '/sales', label: 'Satış Giriş', roles: ['STAFF', 'MANAGER', 'ADMIN'] },
-    { href: '/reports', label: 'Raporlar', roles: ['MANAGER', 'ADMIN'] },
-    { href: '/admin', label: 'Yönetim', roles: ['ADMIN'] },
+    { href: '/dashboard', label: 'Veriler', icon: '📊' },
+    { href: '/sales', label: 'Satış', icon: '💰' },
+    { href: '/reports', label: 'Raporlar', icon: '📈' },
+    { href: '/admin', label: 'Yönetim', icon: '⚙️' },
   ]
 
+  const filteredItems = navItems.filter(item => {
+    if (item.href === '/reports' && !['MANAGER', 'ADMIN'].includes(user.role)) return false
+    if (item.href === '/admin' && !['MANAGER', 'ADMIN'].includes(user.role)) return false
+    return true
+  })
+
   return (
-    <nav className="bg-white shadow">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex">
-            <div className="flex-shrink-0 flex items-center">
-              <span className="text-xl font-bold text-indigo-600">STV1</span>
+    <nav style={{ backgroundColor: '#1e293b', borderBottom: '1px solid #334155', position: 'sticky', top: 0, zIndex: 50 }}>
+      <div className="px-4">
+        <div className="flex justify-between items-center" style={{ height: '60px' }}>
+          <Link href="/dashboard" className="flex items-center" style={{ gap: '0.625rem' }}>
+            <div style={{
+              width: '36px', height: '36px',
+              background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+              borderRadius: '10px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)'
+            }}>
+              <span style={{ fontSize: '18px' }}>🏪</span>
             </div>
-            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-              {navItems
-                .filter(item => item.roles.includes(session.user.role))
-                .map(item => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                      isActive(item.href)
-                        ? 'border-indigo-500 text-gray-900'
-                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
+            <span style={{ fontSize: '18px', fontWeight: '700', color: '#f8fafc' }}>STV1</span>
+          </Link>
+
+          <div className="flex items-center" style={{ gap: '0.75rem' }}>
+            <div style={{
+              padding: '0.375rem 0.75rem',
+              borderRadius: '9999px',
+              fontSize: '11px',
+              fontWeight: '600',
+              backgroundColor: user.role === 'ADMIN' ? 'rgba(239, 68, 68, 0.15)' : user.role === 'MANAGER' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+              color: user.role === 'ADMIN' ? '#fca5a5' : user.role === 'MANAGER' ? '#fcd34d' : '#93c5fd',
+              border: `1px solid ${user.role === 'ADMIN' ? 'rgba(239, 68, 68, 0.3)' : user.role === 'MANAGER' ? 'rgba(245, 158, 11, 0.3)' : 'rgba(59, 130, 246, 0.3)'}`
+            }}>
+              {user.role === 'ADMIN' ? '👑 Yönetici' : user.role === 'MANAGER' ? '👔 Müdür' : '👤 Personel'}
             </div>
-          </div>
-          <div className="flex items-center">
-            <div className="ml-4 flex items-center space-x-4">
-              <span className="text-sm text-gray-700">
-                {session.user.name}
-              </span>
-              <span className="text-xs px-2 py-1 bg-indigo-100 text-indigo-800 rounded">
-                {session.user.role}
-              </span>
-              <button
-                onClick={() => signOut()}
-                className="text-sm text-gray-500 hover:text-gray-700"
-              >
-                Çıkış
-              </button>
-            </div>
+            <button onClick={() => setMenuOpen(!menuOpen)} style={{
+              width: '38px', height: '38px',
+              borderRadius: '10px',
+              border: '1px solid #334155',
+              backgroundColor: menuOpen ? '#334155' : 'transparent',
+              color: '#94a3b8',
+              fontSize: '18px',
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              {menuOpen ? '✕' : '☰'}
+            </button>
           </div>
         </div>
       </div>
+
+      {menuOpen && (
+        <div style={{ backgroundColor: '#1e293b', borderTop: '1px solid #334155', padding: '0.75rem' }}>
+          {filteredItems.map(item => (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setMenuOpen(false)}
+              className="flex items-center"
+              style={{
+                color: isActive(item.href) ? '#3b82f6' : '#e2e8f0',
+                backgroundColor: isActive(item.href) ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                borderRadius: '0.75rem',
+                fontSize: '15px', fontWeight: '500', textDecoration: 'none',
+                padding: '0.875rem 1rem',
+                marginBottom: '0.375rem',
+                gap: '0.75rem'
+              }}
+            >
+              <span style={{ fontSize: '20px' }}>{item.icon}</span>
+              <span>{item.label}</span>
+            </Link>
+          ))}
+          <div style={{ borderTop: '1px solid #334155', marginTop: '0.75rem', paddingTop: '0.75rem' }}>
+            <div style={{ padding: '0 1rem', marginBottom: '0.5rem' }}>
+              <p style={{ fontSize: '13px', color: '#94a3b8' }}>{user.email}</p>
+            </div>
+            <button onClick={() => { signOut(); setMenuOpen(false) }} className="flex items-center" style={{
+              width: '100%', color: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              border: 'none', borderRadius: '0.75rem', fontSize: '15px', cursor: 'pointer',
+              padding: '0.875rem 1rem', gap: '0.75rem'
+            }}>
+              <span>🚪</span>
+              <span>Çıkış Yap</span>
+            </button>
+          </div>
+        </div>
+      )}
     </nav>
   )
 }

@@ -19,6 +19,13 @@ export const metadata: Metadata = {
   description: "Mağaza satış takip ve yönetim sistemi",
 };
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -26,10 +33,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="tr" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col" style={{ backgroundColor: '#0f172a', color: '#f8fafc' }}>
         <Providers>
           <Navbar />
-          <main className="min-h-screen bg-gray-50">
+          <main style={{ backgroundColor: '#0f172a', minHeight: '100vh' }}>
             {children}
           </main>
         </Providers>
