@@ -21,6 +21,9 @@ export default function SalesPage() {
     editorName: '',
     note: ''
   })
+  const [sendingSale, setSendingSale] = useState(null)
+  const [sendData, setSendData] = useState({ subject: '', description: '' })
+  const [showSendModal, setShowSendModal] = useState(false)
 
   useEffect(() => { if (user) fetchSales() }, [user])
 
@@ -95,6 +98,34 @@ export default function SalesPage() {
     } catch (error) { 
       console.error('Error:', error)
       alert('Silinemedi: ' + error.message)
+    }
+  }
+
+  const handleSend = (sale) => {
+    setSendingSale(sale)
+    setSendData({ subject: '', description: '' })
+    setShowSendModal(true)
+  }
+
+  const handleSendSubmit = async () => {
+    if (!sendData.subject || !sendData.description) {
+      alert('Konu ve açıklama zorunludur!')
+      return
+    }
+    try {
+      await updateDoc(doc(db, 'sales', sendingSale.id), {
+        sentBy: user.name || user.email,
+        sentSubject: sendData.subject,
+        sentDescription: sendData.description,
+        sentAt: new Date().toISOString()
+      })
+      setSendingSale(null)
+      setSendData({ subject: '', description: '' })
+      fetchSales()
+      alert('Mesajınız başarıyla gönderildi!')
+    } catch (error) {
+      console.error('Gönderme hatası:', error)
+      alert('Gönderilemedi: ' + error.message)
     }
   }
 
@@ -211,8 +242,14 @@ export default function SalesPage() {
                         {sale.lastEditNote && ` - ${sale.lastEditNote}`}
                       </div>
                     )}
+                    {sale.sentBy && (
+                      <div style={{ marginTop: '0.25rem', color: '#10b981', fontSize: '11px' }}>
+                        📨 {sale.sentBy} tarafından gönderildi
+                        {sale.sentSubject && ` - ${sale.sentSubject}`}
+                      </div>
+                    )}
                   </div>
-                  {canEdit && (
+                  {canEdit ? (
                     <div className="flex" style={{ gap: '0.5rem' }}>
                       <button onClick={() => handleEdit(sale)} style={{
                         padding: '0.5rem 0.875rem', borderRadius: '0.5rem', fontSize: '12px',
@@ -225,6 +262,12 @@ export default function SalesPage() {
                         border: 'none', cursor: 'pointer', fontWeight: '500'
                       }}>🗑️ Sil</button>
                     </div>
+                  ) : (
+                    <button onClick={() => handleSend(sale)} style={{
+                      padding: '0.5rem 0.875rem', borderRadius: '0.5rem', fontSize: '12px',
+                      backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10b981',
+                      border: 'none', cursor: 'pointer', fontWeight: '500'
+                    }}>📨 Gönder</button>
                   )}
                 </div>
               </div>
@@ -290,6 +333,50 @@ export default function SalesPage() {
             <div className="flex" style={{ gap: '0.75rem', marginTop: '1rem' }}>
               <button type="button" onClick={() => { setShowEditModal(false); setEditingSale(null) }} className="btn btn-secondary flex-1">İptal</button>
               <button type="button" onClick={handleSaveEdit} className="btn btn-primary flex-1">💾 Kaydet</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Gönderme Modal'ı */}
+      {sendingSale && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: '#1e293b', borderRadius: '1rem',
+            padding: '1.5rem', width: '100%', maxWidth: '400px',
+            border: '1px solid #334155'
+          }}>
+            <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>
+              📨 Satış Gönder
+            </h3>
+            
+            <div style={{ backgroundColor: '#0f172a', borderRadius: '0.5rem', padding: '0.75rem', marginBottom: '1rem' }}>
+              <div style={{ fontSize: '14px', color: '#f8fafc' }}>
+                {formatCurrencyDecimal(sendingSale.amount || 0)} - {sendingSale.category}
+              </div>
+              <div style={{ fontSize: '12px', color: '#94a3b8' }}>
+                {sendingSale.date} • {sendingSale.hour}:00
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">📋 Konu *</label>
+              <input type="text" value={sendData.subject} onChange={(e) => setSendData(p => ({ ...p, subject: e.target.value }))} placeholder="Mesaj konusu" className="form-input" required />
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">📝 Açıklama *</label>
+              <textarea value={sendData.description} onChange={(e) => setSendData(p => ({ ...p, description: e.target.value }))} placeholder="Mesajınızı yazın..." className="form-input" rows={4} required />
+            </div>
+            
+            <div className="flex" style={{ gap: '0.75rem', marginTop: '1rem' }}>
+              <button type="button" onClick={() => { setSendingSale(null) }} className="btn btn-secondary flex-1">İptal</button>
+              <button type="button" onClick={handleSendSubmit} className="btn btn-primary flex-1">📨 Gönder</button>
             </div>
           </div>
         </div>
