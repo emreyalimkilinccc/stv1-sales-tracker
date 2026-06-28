@@ -116,6 +116,7 @@ export function AuthProvider({ children }) {
   const signOut = async () => {
     await firebaseSignOut(auth)
     setUser(null)
+    window.location.href = '/login'
   }
 
   const changePassword = async (newPassword) => {
