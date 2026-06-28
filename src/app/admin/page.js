@@ -293,7 +293,7 @@ export default function AdminPage() {
                         border: 'none', cursor: 'pointer', fontWeight: '500'
                       }}>🗑️ Sil</button>
                     </div>
-                  )}
+                  ) : null}
                 </div>
               </div>
             ))}
