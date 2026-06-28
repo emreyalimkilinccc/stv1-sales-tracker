@@ -96,8 +96,25 @@ export default function Navbar() {
           ))}
           <div style={{ borderTop: '1px solid #334155', marginTop: '0.75rem', paddingTop: '0.75rem' }}>
             <div style={{ padding: '0 1rem', marginBottom: '0.5rem' }}>
-              <p style={{ fontSize: '13px', color: '#94a3b8' }}>{user.email}</p>
+              <p style={{ fontSize: '13px', color: '#94a3b8' }}>Satış Kodu: <span style={{ color: '#3b82f6', fontWeight: '600' }}>{user.salesCode}</span></p>
             </div>
+            <Link
+              href="/change-password"
+              onClick={() => setMenuOpen(false)}
+              className="flex items-center"
+              style={{
+                color: '#f59e0b',
+                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                borderRadius: '0.75rem',
+                fontSize: '15px', fontWeight: '500', textDecoration: 'none',
+                padding: '0.875rem 1rem',
+                marginBottom: '0.375rem',
+                gap: '0.75rem'
+              }}
+            >
+              <span>🔐</span>
+              <span>Şifre Değiştir</span>
+            </Link>
             <button onClick={() => { signOut(); setMenuOpen(false) }} className="flex items-center" style={{
               width: '100%', color: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)',
               border: 'none', borderRadius: '0.75rem', fontSize: '15px', cursor: 'pointer',

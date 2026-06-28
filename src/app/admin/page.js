@@ -17,7 +17,7 @@ export default function AdminPage() {
   const [showAddUser, setShowAddUser] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
   const [newStore, setNewStore] = useState({ name: '', address: '', phone: '' })
-  const [newUser, setNewUser] = useState({ email: '', password: '', name: '', role: 'STAFF', storeId: '' })
+  const [newUser, setNewUser] = useState({ salesCode: '', email: '', password: '', name: '', role: 'STAFF', storeId: '' })
 
   useEffect(() => { if (user && ['ADMIN', 'MANAGER'].includes(user.role)) fetchData() }, [user])
 
@@ -36,15 +36,31 @@ export default function AdminPage() {
   const handleAddUser = async (e) => {
     e.preventDefault()
     try {
-      const uc = await createUserWithEmailAndPassword(auth, newUser.email, newUser.password)
-      await setDoc(doc(db, 'user', uc.user.uid), { name: newUser.name, email: newUser.email, role: newUser.role, storeId: newUser.storeId, createdAt: new Date().toISOString() })
-      setShowAddUser(false); setNewUser({ email: '', password: '', name: '', role: 'STAFF', storeId: '' }); fetchData()
+      const email = `${newUser.salesCode}@stv1.local`
+      const uc = await createUserWithEmailAndPassword(auth, email, newUser.password)
+      await setDoc(doc(db, 'user', uc.user.uid), { 
+        name: newUser.name, 
+        email: email, 
+        salesCode: newUser.salesCode,
+        role: newUser.role, 
+        storeId: newUser.storeId, 
+        createdAt: new Date().toISOString() 
+      })
+      setShowAddUser(false); setNewUser({ salesCode: '', email: '', password: '', name: '', role: 'STAFF', storeId: '' }); fetchData()
     } catch (error) { alert('Hata: ' + error.message) }
   }
 
   const handleUpdateUser = async (e) => {
     e.preventDefault()
-    try { await updateDoc(doc(db, 'user', editingUser.id), { name: editingUser.name, role: editingUser.role, storeId: editingUser.storeId }); setEditingUser(null); fetchData() } catch (error) { alert('Hata: ' + error.message) }
+    try { 
+      await updateDoc(doc(db, 'user', editingUser.id), { 
+        name: editingUser.name, 
+        role: editingUser.role, 
+        storeId: editingUser.storeId 
+      }); 
+      setEditingUser(null); 
+      fetchData() 
+    } catch (error) { alert('Hata: ' + error.message) }
   }
 
   const handleDeleteUser = async (userId) => {
@@ -141,16 +157,16 @@ export default function AdminPage() {
               <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>👤 Yeni Personel</h3>
               <form onSubmit={handleAddUser}>
                 <div className="form-group">
+                  <label className="form-label">Satış Kodu</label>
+                  <input type="text" placeholder="Satış Kodu (ör: 2646)" value={newUser.salesCode} onChange={(e) => setNewUser(p => ({ ...p, salesCode: e.target.value }))} required className="form-input" inputMode="numeric" pattern="[0-9]*" />
+                </div>
+                <div className="form-group">
                   <label className="form-label">Ad Soyad</label>
                   <input type="text" placeholder="Ad Soyad" value={newUser.name} onChange={(e) => setNewUser(p => ({ ...p, name: e.target.value }))} required className="form-input" />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">E-posta</label>
-                  <input type="email" placeholder="E-posta" value={newUser.email} onChange={(e) => setNewUser(p => ({ ...p, email: e.target.value }))} required className="form-input" />
-                </div>
-                <div className="form-group">
                   <label className="form-label">Şifre</label>
-                  <input type="password" placeholder="Şifre" value={newUser.password} onChange={(e) => setNewUser(p => ({ ...p, password: e.target.value }))} required className="form-input" />
+                  <input type="password" placeholder="Şifre (varsayılan: 123456)" value={newUser.password} onChange={(e) => setNewUser(p => ({ ...p, password: e.target.value }))} required className="form-input" />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Rol</label>
@@ -178,6 +194,10 @@ export default function AdminPage() {
             <div className="card" style={{ borderLeft: '4px solid #f59e0b' }}>
               <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>✏️ Düzenle: {editingUser.name}</h3>
               <form onSubmit={handleUpdateUser}>
+                <div className="form-group">
+                  <label className="form-label">Satış Kodu</label>
+                  <input type="text" value={editingUser.salesCode || '-'} disabled className="form-input" style={{ backgroundColor: '#1e293b', color: '#64748b' }} />
+                </div>
                 <div className="form-group">
                   <label className="form-label">Ad Soyad</label>
                   <input type="text" placeholder="Ad Soyad" value={editingUser.name} onChange={(e) => setEditingUser(p => ({ ...p, name: e.target.value }))} required className="form-input" />
@@ -212,7 +232,9 @@ export default function AdminPage() {
                     <div style={{ fontSize: '15px', fontWeight: '600', color: '#f8fafc' }}>
                       {u.role === 'ADMIN' ? '👑' : u.role === 'MANAGER' ? '👔' : '👤'} {u.name}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#64748b', marginTop: '0.25rem' }}>📧 {u.email}</div>
+                    <div style={{ fontSize: '12px', color: '#64748b', marginTop: '0.25rem' }}>
+                      🔢 Satış Kodu: <span style={{ color: '#3b82f6', fontWeight: '600' }}>{u.salesCode || '-'}</span>
+                    </div>
                   </div>
                   <div style={{
                     padding: '0.375rem 0.75rem', borderRadius: '9999px',

@@ -5,17 +5,20 @@ import {
   onAuthStateChanged, 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
-  signOut as firebaseSignOut
+  signOut as firebaseSignOut,
+  updatePassword
 } from 'firebase/auth'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore'
 import { auth, db } from '@/lib/firebase'
 
 const AuthContext = createContext({
   user: null,
   loading: true,
   signIn: async () => {},
+  signInWithSalesCode: async () => {},
   signUp: async () => {},
-  signOut: async () => {}
+  signOut: async () => {},
+  changePassword: async () => {}
 })
 
 export function useAuth() {
@@ -65,13 +68,39 @@ export function AuthProvider({ children }) {
     return result
   }
 
-  const signUp = async (email, password, name, role = 'STAFF', storeId = null) => {
+  const signInWithSalesCode = async (salesCode, password) => {
+    // Satış koduna karşılık gelen email'i bul
+    const usersRef = collection(db, 'user')
+    const q = query(usersRef, where('salesCode', '==', salesCode))
+    const querySnapshot = await getDocs(q)
+    
+    if (querySnapshot.empty) {
+      throw new Error('Satış kodu bulunamadı')
+    }
+
+    const userDoc = querySnapshot.docs[0]
+    const userData = userDoc.data()
+    
+    // Firebase Auth ile giriş yap
+    const result = await signInWithEmailAndPassword(auth, userData.email, password)
+    
+    setUser({
+      uid: result.user.uid,
+      email: result.user.email,
+      ...userData
+    })
+    
+    return result
+  }
+
+  const signUp = async (email, password, name, role = 'STAFF', storeId = null, salesCode = null) => {
     const result = await createUserWithEmailAndPassword(auth, email, password)
     await setDoc(doc(db, 'user', result.user.uid), {
       name,
       email,
       role,
       storeId,
+      salesCode,
       createdAt: new Date().toISOString()
     })
     setUser({
@@ -79,7 +108,7 @@ export function AuthProvider({ children }) {
       email: result.user.email,
       name,
       role,
-      storeId
+      salesCode
     })
     return result
   }
@@ -89,12 +118,21 @@ export function AuthProvider({ children }) {
     setUser(null)
   }
 
+  const changePassword = async (newPassword) => {
+    if (!auth.currentUser) {
+      throw new Error('Kullanıcı giriş yapmamış')
+    }
+    await updatePassword(auth.currentUser, newPassword)
+  }
+
   const value = {
     user,
     loading,
     signIn,
+    signInWithSalesCode,
     signUp,
-    signOut
+    signOut,
+    changePassword
   }
 
   return (

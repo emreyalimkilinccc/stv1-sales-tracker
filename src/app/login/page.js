@@ -5,20 +5,32 @@ import { useAuth } from '@/lib/auth-context'
 import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
+  const [salesCode, setSalesCode] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const { signIn } = useAuth()
+  const { signInWithSalesCode } = useAuth()
   const router = useRouter()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError('')
-    try { await signIn(email, password); router.push('/dashboard') }
-    catch (err) { setError('Geçersiz e-posta veya şifre') }
-    finally { setLoading(false) }
+
+    try {
+      await signInWithSalesCode(salesCode, password)
+      router.push('/dashboard')
+    } catch (err) {
+      setError('Geçersiz satış kodu veya şifre')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const inputStyle = {
+    width: '100%', padding: '0.875rem 1rem',
+    backgroundColor: '#334155', border: '2px solid #475569',
+    borderRadius: '0.75rem', color: '#f8fafc', fontSize: '16px', outline: 'none'
   }
 
   return (
@@ -58,24 +70,45 @@ export default function LoginPage() {
             )}
 
             <div className="form-group">
-              <label className="form-label">📧 E-posta</label>
-              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                placeholder="ornek@email.com" className="form-input" />
+              <label className="form-label">🔢 Satış Kodu</label>
+              <input 
+                type="text" 
+                required 
+                value={salesCode} 
+                onChange={(e) => setSalesCode(e.target.value)}
+                placeholder="Satış kodunuz" 
+                className="form-input"
+                inputMode="numeric"
+                pattern="[0-9]*"
+              />
             </div>
 
             <div className="form-group">
               <label className="form-label">🔒 Şifre</label>
-              <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••" className="form-input" />
+              <input 
+                type="password" 
+                required 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••" 
+                className="form-input"
+              />
             </div>
 
-            <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%', marginTop: '1.5rem' }}>
+            <button 
+              type="submit" 
+              disabled={loading} 
+              className="btn btn-primary" 
+              style={{ width: '100%', marginTop: '1.5rem' }}
+            >
               {loading ? '⏳ Giriş yapılıyor...' : '🚀 Giriş Yap'}
             </button>
           </form>
         </div>
 
-        <p className="text-center" style={{ color: '#475569', fontSize: '11px', marginTop: '1.5rem' }}>© 2026 STV1 Satış Takip Sistemi</p>
+        <p className="text-center" style={{ color: '#475569', fontSize: '11px', marginTop: '1.5rem' }}>
+          © 2026 STV1 Satış Takip Sistemi
+        </p>
       </div>
     </div>
   )
