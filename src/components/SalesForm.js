@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 export default function SalesForm({ onSubmit, initialData = null }) {
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
-    hour: new Date().getHours(),
+    hour: String(new Date().getHours()),
     amount: '',
     itemCount: '',
     customerPhone: '',
@@ -18,7 +18,7 @@ export default function SalesForm({ onSubmit, initialData = null }) {
     if (initialData) {
       setFormData({
         date: initialData.date || new Date().toISOString().split('T')[0],
-        hour: initialData.hour || new Date().getHours(),
+        hour: String(initialData.hour || new Date().getHours()),
         amount: initialData.amount || '',
         itemCount: initialData.itemCount || '',
         customerPhone: initialData.customerPhone || '',
@@ -66,7 +66,7 @@ export default function SalesForm({ onSubmit, initialData = null }) {
       <div className="form-group">
         <label className="form-label">⏰ Saat</label>
         <select name="hour" value={formData.hour} onChange={handleChange} required className="form-input">
-          {Array.from({ length: 24 }, (_, i) => <option key={i} value={i}>{String(i).padStart(2, '0')}:00</option>)}
+          {Array.from({ length: 24 }, (_, i) => <option key={i} value={String(i)}>{String(i).padStart(2, '0')}:00</option>)}
         </select>
       </div>
 
