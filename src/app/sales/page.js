@@ -24,6 +24,9 @@ export default function SalesPage() {
   const [sendingSale, setSendingSale] = useState(null)
   const [sendData, setSendData] = useState({ subject: '', description: '' })
   const [showSendModal, setShowSendModal] = useState(false)
+  
+  // Aylık kota ayarları
+  const MONTHLY_QUOTA = 500000 // 500.000 TL aylık kota
 
   useEffect(() => { if (user) fetchSales() }, [user])
 
@@ -48,6 +51,23 @@ export default function SalesPage() {
   }
 
   const canEdit = user.role === 'ADMIN' || user.role === 'MANAGER'
+
+  // Aylık kota hesaplama
+  const getMonthlySales = () => {
+    const now = new Date()
+    const currentMonth = now.getMonth()
+    const currentYear = now.getFullYear()
+    
+    return sales.filter(sale => {
+      const saleDate = new Date(sale.date)
+      return saleDate.getMonth() === currentMonth && saleDate.getFullYear() === currentYear
+    })
+  }
+
+  const monthlySales = getMonthlySales()
+  const monthlyTotal = monthlySales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
+  const quotaPercentage = Math.min((monthlyTotal / MONTHLY_QUOTA) * 100, 100)
+  const remainingQuota = Math.max(MONTHLY_QUOTA - monthlyTotal, 0)
 
   const fetchSales = async () => {
     try {
@@ -180,6 +200,69 @@ export default function SalesPage() {
       }}>
         <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#ffffff', marginBottom: '0.375rem' }}>💰 Satış Giriş</h1>
         <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px' }}>Günlük satışlarınızı kaydedin</p>
+      </div>
+
+      {/* Aylık Kota Göstergesi */}
+      <div className="card" style={{ marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+          <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#f8fafc' }}>🎯 Aylık Kota</h3>
+          <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+            {new Date().toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}
+          </span>
+        </div>
+        
+        <div style={{ marginBottom: '0.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+            <span style={{ fontSize: '13px', color: '#94a3b8' }}>
+              Kullanılan: <span style={{ color: '#3b82f6', fontWeight: '600' }}>{formatCurrency(monthlyTotal)}</span>
+            </span>
+            <span style={{ fontSize: '13px', color: '#94a3b8' }}>
+              Hedef: <span style={{ color: '#10b981', fontWeight: '600' }}>{formatCurrency(MONTHLY_QUOTA)}</span>
+            </span>
+          </div>
+          
+          {/* İlerleme Çubuğu */}
+          <div style={{ 
+            height: '24px', 
+            backgroundColor: '#0f172a', 
+            borderRadius: '12px', 
+            overflow: 'hidden',
+            position: 'relative'
+          }}>
+            <div style={{
+              height: '100%',
+              width: `${quotaPercentage}%`,
+              background: quotaPercentage >= 100 
+                ? 'linear-gradient(90deg, #ef4444, #dc2626)' 
+                : quotaPercentage >= 75 
+                  ? 'linear-gradient(90deg, #f59e0b, #d97706)' 
+                  : 'linear-gradient(90deg, #3b82f6, #2563eb)',
+              borderRadius: '12px',
+              transition: 'width 0.5s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              {quotaPercentage > 10 && (
+                <span style={{ fontSize: '11px', fontWeight: '600', color: '#ffffff' }}>
+                  %{quotaPercentage.toFixed(1)}
+                </span>
+              )}
+            </div>
+          </div>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.375rem' }}>
+            <span style={{ fontSize: '11px', color: '#64748b' }}>0 TL</span>
+            <span style={{ 
+              fontSize: '12px', 
+              fontWeight: '600',
+              color: quotaPercentage >= 100 ? '#ef4444' : quotaPercentage >= 75 ? '#f59e0b' : '#10b981'
+            }}>
+              Kalan: {formatCurrency(remainingQuota)}
+            </span>
+            <span style={{ fontSize: '11px', color: '#64748b' }}>{formatCurrency(MONTHLY_QUOTA)}</span>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-3" style={{ gap: '0.75rem', marginBottom: '1rem' }}>
