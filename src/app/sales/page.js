@@ -8,12 +8,32 @@ import { formatCurrency, formatCurrencyDecimal } from '@/lib/utils'
 import SalesForm from '@/components/SalesForm'
 
 export default function SalesPage() {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const [sales, setSales] = useState([])
   const [loading, setLoading] = useState(true)
   const [editingSale, setEditingSale] = useState(null)
 
   useEffect(() => { if (user) fetchSales() }, [user])
+
+  if (authLoading) {
+    return (
+      <div className="px-4 py-6 max-w-7xl mx-auto">
+        <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+          ⏳ Yükleniyor...
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return (
+      <div className="px-4 py-6 max-w-7xl mx-auto">
+        <div style={{ textAlign: 'center', padding: '2rem', color: '#ef4444' }}>
+          🔑 Lütfen giriş yapın
+        </div>
+      </div>
+    )
+  }
 
   const fetchSales = async () => {
     try {
@@ -29,12 +49,31 @@ export default function SalesPage() {
   }
 
   const handleSubmit = async (formData) => {
+    if (!user) {
+      alert('Kullanıcı bilgisi bulunamadı. Lütfen tekrar giriş yapın.')
+      return
+    }
     try {
-      const saleData = { ...formData, amount: parseFloat(formData.amount), itemCount: parseInt(formData.itemCount) || 0, userId: user.uid, userName: user.name || user.email, storeId: user.storeId || null, createdAt: new Date().toISOString() }
-      if (editingSale) { await updateDoc(doc(db, 'sales', editingSale.id), saleData); setEditingSale(null) }
-      else { await addDoc(collection(db, 'sales'), saleData) }
+      const saleData = { 
+        ...formData, 
+        amount: parseFloat(formData.amount) || 0, 
+        itemCount: parseInt(formData.itemCount) || 0, 
+        userId: user.uid, 
+        userName: user.name || user.email || 'Bilinmeyen', 
+        storeId: user.storeId || null, 
+        createdAt: new Date().toISOString() 
+      }
+      if (editingSale) { 
+        await updateDoc(doc(db, 'sales', editingSale.id), saleData)
+        setEditingSale(null) 
+      } else { 
+        await addDoc(collection(db, 'sales'), saleData) 
+      }
       fetchSales()
-    } catch (error) { alert('Kaydedilemedi: ' + error.message) }
+    } catch (error) { 
+      console.error('Satış ekleme hatası:', error)
+      alert('Kaydedilemedi: ' + error.message) 
+    }
   }
 
   const handleDelete = async (id) => {
