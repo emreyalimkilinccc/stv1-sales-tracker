@@ -280,7 +280,7 @@ export default function AdminPage() {
                 </div>
                 <div className="flex justify-between items-center" style={{ borderTop: '1px solid #334155', paddingTop: '0.75rem' }}>
                   <div style={{ fontSize: '12px', color: '#94a3b8' }}>🏪 {stores.find(s => s.id === u.storeId)?.name || '-'}</div>
-                  {u.role !== 'ADMIN' && (user.role === 'ADMIN' || (user.role === 'MANAGER' && u.role === 'STAFF')) && (
+                  {user.role === 'ADMIN' || (user.role === 'MANAGER' && u.role !== 'ADMIN') ? (
                     <div className="flex" style={{ gap: '0.5rem' }}>
                       <button onClick={() => { setEditingUser(u); setShowAddUser(false) }} style={{
                         padding: '0.5rem 0.875rem', borderRadius: '0.5rem', fontSize: '12px',
