@@ -69,7 +69,6 @@ export function AuthProvider({ children }) {
   }
 
   const signInWithSalesCode = async (salesCode, password) => {
-    // Satış koduna karşılık gelen email'i bul
     const usersRef = collection(db, 'user')
     const q = query(usersRef, where('salesCode', '==', salesCode))
     const querySnapshot = await getDocs(q)
@@ -80,14 +79,30 @@ export function AuthProvider({ children }) {
 
     const userDoc = querySnapshot.docs[0]
     const userData = userDoc.data()
+    const firestoreDocId = userDoc.id
     
-    // Firebase Auth ile giriş yap
     const result = await signInWithEmailAndPassword(auth, userData.email, password)
+    
+    if (firestoreDocId !== result.user.uid) {
+      const { id: oldId, ...rest } = userData
+      await setDoc(doc(db, 'user', result.user.uid), {
+        ...rest,
+        email: userData.email,
+        salesCode: userData.salesCode || salesCode,
+        name: userData.name,
+        role: userData.role || 'STAFF',
+        storeId: userData.storeId || null,
+        createdAt: userData.createdAt || new Date().toISOString()
+      })
+    }
     
     setUser({
       uid: result.user.uid,
       email: result.user.email,
-      ...userData
+      name: userData.name,
+      role: userData.role || 'STAFF',
+      salesCode: userData.salesCode || salesCode,
+      storeId: userData.storeId || null
     })
     
     return result

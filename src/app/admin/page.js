@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { collection, query, getDocs, addDoc, doc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { createUserWithEmailAndPassword } from 'firebase/auth'
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as firebaseSignOut } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
 
 export default function AdminPage() {
@@ -33,12 +33,23 @@ export default function AdminPage() {
     try { await addDoc(collection(db, 'stores'), { ...newStore, createdAt: new Date().toISOString() }); setShowAddStore(false); setNewStore({ name: '', address: '', phone: '' }); fetchData() } catch (error) { console.error(error) }
   }
 
+  const [showReauthModal, setShowReauthModal] = useState(false)
+  const [reauthPassword, setReauthPassword] = useState('')
+  const [pendingAdminEmail, setPendingAdminEmail] = useState('')
+
   const handleAddUser = async (e) => {
     e.preventDefault()
     try {
       const email = `${newUser.salesCode}@stv1.local`
-      const uc = await createUserWithEmailAndPassword(auth, email, newUser.password)
-      await setDoc(doc(db, 'user', uc.user.uid), { 
+      
+      // Mevcut admin bilgilerini kaydet
+      const currentAdminEmail = user.email
+      
+      // Yeni kullanıcıyı oluştur
+      await createUserWithEmailAndPassword(auth, email, newUser.password)
+      
+      // Firestore'a doküman ekle
+      await setDoc(doc(db, 'user', email), { 
         name: newUser.name, 
         email: email, 
         salesCode: newUser.salesCode,
@@ -46,8 +57,30 @@ export default function AdminPage() {
         storeId: newUser.storeId, 
         createdAt: new Date().toISOString() 
       })
-      setShowAddUser(false); setNewUser({ salesCode: '', email: '', password: '', name: '', role: 'STAFF', storeId: '' }); fetchData()
+      
+      // Yeni kullanıcı eklendi, şimdi çıkış yapıp admin'i tekrar giriş yaptıralım
+      await firebaseSignOut(auth)
+      
+      // Admin modal'ı aç
+      setPendingAdminEmail(currentAdminEmail)
+      setShowReauthModal(true)
+      setShowAddUser(false)
+      setNewUser({ salesCode: '', email: '', password: '', name: '', role: 'STAFF', storeId: '' })
+      fetchData()
+      
     } catch (error) { alert('Hata: ' + error.message) }
+  }
+
+  const handleReauth = async (e) => {
+    e.preventDefault()
+    try {
+      await signInWithEmailAndPassword(auth, pendingAdminEmail, reauthPassword)
+      setShowReauthModal(false)
+      setReauthPassword('')
+      setPendingAdminEmail('')
+    } catch (error) {
+      alert('Hata: ' + error.message)
+    }
   }
 
   const handleUpdateUser = async (e) => {
@@ -264,6 +297,51 @@ export default function AdminPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Admin Tekrar Giriş Modal'ı */}
+      {showReauthModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: '#1e293b', borderRadius: '1rem',
+            padding: '2rem', width: '100%', maxWidth: '400px',
+            border: '1px solid #334155'
+          }}>
+            <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>
+              🔐 Tekrar Giriş Yap
+            </h3>
+            <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '1rem' }}>
+              Yeni kullanıcı eklendi. Devam etmek için şifrenizi girin.
+            </p>
+            <form onSubmit={handleReauth}>
+              <div className="form-group">
+                <label className="form-label">Şifre</label>
+                <input
+                  type="password"
+                  value={reauthPassword}
+                  onChange={(e) => setReauthPassword(e.target.value)}
+                  placeholder="Şifreniz"
+                  className="form-input"
+                  required
+                />
+              </div>
+              <div className="flex" style={{ gap: '0.75rem', marginTop: '1rem' }}>
+                <button type="button" onClick={() => { setShowReauthModal(false); window.location.href = '/login' }}
+                  className="btn btn-secondary flex-1">
+                  Giriş Sayfası
+                </button>
+                <button type="submit" className="btn btn-primary flex-1">
+                  Giriş Yap
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
