@@ -14,12 +14,13 @@ export default function DashboardPage() {
   const [selectedStaff, setSelectedStaff] = useState('')
   const [allStaff, setAllStaff] = useState([])
   const [storeQuota, setStoreQuota] = useState(0)
+  const [userQuota, setUserQuota] = useState(0)
   const [dateRange, setDateRange] = useState({
     start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     end: new Date().toISOString().split('T')[0]
   })
 
-  useEffect(() => { if (user) { fetchDashboard(); fetchStaffList(); fetchStoreQuota() } }, [user, dateRange])
+  useEffect(() => { if (user) { fetchDashboard(); fetchStaffList(); fetchQuotas() } }, [user, dateRange])
 
   const fetchStaffList = async () => {
     try {
@@ -28,13 +29,13 @@ export default function DashboardPage() {
     } catch (error) { console.error(error) }
   }
 
-  const fetchStoreQuota = async () => {
+  const fetchQuotas = async () => {
     try {
-      // Kullanıcının kotasını Firestore'dan oku
       const userDoc = await getDocs(query(collection(db, 'user'), where('__name__', '==', user.uid)))
       if (!userDoc.empty) {
         const userData = userDoc.docs[0].data()
         setStoreQuota(userData.monthlyQuota || 0)
+        setUserQuota(userData.monthlyQuota || 0)
       }
     } catch (error) { console.error(error) }
   }
@@ -117,53 +118,80 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* AYLIK KOTA ve MAĞAZA CİROSU - Tüm roller için */}
+      {/* AYLIK KOTA & MAĞAZA CİROSU */}
       <div className="card" style={{ marginBottom: '1rem' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>🎯 Aylık Kota & Mağaza Cirosu</h3>
-          
-          {user.role === 'MANAGER' && (
-            <div style={{ marginBottom: '0.75rem' }}>
-              <label style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '0.375rem', display: 'block' }}>👤 Personel Seçin:</label>
-              <select value={selectedStaff} onChange={(e) => setSelectedStaff(e.target.value)}
-                style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', backgroundColor: '#334155', border: '1px solid #475569', color: '#f8fafc', fontSize: '13px' }}>
-                <option value="">Tüm Personel</option>
-                {allStaff.filter(s => s.role === 'STAFF').map(s => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
+        <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>🎯 Aylık Kota & Mağaza Cirosu</h3>
+        
+        {user.role === 'MANAGER' && (
+          <div style={{ marginBottom: '0.75rem' }}>
+            <label style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '0.375rem', display: 'block' }}>👤 Personel Seçin:</label>
+            <select value={selectedStaff} onChange={(e) => setSelectedStaff(e.target.value)}
+              style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', backgroundColor: '#334155', border: '1px solid #475569', color: '#f8fafc', fontSize: '13px' }}>
+              <option value="">Tüm Personel</option>
+              {allStaff.filter(s => s.role === 'STAFF').map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
+        {/* YÖNETİCİ/MÜDÜR: 2 Sütun - Mağaza Kotası + Bireysel Kota */}
+        {user.role !== 'STAFF' && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
-            <div style={{ backgroundColor: '#0f172a', borderRadius: '0.75rem', padding: '0.875rem', border: '1px solid #334155' }}>
-              <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '0.375rem' }}>🏪 Mağaza Cirosu</div>
-              <div style={{ fontSize: '18px', fontWeight: '700', color: '#3b82f6' }}>{formatCurrency(data?.summary?.totalAmount || 0)}</div>
+            {/* Mağaza Kotası Grafiği */}
+            <div style={{ backgroundColor: '#0f172a', borderRadius: '0.75rem', padding: '1rem', border: '1px solid #334155' }}>
+              <div style={{ fontSize: '13px', fontWeight: '600', color: '#f8fafc', marginBottom: '0.5rem' }}>🏪 Mağaza Kotası</div>
+              <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '0.5rem' }}>Kullanılan: <span style={{ color: '#3b82f6', fontWeight: '600' }}>{formatCurrency(data?.summary?.totalAmount || 0)}</span> / <span style={{ color: '#10b981', fontWeight: '600' }}>{formatCurrency(storeQuota)}</span></div>
+              {(() => {
+                const pct = Math.min(((data?.summary?.totalAmount || 0) / (storeQuota || 1)) * 100, 100)
+                return (
+                  <div style={{ height: '18px', backgroundColor: '#1e293b', borderRadius: '9px', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${pct}%`, background: pct >= 100 ? 'linear-gradient(90deg, #ef4444, #dc2626)' : pct >= 75 ? 'linear-gradient(90deg, #f59e0b, #d97706)' : 'linear-gradient(90deg, #3b82f6, #2563eb)', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'width 0.5s ease' }}>
+                      {pct > 10 && <span style={{ fontSize: '9px', fontWeight: '600', color: '#fff' }}>%{pct.toFixed(1)}</span>}
+                    </div>
+                  </div>
+                )
+              })()}
             </div>
-            <div style={{ backgroundColor: '#0f172a', borderRadius: '0.75rem', padding: '0.875rem', border: '1px solid #334155' }}>
-              <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '0.375rem' }}>📦 Toplam İşlem</div>
-              <div style={{ fontSize: '18px', fontWeight: '700', color: '#10b981' }}>{data?.summary?.salesCount || 0}</div>
+            {/* Bireysel Kota Grafiği */}
+            <div style={{ backgroundColor: '#0f172a', borderRadius: '0.75rem', padding: '1rem', border: '1px solid #334155' }}>
+              <div style={{ fontSize: '13px', fontWeight: '600', color: '#f8fafc', marginBottom: '0.5rem' }}>👤 Bireysel Kota</div>
+              <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '0.5rem' }}>Kullanılan: <span style={{ color: '#3b82f6', fontWeight: '600' }}>{formatCurrency(data?.summary?.totalAmount || 0)}</span> / <span style={{ color: '#10b981', fontWeight: '600' }}>{formatCurrency(userQuota)}</span></div>
+              {(() => {
+                const pct = Math.min(((data?.summary?.totalAmount || 0) / (userQuota || 1)) * 100, 100)
+                return (
+                  <div style={{ height: '18px', backgroundColor: '#1e293b', borderRadius: '9px', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${pct}%`, background: pct >= 100 ? 'linear-gradient(90deg, #ef4444, #dc2626)' : pct >= 75 ? 'linear-gradient(90deg, #f59e0b, #d97706)' : 'linear-gradient(90deg, #8b5cf6, #7c3aed)', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'width 0.5s ease' }}>
+                      {pct > 10 && <span style={{ fontSize: '9px', fontWeight: '600', color: '#fff' }}>%{pct.toFixed(1)}</span>}
+                    </div>
+                  </div>
+                )
+              })()}
             </div>
           </div>
+        )}
 
-          {/* Aylık Kota Çubuğu - Yönetim panelindeki değerden */}
-          <div style={{ marginTop: '0.75rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.375rem' }}>
-              <span style={{ fontSize: '12px', color: '#94a3b8' }}>Kullanılan: <span style={{ color: '#3b82f6', fontWeight: '600' }}>{formatCurrency(data?.summary?.totalAmount || 0)}</span></span>
-              <span style={{ fontSize: '12px', color: '#94a3b8' }}>Hedef: <span style={{ color: '#10b981', fontWeight: '600' }}>{formatCurrency(storeQuota)}</span></span>
-            </div>
+        {/* PERSONEL: Sadece Bireysel Kota */}
+        {user.role === 'STAFF' && (
+          <div style={{ backgroundColor: '#0f172a', borderRadius: '0.75rem', padding: '1rem', border: '1px solid #334155', marginBottom: '1rem' }}>
+            <div style={{ fontSize: '13px', fontWeight: '600', color: '#f8fafc', marginBottom: '0.5rem' }}>👤 Bireysel Aylık Kota</div>
+            <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '0.5rem' }}>Kullanılan: <span style={{ color: '#3b82f6', fontWeight: '600' }}>{formatCurrency(data?.summary?.totalAmount || 0)}</span> / <span style={{ color: '#10b981', fontWeight: '600' }}>{formatCurrency(userQuota)}</span></div>
             {(() => {
-              const quota = storeQuota || 1
-              const pct = Math.min(((data?.summary?.totalAmount || 0) / quota) * 100, 100)
+              const pct = Math.min(((data?.summary?.totalAmount || 0) / (userQuota || 1)) * 100, 100)
               return (
-                <div style={{ height: '20px', backgroundColor: '#0f172a', borderRadius: '10px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${pct}%`, background: pct >= 100 ? 'linear-gradient(90deg, #ef4444, #dc2626)' : pct >= 75 ? 'linear-gradient(90deg, #f59e0b, #d97706)' : 'linear-gradient(90deg, #3b82f6, #2563eb)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'width 0.5s ease' }}>
-                    {pct > 10 && <span style={{ fontSize: '10px', fontWeight: '600', color: '#fff' }}>%{pct.toFixed(1)}</span>}
+                <div style={{ height: '18px', backgroundColor: '#1e293b', borderRadius: '9px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${pct}%`, background: pct >= 100 ? 'linear-gradient(90deg, #ef4444, #dc2626)' : pct >= 75 ? 'linear-gradient(90deg, #f59e0b, #d97706)' : 'linear-gradient(90deg, #8b5cf6, #7c3aed)', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'width 0.5s ease' }}>
+                    {pct > 10 && <span style={{ fontSize: '9px', fontWeight: '600', color: '#fff' }}>%{pct.toFixed(1)}</span>}
                   </div>
                 </div>
               )
             })()}
+            <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '0.375rem' }}>
+              Kalan: <span style={{ color: userQuota - (data?.summary?.totalAmount || 0) > 0 ? '#10b981' : '#ef4444', fontWeight: '600' }}>{formatCurrency(Math.max(userQuota - (data?.summary?.totalAmount || 0), 0))}</span>
+            </div>
           </div>
-        </div>
+        )}
+      </div>
 
       {/* İstatistikler */}
       <div className="grid grid-cols-2 md:grid-cols-4" style={{ gap: '0.75rem', marginBottom: '1rem' }}>
