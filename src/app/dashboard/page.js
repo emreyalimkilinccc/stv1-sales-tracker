@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore'
+import { collection, query, where, getDocs, orderBy, getDoc, doc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { formatCurrency } from '@/lib/utils'
 import DashboardCharts from '@/components/DashboardCharts'
@@ -31,17 +31,17 @@ export default function DashboardPage() {
 
   const fetchQuotas = async () => {
     try {
-      // Bireysel kota: user koleksiyonundan
-      const userDoc = await getDocs(query(collection(db, 'user'), where('__name__', '==', user.uid)))
-      if (!userDoc.empty) {
-        const userData = userDoc.docs[0].data()
+      // Bireysel kota: user doc'undan (getDoc ile)
+      const userDocSnap = await getDoc(doc(db, 'user', user.uid))
+      if (userDocSnap.exists()) {
+        const userData = userDocSnap.data()
         setUserQuota(userData.monthlyQuota || 0)
       }
-      // Mağaza kotası: stores koleksiyonundan
+      // Mağaza kotası: stores collection'ından
       if (user.storeId) {
-        const storeDoc = await getDocs(query(collection(db, 'stores'), where('__name__', '==', user.storeId)))
-        if (!storeDoc.empty) {
-          const storeData = storeDoc.docs[0].data()
+        const storeDocSnap = await getDoc(doc(db, 'stores', user.storeId))
+        if (storeDocSnap.exists()) {
+          const storeData = storeDocSnap.data()
           setStoreQuota(storeData.monthlyQuota || 0)
         }
       }
@@ -60,33 +60,34 @@ export default function DashboardPage() {
     try {
       const startDate = new Date(dateRange.start); const endDate = new Date(dateRange.end); endDate.setHours(23, 59, 59, 999)
       
-      // Mağaza satışları (tüm personel)
-      let storeSalesQuery
-      if (user.role === 'MANAGER') {
-        storeSalesQuery = query(collection(db, 'sales'), where('storeId', '==', user.storeId), orderBy('date', 'desc'))
+      // STAFF: sadece kendi satışları (orderBy yok, composite index gerektirmez)
+      // MANAGER: mağaza satışları
+      // ADMIN: tüm satışlar
+      let allSales = []
+      if (user.role === 'STAFF') {
+        const snap = await getDocs(query(collection(db, 'sales'), where('userId', '==', user.uid)))
+        allSales = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      } else if (user.role === 'MANAGER') {
+        const snap = await getDocs(query(collection(db, 'sales'), where('storeId', '==', user.storeId)))
+        allSales = snap.docs.map(d => ({ id: d.id, ...d.data() }))
       } else {
-        storeSalesQuery = query(collection(db, 'sales'), orderBy('date', 'desc'))
+        const snap = await getDocs(collection(db, 'sales'))
+        allSales = snap.docs.map(d => ({ id: d.id, ...d.data() }))
       }
-      const storeSnapshot = await getDocs(storeSalesQuery)
-      const allStoreSales = storeSnapshot.docs.map(d => ({ id: d.id, ...d.data() }))
-      const storeSales = allStoreSales.filter(s => { const d = new Date(s.date); return d >= startDate && d <= endDate })
+      const sales = allSales.filter(s => { const d = new Date(s.date); return d >= startDate && d <= endDate })
       
-      // Kişisel satışlar (sadece giriş yapan kişinin)
-      let personalSalesQuery = query(collection(db, 'sales'), where('userId', '==', user.uid), orderBy('date', 'desc'))
-      const personalSnapshot = await getDocs(personalSalesQuery)
-      const allPersonalSales = personalSnapshot.docs.map(d => ({ id: d.id, ...d.data() }))
-      const personalSales = allPersonalSales.filter(s => { const d = new Date(s.date); return d >= startDate && d <= endDate })
+      const totalAmount = sales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
+      const totalItems = sales.reduce((sum, s) => sum + (parseInt(s.itemCount) || 0), 0)
+      const totalBonusItems = sales.reduce((sum, s) => sum + (parseInt(s.bonusItemCount) || 0), 0)
+      const avgAmount = sales.length > 0 ? totalAmount / sales.length : 0
       
-      // Mağaza toplamı
-      const totalAmount = storeSales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
-      const totalItems = storeSales.reduce((sum, s) => sum + (parseInt(s.itemCount) || 0), 0)
-      const totalBonusItems = storeSales.reduce((sum, s) => sum + (parseInt(s.bonusItemCount) || 0), 0)
-      const avgAmount = storeSales.length > 0 ? totalAmount / storeSales.length : 0
+      // Kişisel satışlar (MANAGER/ADMIN için ayrı)
+      let personalTotalAmount = totalAmount
+      if (user.role !== 'STAFF') {
+        personalTotalAmount = sales.filter(s => s.userId === user.uid).reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
+      }
       
-      // Kişisel toplam
-      const personalTotalAmount = personalSales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
-      
-      const dailyData = storeSales.reduce((acc, sale) => {
+      const dailyData = sales.reduce((acc, sale) => {
         const date = sale.date.split('T')[0]
         if (!acc[date]) acc[date] = { date, amount: 0, count: 0 }
         acc[date].amount += parseFloat(sale.amount) || 0; acc[date].count++; return acc
@@ -95,14 +96,14 @@ export default function DashboardPage() {
       
       let staffStats = []
       if (user.role !== 'STAFF') {
-        const staffData = storeSales.reduce((acc, sale) => {
+        const staffData = sales.reduce((acc, sale) => {
           if (!acc[sale.userId]) acc[sale.userId] = { userId: sale.userId, userName: sale.userName || 'Bilinmeyen', amount: 0, count: 0 }
           acc[sale.userId].amount += parseFloat(sale.amount) || 0; acc[sale.userId].count++; return acc
         }, {})
         staffStats = Object.values(staffData).sort((a, b) => b.amount - a.amount).slice(0, 10)
       }
       
-      setData({ summary: { totalAmount, totalItems, totalBonusItems, avgAmount, salesCount: storeSales.length, personalTotalAmount }, dailyStats, staffStats })
+      setData({ summary: { totalAmount, totalItems, totalBonusItems, avgAmount, salesCount: sales.length, personalTotalAmount }, dailyStats, staffStats })
     } catch (error) { console.error('Error:', error) } finally { setLoading(false) }
   }
 
