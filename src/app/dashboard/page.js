@@ -18,16 +18,18 @@ export default function DashboardPage() {
   const getTurkeyDate = () => {
     const now = new Date()
     const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Istanbul', year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(now)
-    return new Date(parseInt(parts.find(p => p.type === 'year').value), parseInt(parts.find(p => p.type === 'month').value) - 1, parseInt(parts.find(p => p.type === 'day').value))
+    return { year: parseInt(parts.find(p => p.type === 'year').value), month: parseInt(parts.find(p => p.type === 'month').value) - 1, day: parseInt(parts.find(p => p.type === 'day').value) }
   }
 
+  const formatDate = (y, m, d) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+
   const [dateRange, setDateRange] = useState(() => {
-    const turkeyDate = getTurkeyDate()
-    const firstDay = new Date(turkeyDate.getFullYear(), turkeyDate.getMonth(), 1)
-    const lastDay = new Date(turkeyDate.getFullYear(), turkeyDate.getMonth() + 1, 0)
+    const td = getTurkeyDate()
+    const firstDay = new Date(td.year, td.month, 1)
+    const lastDay = new Date(td.year, td.month + 1, 0)
     return {
-      start: firstDay.toISOString().split('T')[0],
-      end: lastDay.toISOString().split('T')[0]
+      start: formatDate(firstDay.getFullYear(), firstDay.getMonth(), firstDay.getDate()),
+      end: formatDate(lastDay.getFullYear(), lastDay.getMonth(), lastDay.getDate())
     }
   })
 
@@ -60,20 +62,24 @@ export default function DashboardPage() {
   }
 
   const handlePeriodChange = (period) => {
-    const turkeyDate = getTurkeyDate()
-    let start = new Date(turkeyDate); let end = new Date(turkeyDate)
+    const td = getTurkeyDate()
+    let sy = td.year, sm = td.month, sd = td.day
+    let ey = td.year, em = td.month, ed = td.day
     if (period === 'month') {
-      start = new Date(turkeyDate.getFullYear(), turkeyDate.getMonth(), 1)
-      end = new Date(turkeyDate.getFullYear(), turkeyDate.getMonth() + 1, 0)
+      sy = td.year; sm = td.month; sd = 1
+      const lastDay = new Date(td.year, td.month + 1, 0)
+      ey = lastDay.getFullYear(); em = lastDay.getMonth(); ed = lastDay.getDate()
     } else if (period === 'lastMonth') {
-      start = new Date(turkeyDate.getFullYear(), turkeyDate.getMonth() - 1, 1)
-      end = new Date(turkeyDate.getFullYear(), turkeyDate.getMonth(), 0)
+      const prevLast = new Date(td.year, td.month, 0)
+      sy = prevLast.getFullYear(); sm = prevLast.getMonth(); sd = 1
+      ey = prevLast.getFullYear(); em = prevLast.getMonth(); ed = prevLast.getDate()
     } else if (period === 'week') {
-      start.setDate(start.getDate() - 7)
+      const d = new Date(td.year, td.month, td.day - 7)
+      sy = d.getFullYear(); sm = d.getMonth(); sd = d.getDate()
     } else if (period === 'year') {
-      start.setFullYear(start.getFullYear() - 1)
+      sy = td.year - 1; sm = td.month; sd = td.day
     }
-    setDateRange({ start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] })
+    setDateRange({ start: formatDate(sy, sm, sd), end: formatDate(ey, em, ed) })
   }
 
   const fetchDashboard = async () => {
@@ -86,6 +92,10 @@ export default function DashboardPage() {
         endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0)
       }
       endDate.setHours(23, 59, 59, 999)
+      
+      // Tarih karşılaştırmaları için string formatında yap
+      const startStr = dateRange.start
+      const endStr = dateRange.end || formatDate(endDate.getFullYear(), endDate.getMonth(), endDate.getDate())
       
       // STAFF: sadece kendi satışları (orderBy yok, composite index gerektirmez)
       // MANAGER: mağaza satışları
@@ -101,7 +111,7 @@ export default function DashboardPage() {
         const snap = await getDocs(collection(db, 'sales'))
         allSales = snap.docs.map(d => ({ id: d.id, ...d.data() }))
       }
-      const sales = allSales.filter(s => { const d = new Date(s.date); return d >= startDate && d <= endDate })
+      const sales = allSales.filter(s => { return s.date >= startStr && s.date <= endStr })
       
       const totalAmount = sales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
       const totalCost = sales.reduce((sum, s) => sum + (parseFloat(s.cost) || 0), 0)
