@@ -2,100 +2,46 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore'
+import { collection, query, where, getDocs, updateDoc, doc, orderBy } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { formatCurrency } from '@/lib/utils'
-import DashboardCharts from '@/components/DashboardCharts'
+import { formatCurrency, formatCurrencyDecimal } from '@/lib/utils'
 
 export default function ReportsPage() {
   const { user } = useAuth()
-  const [data, setData] = useState(null)
+  const [pendingSales, setPendingSales] = useState([])
   const [loading, setLoading] = useState(true)
-  const [dateRange, setDateRange] = useState({
-    start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    end: new Date().toISOString().split('T')[0]
-  })
-  const [groupBy, setGroupBy] = useState('day')
-  const [selectedStaff, setSelectedStaff] = useState('')
-  const [allStaff, setAllStaff] = useState([])
+  const [selectedSale, setSelectedSale] = useState(null)
+  const [responseNote, setResponseNote] = useState('')
 
-  useEffect(() => { if (user && user.role !== 'STAFF') { fetchReport(); fetchStaffList() } }, [user, dateRange, groupBy, selectedStaff])
+  useEffect(() => { if (user && user.role !== 'STAFF') fetchPendingSales() }, [user])
 
-  const fetchStaffList = async () => {
+  const fetchPendingSales = async () => {
     try {
-      const snapshot = await getDocs(collection(db, 'user'))
-      setAllStaff(snapshot.docs.map(d => ({ id: d.id, ...d.data() })))
-    } catch (error) { console.error(error) }
-  }
-
-  const handlePeriodChange = (period) => {
-    const end = new Date(); let start = new Date()
-    if (period === 'week') start.setDate(start.getDate() - 7)
-    else if (period === 'month') start.setMonth(start.getMonth() - 1)
-    else if (period === 'year') start.setFullYear(start.getFullYear() - 1)
-    setDateRange({ start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] })
-  }
-
-  const fetchReport = async () => {
-    try {
-      const startDate = new Date(dateRange.start); const endDate = new Date(dateRange.end); endDate.setHours(23, 59, 59, 999)
       let salesQuery
       if (user.role === 'MANAGER') {
-        salesQuery = query(collection(db, 'sales'), where('storeId', '==', user.storeId), orderBy('date', 'desc'))
+        salesQuery = query(collection(db, 'sales'), where('storeId', '==', user.storeId), where('sentBy', '!=', null), orderBy('sentAt', 'desc'))
       } else {
-        salesQuery = query(collection(db, 'sales'), orderBy('date', 'desc'))
+        salesQuery = query(collection(db, 'sales'), where('sentBy', '!=', null), orderBy('sentAt', 'desc'))
       }
       const snapshot = await getDocs(salesQuery)
-      let sales = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => { const d = new Date(s.date); return d >= startDate && d <= endDate })
-      
-      // Kullanıcı filtresi
-      if (selectedStaff) { sales = sales.filter(s => s.userId === selectedStaff) }
-      
-      let groupedData = {}
-      if (groupBy === 'day') { groupedData = sales.reduce((acc, s) => { const k = s.date.split('T')[0]; if (!acc[k]) acc[k] = { date: k, amount: 0, count: 0, items: 0 }; acc[k].amount += parseFloat(s.amount || 0); acc[k].count++; acc[k].items += parseInt(s.itemCount) || 0; return acc }, {}) }
-      else if (groupBy === 'week') { groupedData = sales.reduce((acc, s) => { const d = new Date(s.date); const ws = new Date(d); ws.setDate(d.getDate() - d.getDay()); const k = ws.toISOString().split('T')[0]; if (!acc[k]) acc[k] = { week: k, amount: 0, count: 0, items: 0 }; acc[k].amount += parseFloat(s.amount || 0); acc[k].count++; acc[k].items += parseInt(s.itemCount) || 0; return acc }, {}) }
-      else { groupedData = sales.reduce((acc, s) => { const k = s.date.substring(0, 7); if (!acc[k]) acc[k] = { month: k, amount: 0, count: 0, items: 0 }; acc[k].amount += parseFloat(s.amount || 0); acc[k].count++; acc[k].items += parseInt(s.itemCount) || 0; return acc }, {}) }
-      
-      // Seçili kullanıcının kotası ve mağaza kotası
-      let selectedUserData = null
-      if (selectedStaff) {
-        const staffDoc = allStaff.find(s => s.id === selectedStaff)
-        if (staffDoc) {
-          const monthSales = sales.filter(s => {
-            const d = new Date(s.date)
-            const now = new Date()
-            return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
-          })
-          const monthlyTotal = monthSales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
-          selectedUserData = {
-            name: staffDoc.name,
-            monthlyQuota: staffDoc.monthlyQuota || 500000,
-            monthlyTotal: monthlyTotal,
-            percentage: Math.min((monthlyTotal / (staffDoc.monthlyQuota || 500000)) * 100, 100)
-          }
-        }
-      }
-      
-      // Mağaza kotası
-      const storeDoc = allStaff.find(s => s.storeId === user.storeId)
-      const storeQuota = storeDoc?.monthlyQuota || 500000
-      const monthSalesAll = sales.filter(s => {
-        const d = new Date(s.date)
-        const now = new Date()
-        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
-      })
-      const storeMonthlyTotal = monthSalesAll.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
-      
-      setData({
-        groupedData: Object.values(groupedData),
-        totalSales: sales.length,
-        totalAmount: sales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0),
-        selectedUserData,
-        storeQuota,
-        storeMonthlyTotal,
-        storePercentage: Math.min((storeMonthlyTotal / storeQuota) * 100, 100)
-      })
+      const sales = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
+      // Düzenlenmiş olanları filtrele (lastEditedBy varsa yönetici düzeltmiş demektir)
+      const pending = sales.filter(s => !s.lastEditedBy)
+      setPendingSales(pending)
     } catch (error) { console.error('Error:', error) } finally { setLoading(false) }
+  }
+
+  const handleApprove = async (sale) => {
+    try {
+      await updateDoc(doc(db, 'sales', sale.id), {
+        lastEditedBy: user.name || user.email,
+        lastEditNote: responseNote || 'Onaylandı - düzeltme yapıldı',
+        lastEditedAt: new Date().toISOString()
+      })
+      setResponseNote('')
+      fetchPendingSales()
+      alert('Satış onaylandı ve raporlar sayfasından kaldırıldı!')
+    } catch (error) { alert('Hata: ' + error.message) }
   }
 
   if (!user || user.role === 'STAFF') return <div className="min-h-screen flex items-center justify-center"><div>🚫 Erişim yetkiniz yok</div></div>
@@ -104,137 +50,77 @@ export default function ReportsPage() {
   return (
     <div className="px-4 py-6 max-w-7xl mx-auto">
       <div className="page-header" style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>
-        <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#ffffff', marginBottom: '0.375rem' }}>📈 Raporlar</h1>
-        <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px' }}>Satış raporlarını görüntüleyin</p>
+        <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#ffffff', marginBottom: '0.375rem' }}>📨 Düzeltme İstekleri</h1>
+        <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px' }}>Personelin gönderdiği düzeltme isteklerini görüntüleyin</p>
       </div>
 
-      {/* Tarih Filtresi */}
-      <div className="card">
-        <div className="flex flex-wrap gap-2" style={{ marginBottom: '1rem' }}>
-          {[
-            { key: 'week', label: '📅 7G', color: '#3b82f6' },
-            { key: 'month', label: '📅 30G', color: '#8b5cf6' },
-            { key: 'year', label: '📅 1Y', color: '#10b981' }
-          ].map(p => (
-            <button key={p.key} onClick={() => handlePeriodChange(p.key)} style={{ flex: 1, padding: '0.625rem', borderRadius: '0.75rem', fontSize: '12px', fontWeight: '600', border: 'none', backgroundColor: `${p.color}20`, color: p.color, cursor: 'pointer' }}>{p.label}</button>
-          ))}
+      {pendingSales.length === 0 ? (
+        <div className="card" style={{ textAlign: 'center', padding: '2rem' }}>
+          <div style={{ fontSize: '48px', marginBottom: '0.75rem' }}>✅</div>
+          <p style={{ color: '#94a3b8', fontSize: '14px' }}>Bekleyen düzeltme isteği yok</p>
+          <p style={{ color: '#64748b', fontSize: '12px', marginTop: '0.5rem' }}>Personel satış düzeltme gönderdiğinde burada görünecek</p>
         </div>
-        <div className="flex gap-3" style={{ marginBottom: '1rem' }}>
-          <input type="date" value={dateRange.start} onChange={(e) => setDateRange(p => ({ ...p, start: e.target.value }))}
-            style={{ flex: 1, padding: '0.625rem', borderRadius: '0.75rem', fontSize: '13px', backgroundColor: '#334155', border: '1px solid #475569', color: '#f8fafc' }} />
-          <input type="date" value={dateRange.end} onChange={(e) => setDateRange(p => ({ ...p, end: e.target.value }))}
-            style={{ flex: 1, padding: '0.625rem', borderRadius: '0.75rem', fontSize: '13px', backgroundColor: '#334155', border: '1px solid #475569', color: '#f8fafc' }} />
-        </div>
-        <select value={groupBy} onChange={(e) => setGroupBy(e.target.value)} style={{ width: '100%', padding: '0.625rem', borderRadius: '0.75rem', fontSize: '13px', backgroundColor: '#334155', border: '1px solid #475569', color: '#f8fafc', marginBottom: '1rem' }}>
-          <option value="day">📊 Günlük</option><option value="week">📊 Haftalık</option><option value="month">📊 Aylık</option>
-        </select>
-        
-        {user.role === 'MANAGER' && (
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '0.375rem', display: 'block' }}>👤 Personel Seçin:</label>
-            <select value={selectedStaff} onChange={(e) => setSelectedStaff(e.target.value)}
-              style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', backgroundColor: '#334155', border: '1px solid #475569', color: '#f8fafc', fontSize: '13px' }}>
-              <option value="">Tüm Personel</option>
-              {allStaff.filter(s => s.role === 'STAFF').map(s => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
-      </div>
-
-      {/* Seçili Kullanıcı Bireysel Kota + Mağaza Kotası */}
-      {data && data.selectedUserData && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
-          {/* Bireysel Kota */}
-          <div className="card">
-            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#f8fafc', marginBottom: '0.75rem' }}>👤 {data.selectedUserData.name} - Aylık Kota</h3>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.375rem' }}>
-              <span style={{ fontSize: '11px', color: '#94a3b8' }}>Kullanılan: <span style={{ color: '#3b82f6', fontWeight: '600' }}>{formatCurrency(data.selectedUserData.monthlyTotal)}</span></span>
-              <span style={{ fontSize: '11px', color: '#94a3b8' }}>Hedef: <span style={{ color: '#10b981', fontWeight: '600' }}>{formatCurrency(data.selectedUserData.monthlyQuota)}</span></span>
-            </div>
-            <div style={{ height: '16px', backgroundColor: '#0f172a', borderRadius: '8px', overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${data.selectedUserData.percentage}%`, background: data.selectedUserData.percentage >= 100 ? 'linear-gradient(90deg, #ef4444, #dc2626)' : data.selectedUserData.percentage >= 75 ? 'linear-gradient(90deg, #f59e0b, #d97706)' : 'linear-gradient(90deg, #3b82f6, #2563eb)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: '9px', fontWeight: '600', color: '#fff' }}>%{data.selectedUserData.percentage.toFixed(1)}</span>
-              </div>
-            </div>
-          </div>
-          {/* Mağaza Kotası */}
-          <div className="card">
-            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#f8fafc', marginBottom: '0.75rem' }}>🏪 Mağaza Kotası</h3>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.375rem' }}>
-              <span style={{ fontSize: '11px', color: '#94a3b8' }}>Kullanılan: <span style={{ color: '#3b82f6', fontWeight: '600' }}>{formatCurrency(data.storeMonthlyTotal)}</span></span>
-              <span style={{ fontSize: '11px', color: '#94a3b8' }}>Hedef: <span style={{ color: '#10b981', fontWeight: '600' }}>{formatCurrency(data.storeQuota)}</span></span>
-            </div>
-            <div style={{ height: '16px', backgroundColor: '#0f172a', borderRadius: '8px', overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${data.storePercentage}%`, background: data.storePercentage >= 100 ? 'linear-gradient(90deg, #ef4444, #dc2626)' : data.storePercentage >= 75 ? 'linear-gradient(90deg, #f59e0b, #d97706)' : 'linear-gradient(90deg, #10b981, #059669)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: '9px', fontWeight: '600', color: '#fff' }}>%{data.storePercentage.toFixed(1)}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {data && (
-        <>
-          <div className="grid grid-cols-3" style={{ gap: '0.75rem', marginBottom: '1rem' }}>
-            {[
-              { label: 'Toplam', value: formatCurrency(data.totalAmount || 0), color: '#f59e0b' },
-              { label: 'İşlem', value: data.totalSales || 0, color: '#3b82f6' },
-              { label: 'Ortalama', value: data.totalSales > 0 ? formatCurrency(data.totalAmount / data.totalSales) : '0 TL', color: '#10b981' }
-            ].map((stat, i) => (
-              <div key={i} className="stat-card">
-                <div className="stat-label">{stat.label}</div>
-                <div className="stat-value" style={{ color: stat.color, fontSize: '16px' }}>{stat.value}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Grafikler - Tarih bilgilerinin altında */}
-          <DashboardCharts dailyStats={data.groupedData} staffStats={[]} />
-
-          {/* Satış Detayları */}
-          <div className="card" style={{ marginTop: '1rem' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>📊 Satış Detayları</h3>
-            <div className="space-y-3">
-              {data.groupedData?.map((row, i) => (
-                <div key={i} className="list-item" style={{ borderLeft: '4px solid #f59e0b' }}>
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#f8fafc', marginBottom: '0.25rem' }}>📅 {row.date || row.week || row.month}</div>
-                      <div style={{ fontSize: '12px', color: '#64748b' }}>🧾 {row.count} işlem • 📦 {row.items} ürün</div>
-                    </div>
-                    <div style={{ fontSize: '16px', fontWeight: '700', color: '#f59e0b' }}>
-                      {formatCurrency(row.amount)}
-                    </div>
+      ) : (
+        <div className="space-y-3">
+          {pendingSales.map(sale => (
+            <div key={sale.id} className="card" style={{ borderLeft: '4px solid #f59e0b' }}>
+              <div className="flex justify-between items-start" style={{ marginBottom: '0.75rem' }}>
+                <div>
+                  <div style={{ fontSize: '18px', fontWeight: '700', color: '#f59e0b' }}>
+                    {formatCurrencyDecimal(sale.amount || 0)}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '0.25rem' }}>
+                    {sale.date ? new Date(sale.date).toLocaleDateString('tr-TR') : ''} • {sale.hour !== undefined ? `${String(sale.hour).padStart(2, '0')}:00` : ''}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#93c5fd', marginTop: '0.25rem' }}>
+                    👤 {sale.userName || 'Bilinmeyen'} • 📦 {sale.itemCount || 0} ürün
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
+                <div style={{ padding: '0.25rem 0.625rem', borderRadius: '9999px', fontSize: '11px', fontWeight: '500', backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#fcd34d' }}>
+                  {sale.category || '-'}
+                </div>
+              </div>
 
-          {/* Gönderilen Satışlar (Sadece Düzenleme İsteği Olanlar) */}
-          {data.groupedData?.some(row => row.sentBy) && (
-            <div className="card" style={{ marginTop: '1rem' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>📨 Gönderilen Satışlar</h3>
-              <div className="space-y-3">
-                {data.groupedData?.filter(row => row.sentBy).map((row, i) => (
-                  <div key={i} className="list-item" style={{ borderLeft: '4px solid #10b981' }}>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <div style={{ fontSize: '14px', fontWeight: '600', color: '#f8fafc', marginBottom: '0.25rem' }}>📅 {row.date || row.week || row.month}</div>
-                        <div style={{ fontSize: '12px', color: '#10b981' }}>📨 {row.sentBy} tarafından gönderildi</div>
-                      </div>
-                      <div style={{ fontSize: '16px', fontWeight: '700', color: '#10b981' }}>
-                        {formatCurrency(row.amount)}
-                      </div>
-                    </div>
+              {/* Gönderilen Mesaj */}
+              <div style={{ backgroundColor: '#0f172a', borderRadius: '0.5rem', padding: '0.75rem', marginBottom: '0.75rem', borderLeft: '3px solid #f59e0b' }}>
+                <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '0.25rem' }}>
+                  📨 <span style={{ color: '#f59e0b', fontWeight: '600' }}>{sale.sentBy}</span> tarafından gönderildi
+                </div>
+                {sale.sentSubject && (
+                  <div style={{ fontSize: '13px', color: '#f8fafc', fontWeight: '600', marginBottom: '0.25rem' }}>
+                    Konu: {sale.sentSubject}
                   </div>
-                ))}
+                )}
+                {sale.sentDescription && (
+                  <div style={{ fontSize: '12px', color: '#94a3b8' }}>
+                    {sale.sentDescription}
+                  </div>
+                )}
+              </div>
+
+              {/* Yanıt Formu */}
+              <div className="form-group">
+                <label className="form-label">📝 Yanıt / Düzeltme Notu</label>
+                <textarea
+                  value={responseNote}
+                  onChange={(e) => setResponseNote(e.target.value)}
+                  placeholder="Düzeltme açıklamanızı yazın..."
+                  className="form-input"
+                  rows={2}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+                <button onClick={() => handleApprove(sale)} className="btn btn-primary" style={{ flex: 1 }}>
+                  ✅ Düzenle ve Onayla
+                </button>
+                <button onClick={() => { setSelectedSale(null); setResponseNote('') }} className="btn btn-secondary" style={{ flex: 1 }}>
+                  ❌ İptal
+                </button>
               </div>
             </div>
-          )}
-        </>
+          ))}
+        </div>
       )}
     </div>
   )
