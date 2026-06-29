@@ -8,6 +8,7 @@ export default function SalesForm({ onSubmit, initialData = null }) {
     hour: String(new Date().getHours()),
     amount: '',
     itemCount: '',
+    bonusItemCount: '',
     customerPhone: '',
     category: ''
   })
@@ -21,6 +22,7 @@ export default function SalesForm({ onSubmit, initialData = null }) {
         hour: String(initialData.hour || new Date().getHours()),
         amount: initialData.amount || '',
         itemCount: initialData.itemCount || '',
+        bonusItemCount: initialData.bonusItemCount || '',
         customerPhone: initialData.customerPhone || '',
         category: initialData.category || ''
       })
@@ -49,11 +51,7 @@ export default function SalesForm({ onSubmit, initialData = null }) {
   return (
     <form onSubmit={handleSubmit}>
       {error && (
-        <div style={{
-          backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)',
-          color: '#fca5a5', padding: '0.875rem', borderRadius: '0.75rem',
-          fontSize: '13px', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem'
-        }}>
+        <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#fca5a5', padding: '0.75rem', borderRadius: '0.75rem', fontSize: '13px', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <span>⚠️</span> {error}
         </div>
       )}
@@ -81,29 +79,26 @@ export default function SalesForm({ onSubmit, initialData = null }) {
       </div>
 
       <div className="form-group">
+        <label className="form-label">🎁 Bonus Ürün Sayısı</label>
+        <input type="number" name="bonusItemCount" value={formData.bonusItemCount} onChange={handleChange} min="0" placeholder="0" className="form-input" />
+      </div>
+
+      <div className="form-group">
         <label className="form-label">👤 Müşteri Numarası</label>
         <input type="text" name="customerPhone" value={formData.customerPhone} onChange={handleChange} placeholder="Müşteri numarası" className="form-input" />
       </div>
 
       <div className="form-group">
         <label className="form-label">🏷️ Kategori</label>
-        <div className="grid grid-cols-2 gap-3">
+        <select name="category" value={formData.category} onChange={handleChange} required className="form-input">
+          <option value="">Seçiniz</option>
           {categories.map(cat => (
-            <button key={cat.value} type="button" onClick={() => setFormData(p => ({ ...p, category: cat.value }))}
-              style={{
-                padding: '0.875rem', borderRadius: '0.75rem', fontSize: '13px', fontWeight: '500',
-                border: `2px solid ${formData.category === cat.value ? cat.color : '#334155'}`,
-                backgroundColor: formData.category === cat.value ? `${cat.color}20` : '#1e293b',
-                color: formData.category === cat.value ? cat.color : '#94a3b8',
-                cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s ease'
-              }}>
-              {cat.icon} {cat.value}
-            </button>
+            <option key={cat.value} value={cat.value}>{cat.icon} {cat.value}</option>
           ))}
-        </div>
+        </select>
       </div>
 
-      <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%', marginTop: '1.5rem' }}>
+      <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }}>
         {loading ? '⏳ Kaydediliyor...' : initialData ? '✅ Güncelle' : '💾 Kaydet'}
       </button>
     </form>

@@ -63,7 +63,7 @@ export default function SalesPage() {
   const handleSubmit = async (formData) => {
     if (!user) { alert('Kullanıcı bilgisi bulunamadı.'); return }
     try {
-      const saleData = { ...formData, amount: parseFloat(formData.amount) || 0, itemCount: parseInt(formData.itemCount) || 0, userId: user.uid, userName: user.name || user.email || 'Bilinmeyen', storeId: user.storeId || null, createdAt: new Date().toISOString() }
+      const saleData = { ...formData, amount: parseFloat(formData.amount) || 0, itemCount: parseInt(formData.itemCount) || 0, bonusItemCount: parseInt(formData.bonusItemCount) || 0, userId: user.uid, userName: user.name || user.email || 'Bilinmeyen', storeId: user.storeId || null, createdAt: new Date().toISOString() }
       if (editingSale) { await updateDoc(doc(db, 'sales', editingSale.id), saleData); setEditingSale(null) }
       else { await addDoc(collection(db, 'sales'), saleData) }
       fetchSales()
@@ -90,7 +90,7 @@ export default function SalesPage() {
   const handleSaveEdit = async (formData) => {
     if (!formData) return
     try {
-      const saleData = { ...formData, amount: parseFloat(formData.amount) || 0, itemCount: parseInt(formData.itemCount) || 0, userId: editingSale.userId, userName: editingSale.userName, storeId: editingSale.storeId, lastEditedBy: user.name || user.email, lastEditNote: 'Düzenlendi', lastEditedAt: new Date().toISOString() }
+      const saleData = { ...formData, amount: parseFloat(formData.amount) || 0, itemCount: parseInt(formData.itemCount) || 0, bonusItemCount: parseInt(formData.bonusItemCount) || 0, userId: editingSale.userId, userName: editingSale.userName, storeId: editingSale.storeId, lastEditedBy: user.name || user.email, lastEditNote: 'Düzenlendi', lastEditedAt: new Date().toISOString() }
       await updateDoc(doc(db, 'sales', editingSale.id), saleData)
       setEditingSale(null); fetchSales(); alert('Satış başarıyla güncellendi!')
     } catch (error) { alert('Güncellenemedi: ' + error.message) }
@@ -182,6 +182,11 @@ export default function SalesPage() {
                       <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '0.25rem' }}>
                         {sale.date ? new Date(sale.date).toLocaleDateString('tr-TR') : ''} • {sale.hour !== undefined ? `${String(sale.hour).padStart(2, '0')}:00` : ''} • {sale.userName || '-'}
                       </div>
+                      {(sale.itemCount > 0 || sale.bonusItemCount > 0) && (
+                        <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '0.25rem' }}>
+                          📦 {sale.itemCount || 0} ürün{sale.bonusItemCount > 0 ? ` • 🎁 ${sale.bonusItemCount} bonus` : ''}
+                        </div>
+                      )}
                     </div>
                     <div style={{ display: 'flex', gap: '0.375rem', alignItems: 'center' }}>
                       <span style={{ padding: '0.2rem 0.5rem', borderRadius: '9999px', fontSize: '10px', backgroundColor: isNegative ? 'rgba(239, 68, 68, 0.15)' : 'rgba(59, 130, 246, 0.15)', color: isNegative ? '#fca5a5' : '#93c5fd' }}>

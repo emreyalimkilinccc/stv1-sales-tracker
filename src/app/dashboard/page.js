@@ -80,6 +80,7 @@ export default function DashboardPage() {
       // Mağaza toplamı
       const totalAmount = storeSales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
       const totalItems = storeSales.reduce((sum, s) => sum + (parseInt(s.itemCount) || 0), 0)
+      const totalBonusItems = storeSales.reduce((sum, s) => sum + (parseInt(s.bonusItemCount) || 0), 0)
       const avgAmount = storeSales.length > 0 ? totalAmount / storeSales.length : 0
       
       // Kişisel toplam
@@ -101,7 +102,7 @@ export default function DashboardPage() {
         staffStats = Object.values(staffData).sort((a, b) => b.amount - a.amount).slice(0, 10)
       }
       
-      setData({ summary: { totalAmount, totalItems, avgAmount, salesCount: storeSales.length, personalTotalAmount }, dailyStats, staffStats })
+      setData({ summary: { totalAmount, totalItems, totalBonusItems, avgAmount, salesCount: storeSales.length, personalTotalAmount }, dailyStats, staffStats })
     } catch (error) { console.error('Error:', error) } finally { setLoading(false) }
   }
 
@@ -215,12 +216,13 @@ export default function DashboardPage() {
       </div>
 
       {/* İstatistikler */}
-      <div className="grid grid-cols-2 md:grid-cols-4" style={{ gap: '0.75rem', marginBottom: '1rem' }}>
+      <div className="grid grid-cols-2 md:grid-cols-5" style={{ gap: '0.75rem', marginBottom: '1rem' }}>
         {[
           { label: 'Toplam Satış', value: formatCurrency(data?.summary?.totalAmount || 0), icon: '💰', color: '#3b82f6' },
           { label: 'İşlem', value: data?.summary?.salesCount || 0, icon: '🧾', color: '#8b5cf6' },
           { label: 'Toplam Ürün', value: data?.summary?.totalItems || 0, icon: '📦', color: '#10b981' },
-          { label: 'Ortalama', value: formatCurrency(data?.summary?.avgAmount || 0), icon: '📈', color: '#f59e0b' }
+          { label: 'Ortalama', value: formatCurrency(data?.summary?.avgAmount || 0), icon: '📈', color: '#f59e0b' },
+          { label: 'Bonus Ürün', value: data?.summary?.totalBonusItems || 0, icon: '🎁', color: '#ec4899' }
         ].map((stat, i) => (
           <div key={i} style={{ backgroundColor: '#1e293b', borderRadius: '1rem', padding: '1rem', border: '1px solid #334155', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: '-8px', right: '-8px', width: '56px', height: '56px', borderRadius: '50%', backgroundColor: `${stat.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>{stat.icon}</div>
