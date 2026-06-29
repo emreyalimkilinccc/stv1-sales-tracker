@@ -17,8 +17,9 @@ export default function DashboardPage() {
   const [userQuota, setUserQuota] = useState(0)
   const [dateRange, setDateRange] = useState(() => {
     const now = new Date()
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    const turkeyDate = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Istanbul' }))
+    const firstDay = new Date(turkeyDate.getFullYear(), turkeyDate.getMonth(), 1)
+    const lastDay = new Date(turkeyDate.getFullYear(), turkeyDate.getMonth() + 1, 0)
     return {
       start: firstDay.toISOString().split('T')[0],
       end: lastDay.toISOString().split('T')[0]
@@ -54,13 +55,15 @@ export default function DashboardPage() {
   }
 
   const handlePeriodChange = (period) => {
-    const now = new Date(); let start = new Date(); let end = new Date()
+    const now = new Date()
+    const turkeyDate = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Istanbul' }))
+    let start = new Date(turkeyDate); let end = new Date(turkeyDate)
     if (period === 'month') {
-      start = new Date(now.getFullYear(), now.getMonth(), 1)
-      end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+      start = new Date(turkeyDate.getFullYear(), turkeyDate.getMonth(), 1)
+      end = new Date(turkeyDate.getFullYear(), turkeyDate.getMonth() + 1, 0)
     } else if (period === 'lastMonth') {
-      start = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-      end = new Date(now.getFullYear(), now.getMonth(), 0)
+      start = new Date(turkeyDate.getFullYear(), turkeyDate.getMonth() - 1, 1)
+      end = new Date(turkeyDate.getFullYear(), turkeyDate.getMonth(), 0)
     } else if (period === 'week') {
       start.setDate(start.getDate() - 7)
     } else if (period === 'year') {
