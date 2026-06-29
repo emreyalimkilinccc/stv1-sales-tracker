@@ -6,6 +6,7 @@ import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, o
 import { db } from '@/lib/firebase'
 import { formatCurrency, formatCurrencyDecimal } from '@/lib/utils'
 import SalesForm from '@/components/SalesForm'
+import * as XLSX from 'xlsx'
 
 export default function SalesPage() {
   const { user, loading: authLoading } = useAuth()
@@ -16,6 +17,7 @@ export default function SalesPage() {
   const [sendingSale, setSendingSale] = useState(null)
   const [sendData, setSendData] = useState({ subject: '', description: '' })
   const [showSendModal, setShowSendModal] = useState(false)
+  const [excelLoading, setExcelLoading] = useState(false)
   
   // Filtreler (yönetici/müdür için)
   const [allStaff, setAllStaff] = useState([])
@@ -96,6 +98,44 @@ export default function SalesPage() {
     } catch (error) { alert('Güncellenemedi: ' + error.message) }
   }
 
+  const handleExcelUpload = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    setExcelLoading(true)
+    try {
+      const data = await file.arrayBuffer()
+      const workbook = XLSX.read(data)
+      const sheet = workbook.Sheets[workbook.SheetNames[0]]
+      const rows = XLSX.utils.sheet_to_json(sheet)
+      let imported = 0
+      for (const row of rows) {
+        const amount = parseFloat(row['Tutar'] || row['tutar'] || row['Amount'] || row['amount'] || 0)
+        if (amount <= 0) continue
+        await addDoc(collection(db, 'sales'), {
+          date: row['Tarih'] || row['tarih'] || row['Date'] || row['date'] || new Date().toISOString().split('T')[0],
+          hour: String(row['Saat'] || row['saat'] || row['Hour'] || row['hour'] || 9),
+          amount,
+          cost: parseFloat(row['Maliyet'] || row['maliyet'] || row['Cost'] || row['cost'] || 0),
+          itemCount: parseInt(row['Ürün Sayısı'] || row['urunSayisi'] || row['Items'] || row['items'] || 0),
+          bonusItemCount: parseInt(row['Bonus'] || row['bonus'] || 0),
+          customerPhone: row['Müşteri'] || row['musteri'] || row['Customer'] || '',
+          category: row['Kategori'] || row['kategori'] || row['Category'] || 'Giriş kat',
+          userId: user.uid,
+          userName: user.name || user.email || 'Bilinmeyen',
+          storeId: user.storeId || null,
+          createdAt: new Date().toISOString()
+        })
+        imported++
+      }
+      alert(`${imported} satış başarıyla içe aktarıldı!`)
+      fetchSales()
+    } catch (error) {
+      alert('İçe aktarma hatası: ' + error.message)
+    } finally {
+      setExcelLoading(false)
+      e.target.value = ''
+    }
+  }
   const today = new Date().toISOString().split('T')[0]
   const todaySales = sales.filter(s => s.date && s.date.startsWith(today))
   const totalToday = todaySales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
@@ -165,7 +205,15 @@ export default function SalesPage() {
 
       {/* Satış Geçmişi */}
       <div className="card">
-        <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>📋 Satış Geçmişi</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc' }}>📋 Satış Geçmişi</h3>
+          {canEdit && (
+            <label style={{ padding: '0.375rem 0.75rem', borderRadius: '0.5rem', fontSize: '12px', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)', cursor: 'pointer', fontWeight: '600' }}>
+              📁 {excelLoading ? 'Yükleniyor...' : 'Excel Yükle'}
+              <input type="file" accept=".xlsx,.xls,.csv" onChange={handleExcelUpload} style={{ display: 'none' }} disabled={excelLoading} />
+            </label>
+          )}
+        </div>
         {loading ? <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>⏳ Yükleniyor...</div>
         : displaySales.length === 0 ? <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>📭 Kayıt bulunamadı</div>
         : (

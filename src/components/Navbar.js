@@ -12,6 +12,20 @@ export default function Navbar() {
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
   const [notifications, setNotifications] = useState(0)
+  const [theme, setTheme] = useState('dark')
+
+  useEffect(() => {
+    const saved = localStorage.getItem('stv1-theme') || 'dark'
+    setTheme(saved)
+    document.documentElement.setAttribute('data-theme', saved)
+  }, [])
+
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark'
+    setTheme(next)
+    localStorage.setItem('stv1-theme', next)
+    document.documentElement.setAttribute('data-theme', next)
+  }
 
   const isActive = (path) => pathname === path
 
@@ -131,6 +145,20 @@ export default function Navbar() {
             }}>
               {user.role === 'ADMIN' ? '👑 Yönetici' : user.role === 'MANAGER' ? '👔 Müdür' : '👤 Personel'}
             </div>
+
+            {/* Tema Toggle */}
+            <button onClick={toggleTheme} style={{
+              width: '38px', height: '38px',
+              borderRadius: '10px',
+              border: '1px solid #334155',
+              backgroundColor: 'transparent',
+              color: '#94a3b8',
+              fontSize: '18px',
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
 
             {/* Menü Butonu */}
             <button onClick={() => setMenuOpen(!menuOpen)} style={{
