@@ -30,11 +30,11 @@ export default function DashboardPage() {
 
   const fetchStoreQuota = async () => {
     try {
-      if (user.storeId) {
-        const storeDoc = await getDocs(query(collection(db, 'stores'), where('__name__', '==', user.storeId)))
-        if (!storeDoc.empty) {
-          setStoreQuota(storeDoc.docs[0].data().monthlyQuota || 0)
-        }
+      // Kullanıcının kotasını Firestore'dan oku
+      const userDoc = await getDocs(query(collection(db, 'user'), where('__name__', '==', user.uid)))
+      if (!userDoc.empty) {
+        const userData = userDoc.docs[0].data()
+        setStoreQuota(userData.monthlyQuota || 0)
       }
     } catch (error) { console.error(error) }
   }
@@ -117,9 +117,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* AYLIK KOTA ve MAĞAZA CİROSU - Yönetim panelindeki değerlerden */}
-      {user.role !== 'STAFF' && (
-        <div className="card" style={{ marginBottom: '1rem' }}>
+      {/* AYLIK KOTA ve MAĞAZA CİROSU - Tüm roller için */}
+      <div className="card" style={{ marginBottom: '1rem' }}>
           <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>🎯 Aylık Kota & Mağaza Cirosu</h3>
           
           {user.role === 'MANAGER' && (
@@ -165,7 +164,6 @@ export default function DashboardPage() {
             })()}
           </div>
         </div>
-      )}
 
       {/* İstatistikler */}
       <div className="grid grid-cols-2 md:grid-cols-4" style={{ gap: '0.75rem', marginBottom: '1rem' }}>
