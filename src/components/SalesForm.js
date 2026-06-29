@@ -7,7 +7,6 @@ export default function SalesForm({ onSubmit, initialData = null }) {
     date: new Date().toISOString().split('T')[0],
     hour: String(new Date().getHours()),
     amount: '',
-    cost: '',
     itemCount: '',
     bonusItemCount: '',
     customerPhone: '',
@@ -22,7 +21,6 @@ export default function SalesForm({ onSubmit, initialData = null }) {
         date: initialData.date || new Date().toISOString().split('T')[0],
         hour: String(initialData.hour || new Date().getHours()),
         amount: initialData.amount || '',
-        cost: initialData.cost || '',
         itemCount: initialData.itemCount || '',
         bonusItemCount: initialData.bonusItemCount || '',
         customerPhone: initialData.customerPhone || '',
@@ -73,11 +71,6 @@ export default function SalesForm({ onSubmit, initialData = null }) {
       <div className="form-group">
         <label className="form-label">💰 Satış Tutarı (TL)</label>
         <input type="number" name="amount" value={formData.amount} onChange={handleChange} required step="0.01" placeholder="Eksi girerseniz iptal/iade olur" className="form-input" style={{ color: parseFloat(formData.amount) < 0 ? '#ef4444' : undefined }} />
-      </div>
-
-      <div className="form-group">
-        <label className="form-label">🏷️ Maliyet (TL)</label>
-        <input type="number" name="cost" value={formData.cost} onChange={handleChange} min="0" step="0.01" placeholder="0.00 TL" className="form-input" />
       </div>
 
       <div className="form-group">
