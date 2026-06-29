@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-context'
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { formatCurrency } from '@/lib/utils'
+import DashboardCharts from '@/components/DashboardCharts'
 
 export default function ReportsPage() {
   const { user } = useAuth()
@@ -15,8 +16,17 @@ export default function ReportsPage() {
     end: new Date().toISOString().split('T')[0]
   })
   const [groupBy, setGroupBy] = useState('day')
+  const [selectedStaff, setSelectedStaff] = useState('')
+  const [allStaff, setAllStaff] = useState([])
 
-  useEffect(() => { if (user && user.role !== 'STAFF') fetchReport() }, [user, dateRange, groupBy])
+  useEffect(() => { if (user && user.role !== 'STAFF') { fetchReport(); fetchStaffList() } }, [user, dateRange, groupBy])
+
+  const fetchStaffList = async () => {
+    try {
+      const snapshot = await getDocs(collection(db, 'user'))
+      setAllStaff(snapshot.docs.map(d => ({ id: d.id, ...d.data() })))
+    } catch (error) { console.error(error) }
+  }
 
   const handlePeriodChange = (period) => {
     const end = new Date(); let start = new Date()
@@ -36,12 +46,17 @@ export default function ReportsPage() {
         salesQuery = query(collection(db, 'sales'), orderBy('date', 'desc'))
       }
       const snapshot = await getDocs(salesQuery)
-      const sales = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => { const d = new Date(s.date); return d >= startDate && d <= endDate })
+      let sales = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => { const d = new Date(s.date); return d >= startDate && d <= endDate })
+      
+      if (selectedStaff) { sales = sales.filter(s => s.userId === selectedStaff) }
+      
       let groupedData = {}
       if (groupBy === 'day') { groupedData = sales.reduce((acc, s) => { const k = s.date.split('T')[0]; if (!acc[k]) acc[k] = { date: k, amount: 0, count: 0, items: 0 }; acc[k].amount += parseFloat(s.amount || 0); acc[k].count++; acc[k].items += parseInt(s.itemCount) || 0; return acc }, {}) }
       else if (groupBy === 'week') { groupedData = sales.reduce((acc, s) => { const d = new Date(s.date); const ws = new Date(d); ws.setDate(d.getDate() - d.getDay()); const k = ws.toISOString().split('T')[0]; if (!acc[k]) acc[k] = { week: k, amount: 0, count: 0, items: 0 }; acc[k].amount += parseFloat(s.amount || 0); acc[k].count++; acc[k].items += parseInt(s.itemCount) || 0; return acc }, {}) }
       else { groupedData = sales.reduce((acc, s) => { const k = s.date.substring(0, 7); if (!acc[k]) acc[k] = { month: k, amount: 0, count: 0, items: 0 }; acc[k].amount += parseFloat(s.amount || 0); acc[k].count++; acc[k].items += parseInt(s.itemCount) || 0; return acc }, {}) }
-      setData({ groupedData: Object.values(groupedData), totalSales: sales.length, totalAmount: sales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0) })
+      
+      const dailyStats = Object.values(groupedData)
+      setData({ groupedData: dailyStats, totalSales: sales.length, totalAmount: sales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0) })
     } catch (error) { console.error('Error:', error) } finally { setLoading(false) }
   }
 
@@ -50,9 +65,7 @@ export default function ReportsPage() {
 
   return (
     <div className="px-4 py-6 max-w-7xl mx-auto">
-      <div className="page-header" style={{
-        background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-      }}>
+      <div className="page-header" style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>
         <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#ffffff', marginBottom: '0.375rem' }}>📈 Raporlar</h1>
         <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px' }}>Satış raporlarını görüntüleyin</p>
       </div>
@@ -64,10 +77,7 @@ export default function ReportsPage() {
             { key: 'month', label: '📅 30G', color: '#8b5cf6' },
             { key: 'year', label: '📅 1Y', color: '#10b981' }
           ].map(p => (
-            <button key={p.key} onClick={() => handlePeriodChange(p.key)} style={{
-              flex: 1, padding: '0.625rem', borderRadius: '0.75rem', fontSize: '12px', fontWeight: '600',
-              border: 'none', backgroundColor: `${p.color}20`, color: p.color, cursor: 'pointer'
-            }}>{p.label}</button>
+            <button key={p.key} onClick={() => handlePeriodChange(p.key)} style={{ flex: 1, padding: '0.625rem', borderRadius: '0.75rem', fontSize: '12px', fontWeight: '600', border: 'none', backgroundColor: `${p.color}20`, color: p.color, cursor: 'pointer' }}>{p.label}</button>
           ))}
         </div>
         <div className="flex gap-3" style={{ marginBottom: '1rem' }}>
@@ -76,12 +86,22 @@ export default function ReportsPage() {
           <input type="date" value={dateRange.end} onChange={(e) => setDateRange(p => ({ ...p, end: e.target.value }))}
             style={{ flex: 1, padding: '0.625rem', borderRadius: '0.75rem', fontSize: '13px', minWidth: 0, backgroundColor: '#334155', border: '1px solid #475569', color: '#f8fafc' }} />
         </div>
-        <select value={groupBy} onChange={(e) => setGroupBy(e.target.value)} style={{
-          width: '100%', padding: '0.625rem', borderRadius: '0.75rem', fontSize: '13px',
-          backgroundColor: '#334155', border: '1px solid #475569', color: '#f8fafc'
-        }}>
+        <select value={groupBy} onChange={(e) => setGroupBy(e.target.value)} style={{ width: '100%', padding: '0.625rem', borderRadius: '0.75rem', fontSize: '13px', backgroundColor: '#334155', border: '1px solid #475569', color: '#f8fafc', marginBottom: '1rem' }}>
           <option value="day">📊 Günlük</option><option value="week">📊 Haftalık</option><option value="month">📊 Aylık</option>
         </select>
+        
+        {user.role === 'MANAGER' && (
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '0.375rem', display: 'block' }}>👤 Personel Seçin:</label>
+            <select value={selectedStaff} onChange={(e) => setSelectedStaff(e.target.value)}
+              style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', backgroundColor: '#334155', border: '1px solid #475569', color: '#f8fafc', fontSize: '13px' }}>
+              <option value="">Tüm Personel</option>
+              {allStaff.filter(s => s.role === 'STAFF').map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {data && (
@@ -99,7 +119,10 @@ export default function ReportsPage() {
             ))}
           </div>
 
-          <div className="card">
+          {/* GRAFİKLER - Tarih bilgilerinin altında */}
+          <DashboardCharts dailyStats={data.groupedData} staffStats={[]} />
+
+          <div className="card" style={{ marginTop: '1rem' }}>
             <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>📊 Satış Detayları</h3>
             <div className="space-y-3">
               {data.groupedData?.map((row, i) => (
