@@ -136,7 +136,7 @@ export default function SalesPage() {
               <select value={filterStaff} onChange={(e) => setFilterStaff(e.target.value)}
                 style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', fontSize: '12px', backgroundColor: '#334155', border: '1px solid #475569', color: '#f8fafc' }}>
                 <option value="">Tümü</option>
-                {allStaff.filter(s => s.role === 'STAFF').map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                {allStaff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
             <div style={{ display: 'flex', alignItems: 'flex-end' }}>
@@ -187,11 +187,13 @@ export default function SalesPage() {
                       <span style={{ padding: '0.2rem 0.5rem', borderRadius: '9999px', fontSize: '10px', backgroundColor: isNegative ? 'rgba(239, 68, 68, 0.15)' : 'rgba(59, 130, 246, 0.15)', color: isNegative ? '#fca5a5' : '#93c5fd' }}>
                         {isNegative ? '🚫 İptal' : sale.category || '-'}
                       </span>
-                      {canEdit && (
+                      {canEdit ? (
                         <>
                           <button onClick={() => handleEdit(sale)} style={{ padding: '0.375rem 0.625rem', borderRadius: '0.375rem', fontSize: '11px', backgroundColor: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', border: 'none', cursor: 'pointer' }}>✏️</button>
                           <button onClick={() => handleDelete(sale.id)} style={{ padding: '0.375rem 0.625rem', borderRadius: '0.375rem', fontSize: '11px', backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: 'none', cursor: 'pointer' }}>🗑️</button>
                         </>
+                      ) : (
+                        <button onClick={() => handleSend(sale)} style={{ padding: '0.375rem 0.625rem', borderRadius: '0.375rem', fontSize: '11px', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: 'none', cursor: 'pointer' }}>📨 Gönder</button>
                       )}
                     </div>
                   </div>
