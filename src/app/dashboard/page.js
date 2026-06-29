@@ -128,7 +128,9 @@ export default function DashboardPage() {
 
       {/* AYLIK KOTA & MAĞAZA CİROSU */}
       <div className="card" style={{ marginBottom: '1rem' }}>
-        <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>🎯 Aylık Kota & Mağaza Cirosu</h3>
+        <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>
+          {user.role === 'STAFF' ? '👤 Bireysel Kota' : '🎯 Aylık Kota & Mağaza Cirosu'}
+        </h3>
         
         {user.role === 'MANAGER' && (
           <div style={{ marginBottom: '0.75rem' }}>
