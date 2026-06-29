@@ -17,6 +17,13 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "STV1 - Satış Takip Sistemi",
   description: "Mağaza satış takip ve yönetim sistemi",
+  manifest: "/manifest.json",
+  themeColor: "#3b82f6",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "STV1"
+  }
 };
 
 export const viewport = {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
-import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, orderBy } from 'firebase/firestore'
+import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, orderBy, writeBatch } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { formatCurrency, formatCurrencyDecimal } from '@/lib/utils'
 import SalesForm from '@/components/SalesForm'
@@ -108,24 +108,31 @@ export default function SalesPage() {
       const sheet = workbook.Sheets[workbook.SheetNames[0]]
       const rows = XLSX.utils.sheet_to_json(sheet)
       let imported = 0
-      for (const row of rows) {
-        const amount = parseFloat(row['Tutar'] || row['tutar'] || row['Amount'] || row['amount'] || 0)
-        if (amount <= 0) continue
-        await addDoc(collection(db, 'sales'), {
-          date: row['Tarih'] || row['tarih'] || row['Date'] || row['date'] || new Date().toISOString().split('T')[0],
-          hour: String(row['Saat'] || row['saat'] || row['Hour'] || row['hour'] || 9),
-          amount,
-          cost: parseFloat(row['Maliyet'] || row['maliyet'] || row['Cost'] || row['cost'] || 0),
-          itemCount: parseInt(row['Ürün Sayısı'] || row['urunSayisi'] || row['Items'] || row['items'] || 0),
-          bonusItemCount: parseInt(row['Bonus'] || row['bonus'] || 0),
-          customerPhone: row['Müşteri'] || row['musteri'] || row['Customer'] || '',
-          category: row['Kategori'] || row['kategori'] || row['Category'] || 'Giriş kat',
-          userId: user.uid,
-          userName: user.name || user.email || 'Bilinmeyen',
-          storeId: user.storeId || null,
-          createdAt: new Date().toISOString()
-        })
-        imported++
+      const BATCH_SIZE = 500
+      for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+        const batch = writeBatch(db)
+        const chunk = rows.slice(i, i + BATCH_SIZE)
+        for (const row of chunk) {
+          const amount = parseFloat(row['Tutar'] || row['tutar'] || row['Amount'] || row['amount'] || 0)
+          if (amount <= 0) continue
+          const newRef = doc(collection(db, 'sales'))
+          batch.set(newRef, {
+            date: row['Tarih'] || row['tarih'] || row['Date'] || row['date'] || new Date().toISOString().split('T')[0],
+            hour: String(row['Saat'] || row['saat'] || row['Hour'] || row['hour'] || 9),
+            amount,
+            cost: parseFloat(row['Maliyet'] || row['maliyet'] || row['Cost'] || row['cost'] || 0),
+            itemCount: parseInt(row['Ürün Sayısı'] || row['urunSayisi'] || row['Items'] || row['items'] || 0),
+            bonusItemCount: parseInt(row['Bonus'] || row['bonus'] || 0),
+            customerPhone: row['Müşteri'] || row['musteri'] || row['Customer'] || '',
+            category: row['Kategori'] || row['kategori'] || row['Category'] || 'Giriş kat',
+            userId: user.uid,
+            userName: user.name || user.email || 'Bilinmeyen',
+            storeId: user.storeId || null,
+            createdAt: new Date().toISOString()
+          })
+          imported++
+        }
+        await batch.commit()
       }
       alert(`${imported} satış başarıyla içe aktarıldı!`)
       fetchSales()

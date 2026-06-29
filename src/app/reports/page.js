@@ -12,8 +12,9 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true)
   const [selectedSale, setSelectedSale] = useState(null)
   const [responseNote, setResponseNote] = useState('')
+  const [weeklyStats, setWeeklyStats] = useState(null)
 
-  useEffect(() => { if (user && user.role !== 'STAFF') fetchPendingSales() }, [user])
+  useEffect(() => { if (user && user.role !== 'STAFF') { fetchPendingSales(); fetchWeeklyStats() } }, [user])
 
   const fetchPendingSales = async () => {
     try {
@@ -39,6 +40,55 @@ export default function ReportsPage() {
     } catch (error) { console.error('Error:', error) } finally { setLoading(false) }
   }
 
+  const fetchWeeklyStats = async () => {
+    try {
+      const now = new Date()
+      const weekAgo = new Date(now)
+      weekAgo.setDate(weekAgo.getDate() - 7)
+      const twoWeeksAgo = new Date(now)
+      twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14)
+
+      let salesQuery
+      if (user.role === 'MANAGER') {
+        salesQuery = query(collection(db, 'sales'), where('storeId', '==', user.storeId))
+      } else {
+        salesQuery = query(collection(db, 'sales'))
+      }
+      const snapshot = await getDocs(salesQuery)
+      const allSales = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
+
+      const thisWeek = allSales.filter(s => { const d = new Date(s.date); return d >= weekAgo && d <= now })
+      const lastWeek = allSales.filter(s => { const d = new Date(s.date); return d >= twoWeeksAgo && d < weekAgo })
+
+      const thisWeekTotal = thisWeek.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
+      const lastWeekTotal = lastWeek.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
+      const thisWeekProfit = thisWeek.reduce((sum, s) => sum + ((parseFloat(s.amount) || 0) - (parseFloat(s.cost) || 0)), 0)
+      const thisWeekItems = thisWeek.reduce((sum, s) => sum + (parseInt(s.itemCount) || 0) + (parseInt(s.bonusItemCount) || 0), 0)
+
+      const changePercent = lastWeekTotal > 0 ? ((thisWeekTotal - lastWeekTotal) / lastWeekTotal * 100) : 0
+
+      const catData = thisWeek.reduce((acc, s) => {
+        const cat = s.category || 'Diğer'
+        acc[cat] = (acc[cat] || 0) + (parseFloat(s.amount) || 0)
+        return acc
+      }, {})
+      const topCategory = Object.entries(catData).sort((a, b) => b[1] - a[1])[0]
+
+      const staffData = thisWeek.reduce((acc, s) => {
+        acc[s.userName || 'Bilinmeyen'] = (acc[s.userName || 'Bilinmeyen'] || 0) + (parseFloat(s.amount) || 0)
+        return acc
+      }, {})
+      const topStaff = Object.entries(staffData).sort((a, b) => b[1] - a[1])[0]
+
+      setWeeklyStats({
+        thisWeekTotal, lastWeekTotal, thisWeekProfit, thisWeekItems,
+        changePercent, topCategory: topCategory ? topCategory[0] : '-',
+        topStaff: topStaff ? topStaff[0] : '-',
+        salesCount: thisWeek.length
+      })
+    } catch (error) { console.error('Weekly stats error:', error) }
+  }
+
   const handleApprove = async (sale) => {
     try {
       await updateDoc(doc(db, 'sales', sale.id), {
@@ -58,9 +108,39 @@ export default function ReportsPage() {
   return (
     <div className="px-4 py-6 max-w-7xl mx-auto">
       <div className="page-header" style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>
-        <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#ffffff', marginBottom: '0.375rem' }}>📨 Düzeltme İstekleri</h1>
-        <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px' }}>Personelin gönderdiği düzeltme isteklerini görüntüleyin</p>
+        <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#ffffff', marginBottom: '0.375rem' }}>📨 Raporlar</h1>
+        <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px' }}>Haftalık özet ve düzeltme istekleri</p>
       </div>
+
+      {/* Haftalık Özet */}
+      {weeklyStats && (
+        <div className="card" style={{ marginBottom: '1rem' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>📊 Son 7 Gün Özeti</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4" style={{ gap: '0.75rem', marginBottom: '1rem' }}>
+            <div style={{ backgroundColor: '#0f172a', borderRadius: '0.75rem', padding: '0.875rem', border: '1px solid #334155' }}>
+              <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '0.25rem' }}>Bu Hafta</div>
+              <div style={{ fontSize: '18px', fontWeight: '700', color: '#3b82f6' }}>{formatCurrency(weeklyStats.thisWeekTotal)}</div>
+              <div style={{ fontSize: '11px', color: weeklyStats.changePercent >= 0 ? '#10b981' : '#ef4444', marginTop: '0.25rem' }}>
+                {weeklyStats.changePercent >= 0 ? '📈' : '📉'} %{Math.abs(weeklyStats.changePercent).toFixed(1)} {weeklyStats.changePercent >= 0 ? 'artış' : 'düşüş'}
+              </div>
+            </div>
+            <div style={{ backgroundColor: '#0f172a', borderRadius: '0.75rem', padding: '0.875rem', border: '1px solid #334155' }}>
+              <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '0.25rem' }}>Kâr</div>
+              <div style={{ fontSize: '18px', fontWeight: '700', color: '#10b981' }}>{formatCurrency(weeklyStats.thisWeekProfit)}</div>
+              <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '0.25rem' }}>{weeklyStats.salesCount} işlem</div>
+            </div>
+            <div style={{ backgroundColor: '#0f172a', borderRadius: '0.75rem', padding: '0.875rem', border: '1px solid #334155' }}>
+              <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '0.25rem' }}>En Çok Satan Kategori</div>
+              <div style={{ fontSize: '16px', fontWeight: '700', color: '#f59e0b' }}>{weeklyStats.topCategory}</div>
+            </div>
+            <div style={{ backgroundColor: '#0f172a', borderRadius: '0.75rem', padding: '0.875rem', border: '1px solid #334155' }}>
+              <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '0.25rem' }}>En İyi Personel</div>
+              <div style={{ fontSize: '16px', fontWeight: '700', color: '#8b5cf6' }}>{weeklyStats.topStaff}</div>
+              <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '0.25rem' }}>{weeklyStats.thisWeekItems} ürün satıldı</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {pendingSales.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '2rem' }}>
