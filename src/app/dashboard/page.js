@@ -115,6 +115,7 @@ export default function DashboardPage() {
       
       const totalAmount = sales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
       const totalCost = sales.reduce((sum, s) => sum + (parseFloat(s.cost) || 0), 0)
+      const totalRefunds = sales.filter(s => (parseFloat(s.amount) || 0) < 0).reduce((sum, s) => sum + Math.abs(parseFloat(s.amount) || 0), 0)
       const totalProfit = totalAmount - totalCost
       const totalItems = sales.reduce((sum, s) => sum + (parseInt(s.itemCount) || 0), 0)
       const totalBonusItems = sales.reduce((sum, s) => sum + (parseInt(s.bonusItemCount) || 0), 0)
@@ -149,7 +150,7 @@ export default function DashboardPage() {
       }, {})
       const categoryStats = Object.values(categoryData).sort((a, b) => b.amount - a.amount)
       
-      setData({ summary: { totalAmount, totalCost, totalProfit, totalItems, totalBonusItems, avgAmount, salesCount: sales.length, personalTotalAmount }, dailyStats, staffStats, categoryStats })
+      setData({ summary: { totalAmount, totalCost, totalProfit, totalRefunds, totalItems, totalBonusItems, avgAmount, salesCount: sales.length, personalTotalAmount }, dailyStats, staffStats, categoryStats })
     } catch (error) { console.error('Error:', error) } finally { setLoading(false) }
   }
 
@@ -271,7 +272,8 @@ export default function DashboardPage() {
           { label: 'Toplam Ürün', value: data?.summary?.totalItems || 0, icon: '📦', color: '#10b981' },
           { label: 'Ortalama', value: formatCurrency(data?.summary?.avgAmount || 0), icon: '📈', color: '#f59e0b' },
           { label: 'Bonus Ürün', value: data?.summary?.totalBonusItems || 0, icon: '🎁', color: '#ec4899' },
-          { label: 'Kâr', value: formatCurrency(data?.summary?.totalProfit || 0), icon: '💵', color: '#10b981' }
+          { label: 'Kâr', value: formatCurrency(data?.summary?.totalProfit || 0), icon: '💵', color: (data?.summary?.totalProfit || 0) >= 0 ? '#10b981' : '#ef4444' },
+          { label: 'İadeler', value: formatCurrency(data?.summary?.totalRefunds || 0), icon: '↩️', color: '#ef4444' }
         ].map((stat, i) => (
           <div key={i} style={{ backgroundColor: '#1e293b', borderRadius: '1rem', padding: '1rem', border: '1px solid #334155', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: '-8px', right: '-8px', width: '56px', height: '56px', borderRadius: '50%', backgroundColor: `${stat.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>{stat.icon}</div>
