@@ -31,11 +31,19 @@ export default function DashboardPage() {
 
   const fetchQuotas = async () => {
     try {
+      // Bireysel kota: user koleksiyonundan
       const userDoc = await getDocs(query(collection(db, 'user'), where('__name__', '==', user.uid)))
       if (!userDoc.empty) {
         const userData = userDoc.docs[0].data()
-        setStoreQuota(userData.monthlyQuota || 0)
         setUserQuota(userData.monthlyQuota || 0)
+      }
+      // Mağaza kotası: stores koleksiyonundan
+      if (user.storeId) {
+        const storeDoc = await getDocs(query(collection(db, 'stores'), where('__name__', '==', user.storeId)))
+        if (!storeDoc.empty) {
+          const storeData = storeDoc.docs[0].data()
+          setStoreQuota(storeData.monthlyQuota || 0)
+        }
       }
     } catch (error) { console.error(error) }
   }
