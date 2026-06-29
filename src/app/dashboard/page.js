@@ -74,7 +74,14 @@ export default function DashboardPage() {
 
   const fetchDashboard = async () => {
     try {
-      const startDate = new Date(dateRange.start); const endDate = new Date(dateRange.end); endDate.setHours(23, 59, 59, 999)
+      const startDate = new Date(dateRange.start)
+      let endDate
+      if (dateRange.end) {
+        endDate = new Date(dateRange.end)
+      } else {
+        endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0)
+      }
+      endDate.setHours(23, 59, 59, 999)
       
       // STAFF: sadece kendi satışları (orderBy yok, composite index gerektirmez)
       // MANAGER: mağaza satışları
