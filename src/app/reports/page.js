@@ -17,17 +17,22 @@ export default function ReportsPage() {
 
   const fetchPendingSales = async () => {
     try {
-      // Tüm satışları çek, gönderilenleri filtrele
+      // Tüm satışları çek
       const salesQuery = query(collection(db, 'sales'), orderBy('date', 'desc'))
       const snapshot = await getDocs(salesQuery)
       const allSales = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
       
-      // Gönderilmiş ama henüz düzenlenmemiş satışları filtrele
-      let pending = allSales.filter(s => s.sentBy && !s.lastEditedBy)
+      // Gönderilmiş satışları filtrele (sentBy alanı varsa)
+      let pending = allSales.filter(s => {
+        return s.sentBy && s.sentBy.trim() !== ''
+      })
+      
+      // Düzenlenmiş olanları çıkar (lastEditedBy alanı varsa)
+      pending = pending.filter(s => !s.lastEditedBy)
       
       // Mağaza müdürü ise sadece kendi mağazasını görsün
       if (user.role === 'MANAGER') {
-        pending = pending.filter(s => s.storeId === user.storeId)
+        pending = pending.filter(s => s.storeId === user.storeId || !s.storeId)
       }
       
       setPendingSales(pending)
