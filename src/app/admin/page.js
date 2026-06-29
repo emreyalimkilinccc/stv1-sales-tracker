@@ -6,6 +6,7 @@ import { collection, query, getDocs, addDoc, doc, setDoc, updateDoc, deleteDoc }
 import { db } from '@/lib/firebase'
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as firebaseSignOut } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
+import { formatCurrency } from '@/lib/utils'
 
 export default function AdminPage() {
   const { user } = useAuth()
@@ -16,8 +17,8 @@ export default function AdminPage() {
   const [showAddStore, setShowAddStore] = useState(false)
   const [showAddUser, setShowAddUser] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
-  const [newStore, setNewStore] = useState({ name: '', address: '', phone: '' })
-  const [newUser, setNewUser] = useState({ salesCode: '', email: '', password: '', name: '', role: 'STAFF', storeId: '' })
+  const [newStore, setNewStore] = useState({ name: '', address: '', phone: '', monthlyQuota: '' })
+  const [newUser, setNewUser] = useState({ salesCode: '', email: '', password: '', name: '', role: 'STAFF', storeId: '', monthlyQuota: '' })
 
   useEffect(() => { if (user && ['ADMIN', 'MANAGER'].includes(user.role)) fetchData() }, [user])
 
@@ -30,7 +31,16 @@ export default function AdminPage() {
 
   const handleAddStore = async (e) => {
     e.preventDefault()
-    try { await addDoc(collection(db, 'stores'), { ...newStore, createdAt: new Date().toISOString() }); setShowAddStore(false); setNewStore({ name: '', address: '', phone: '' }); fetchData() } catch (error) { console.error(error) }
+    try { 
+      await addDoc(collection(db, 'stores'), { 
+        ...newStore, 
+        monthlyQuota: parseFloat(newStore.monthlyQuota) || 0,
+        createdAt: new Date().toISOString() 
+      }); 
+      setShowAddStore(false); 
+      setNewStore({ name: '', address: '', phone: '', monthlyQuota: '' }); 
+      fetchData() 
+    } catch (error) { console.error(error) }
   }
 
   const [showReauthModal, setShowReauthModal] = useState(false)
@@ -41,33 +51,23 @@ export default function AdminPage() {
     e.preventDefault()
     try {
       const email = `${newUser.salesCode}@stv1.local`
-      
-      // Mevcut admin bilgilerini kaydet
       const currentAdminEmail = user.email
-      
-      // Yeni kullanıcıyı oluştur
       await createUserWithEmailAndPassword(auth, email, newUser.password)
-      
-      // Firestore'a doküman ekle
       await setDoc(doc(db, 'user', email), { 
         name: newUser.name, 
         email: email, 
         salesCode: newUser.salesCode,
         role: newUser.role, 
-        storeId: newUser.storeId, 
+        storeId: newUser.storeId,
+        monthlyQuota: parseFloat(newUser.monthlyQuota) || 0,
         createdAt: new Date().toISOString() 
       })
-      
-      // Yeni kullanıcı eklendi, şimdi çıkış yapıp admin'i tekrar giriş yaptıralım
       await firebaseSignOut(auth)
-      
-      // Admin modal'ı aç
       setPendingAdminEmail(currentAdminEmail)
       setShowReauthModal(true)
       setShowAddUser(false)
-      setNewUser({ salesCode: '', email: '', password: '', name: '', role: 'STAFF', storeId: '' })
+      setNewUser({ salesCode: '', email: '', password: '', name: '', role: 'STAFF', storeId: '', monthlyQuota: '' })
       fetchData()
-      
     } catch (error) { alert('Hata: ' + error.message) }
   }
 
@@ -78,9 +78,7 @@ export default function AdminPage() {
       setShowReauthModal(false)
       setReauthPassword('')
       setPendingAdminEmail('')
-    } catch (error) {
-      alert('Hata: ' + error.message)
-    }
+    } catch (error) { alert('Hata: ' + error.message) }
   }
 
   const handleUpdateUser = async (e) => {
@@ -89,7 +87,8 @@ export default function AdminPage() {
       await updateDoc(doc(db, 'user', editingUser.id), { 
         name: editingUser.name, 
         role: editingUser.role, 
-        storeId: editingUser.storeId 
+        storeId: editingUser.storeId,
+        monthlyQuota: parseFloat(editingUser.monthlyQuota) || 0
       }); 
       setEditingUser(null); 
       fetchData() 
@@ -101,6 +100,13 @@ export default function AdminPage() {
     try { await deleteDoc(doc(db, 'user', userId)); fetchData() } catch (error) { alert('Hata: ' + error.message) }
   }
 
+  const handleUpdateStoreQuota = async (storeId, newQuota) => {
+    try {
+      await updateDoc(doc(db, 'stores', storeId), { monthlyQuota: parseFloat(newQuota) || 0 })
+      fetchData()
+    } catch (error) { alert('Hata: ' + error.message) }
+  }
+
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div style={{ fontSize: '48px' }}>⏳</div></div>
   if (!['ADMIN', 'MANAGER'].includes(user?.role)) return <div className="min-h-screen flex items-center justify-center"><div style={{ color: '#ef4444' }}>🚫 Erişim yetkiniz yok</div></div>
 
@@ -110,30 +116,35 @@ export default function AdminPage() {
         background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
       }}>
         <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#ffffff', marginBottom: '0.375rem' }}>⚙️ Yönetim Paneli</h1>
-        <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px' }}>Mağazalar ve personel yönetimi</p>
+        <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px' }}>Mağazalar, personel ve kota yönetimi</p>
       </div>
 
-      <div className="flex" style={{ gap: '0.75rem', marginBottom: '1.25rem' }}>
-        {[{ key: 'stores', label: '🏪 Mağazalar', count: user.role === 'ADMIN' ? stores.length : stores.filter(s => s.id === user.storeId).length, color: '#10b981' }, { key: 'users', label: '👥 Personel', count: user.role === 'ADMIN' ? users.length : users.filter(u => u.storeId === user.storeId).length, color: '#3b82f6' }].map(tab => (
-          <button key={tab.key} onClick={() => setActiveTab(tab.key)} className="flex-1" style={{
-            padding: '0.875rem', fontSize: '14px', fontWeight: '600', borderRadius: '0.75rem',
+      <div className="flex" style={{ gap: '0.5rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+        {[
+          { key: 'stores', label: '🏪 Mağazalar', color: '#10b981' },
+          { key: 'users', label: '👥 Personel', color: '#3b82f6' },
+          { key: 'quotas', label: '🎯 Kotalar', color: '#f59e0b' }
+        ].map(tab => (
+          <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{
+            padding: '0.75rem 1rem', fontSize: '13px', fontWeight: '600', borderRadius: '0.75rem',
             border: `2px solid ${activeTab === tab.key ? tab.color : '#334155'}`,
             backgroundColor: activeTab === tab.key ? `${tab.color}15` : '#1e293b',
-            color: activeTab === tab.key ? tab.color : '#94a3b8', cursor: 'pointer', textAlign: 'center'
+            color: activeTab === tab.key ? tab.color : '#94a3b8', cursor: 'pointer', textAlign: 'center',
+            flex: '1', minWidth: '100px'
           }}>
-            {tab.label} ({tab.count})
+            {tab.label}
           </button>
         ))}
       </div>
 
+      {/* MAĞAZALAR SEKMESİ */}
       {activeTab === 'stores' && (
         <div>
           {user.role === 'ADMIN' && (
-            <button onClick={() => setShowAddStore(!showAddStore)} className="btn" style={{
-              width: '100%', marginBottom: '1rem',
+            <button onClick={() => setShowAddStore(!showAddStore)} style={{
+              width: '100%', marginBottom: '1rem', padding: '0.875rem',
               background: showAddStore ? '#334155' : 'linear-gradient(135deg, #10b981, #059669)',
-              color: showAddStore ? '#94a3b8' : 'white',
-              boxShadow: showAddStore ? 'none' : '0 4px 12px rgba(16, 185, 129, 0.3)'
+              color: showAddStore ? '#94a3b8' : 'white', fontWeight: '600', borderRadius: '0.75rem', border: 'none', cursor: 'pointer'
             }}>
               {showAddStore ? '✕ Kapat' : '➕ Mağaza Ekle'}
             </button>
@@ -155,6 +166,10 @@ export default function AdminPage() {
                   <label className="form-label">Telefon</label>
                   <input type="text" placeholder="Telefon" value={newStore.phone} onChange={(e) => setNewStore(p => ({ ...p, phone: e.target.value }))} className="form-input" />
                 </div>
+                <div className="form-group">
+                  <label className="form-label">🎯 Aylık Mağaza Kotası (TL)</label>
+                  <input type="number" placeholder="Örn: 5000000" value={newStore.monthlyQuota} onChange={(e) => setNewStore(p => ({ ...p, monthlyQuota: e.target.value }))} className="form-input" />
+                </div>
                 <div className="flex" style={{ gap: '0.75rem', marginTop: '1.25rem' }}>
                   <button type="button" onClick={() => setShowAddStore(false)} className="btn btn-secondary flex-1">İptal</button>
                   <button type="submit" className="btn btn-primary flex-1">💾 Kaydet</button>
@@ -168,19 +183,22 @@ export default function AdminPage() {
               <div key={s.id} className="list-item" style={{ borderLeft: '4px solid #10b981' }}>
                 <div style={{ fontSize: '15px', fontWeight: '600', color: '#f8fafc', marginBottom: '0.375rem' }}>🏪 {s.name}</div>
                 <div style={{ fontSize: '12px', color: '#94a3b8' }}>📍 {s.address || '-'} {s.phone ? `• 📞 ${s.phone}` : ''}</div>
+                <div style={{ fontSize: '12px', color: '#f59e0b', marginTop: '0.25rem' }}>
+                  🎯 Aylık Kota: <span style={{ fontWeight: '600' }}>{formatCurrency(s.monthlyQuota || 0)}</span>
+                </div>
               </div>
             ))}
           </div>
         </div>
       )}
 
+      {/* PERSONEL SEKMESİ */}
       {activeTab === 'users' && (
         <div>
-          <button onClick={() => { setShowAddUser(!showAddUser); setEditingUser(null) }} className="btn" style={{
-            width: '100%', marginBottom: '1rem',
+          <button onClick={() => { setShowAddUser(!showAddUser); setEditingUser(null) }} style={{
+            width: '100%', marginBottom: '1rem', padding: '0.875rem',
             background: showAddUser ? '#334155' : 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
-            color: showAddUser ? '#94a3b8' : 'white',
-            boxShadow: showAddUser ? 'none' : '0 4px 12px rgba(59, 130, 246, 0.3)'
+            color: showAddUser ? '#94a3b8' : 'white', fontWeight: '600', borderRadius: '0.75rem', border: 'none', cursor: 'pointer'
           }}>
             {showAddUser ? '✕ Kapat' : '➕ Personel Ekle'}
           </button>
@@ -214,6 +232,10 @@ export default function AdminPage() {
                   <select value={newUser.storeId} onChange={(e) => setNewUser(p => ({ ...p, storeId: e.target.value }))} className="form-input">
                     <option value="">🏪 Mağaza Seçin</option>{stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">🎯 Aylık Kota (TL)</label>
+                  <input type="number" placeholder="Örn: 500000" value={newUser.monthlyQuota} onChange={(e) => setNewUser(p => ({ ...p, monthlyQuota: e.target.value }))} className="form-input" />
                 </div>
                 <div className="flex" style={{ gap: '0.75rem', marginTop: '1.25rem' }}>
                   <button type="button" onClick={() => setShowAddUser(false)} className="btn btn-secondary flex-1">İptal</button>
@@ -249,6 +271,10 @@ export default function AdminPage() {
                     <option value="">🏪 Mağaza Seçin</option>{stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
                 </div>
+                <div className="form-group">
+                  <label className="form-label">🎯 Aylık Kota (TL)</label>
+                  <input type="number" placeholder="Örn: 500000" value={editingUser.monthlyQuota || ''} onChange={(e) => setEditingUser(p => ({ ...p, monthlyQuota: e.target.value }))} className="form-input" />
+                </div>
                 <div className="flex" style={{ gap: '0.75rem', marginTop: '1.25rem' }}>
                   <button type="button" onClick={() => setEditingUser(null)} className="btn btn-secondary flex-1">İptal</button>
                   <button type="submit" className="btn btn-primary flex-1">💾 Güncelle</button>
@@ -267,6 +293,9 @@ export default function AdminPage() {
                     </div>
                     <div style={{ fontSize: '12px', color: '#64748b', marginTop: '0.25rem' }}>
                       🔢 Satış Kodu: <span style={{ color: '#3b82f6', fontWeight: '600' }}>{u.salesCode || '-'}</span>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#f59e0b', marginTop: '0.25rem' }}>
+                      🎯 Aylık Kota: <span style={{ fontWeight: '600' }}>{formatCurrency(u.monthlyQuota || 0)}</span>
                     </div>
                   </div>
                   <div style={{
@@ -297,6 +326,83 @@ export default function AdminPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* KOTALAR SEKMESİ */}
+      {activeTab === 'quotas' && (
+        <div>
+          <div className="card" style={{ marginBottom: '1rem', borderLeft: '4px solid #f59e0b' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '0.75rem' }}>🏪 Mağaza Kotaları</h3>
+            <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '1rem' }}>Her mağazanın aylık satış hedefini belirleyin</p>
+            
+            <div className="space-y-3">
+              {stores.filter(s => user.role === 'ADMIN' || s.id === user.storeId).map(s => (
+                <div key={s.id} className="list-item" style={{ borderLeft: '4px solid #10b981', padding: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontSize: '14px', fontWeight: '600', color: '#f8fafc' }}>🏪 {s.name}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <input 
+                        type="number" 
+                        value={s.monthlyQuota || ''} 
+                        onChange={(e) => handleUpdateStoreQuota(s.id, e.target.value)}
+                        placeholder="0"
+                        style={{ 
+                          width: '150px', padding: '0.5rem', borderRadius: '0.5rem',
+                          backgroundColor: '#334155', border: '1px solid #475569',
+                          color: '#f8fafc', fontSize: '14px', textAlign: 'right'
+                        }}
+                      />
+                      <span style={{ fontSize: '12px', color: '#94a3b8' }}>TL</span>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#f59e0b', marginTop: '0.5rem' }}>
+                    📊 Hedef: {formatCurrency(s.monthlyQuota || 0)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="card" style={{ borderLeft: '4px solid #3b82f6' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '0.75rem' }}>👤 Personel Kotaları</h3>
+            <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '1rem' }}>Her personelin aylık satış hedefini belirleyin</p>
+            
+            <div className="space-y-3">
+              {users.filter(u => user.role === 'ADMIN' || u.storeId === user.storeId).filter(u => u.role === 'STAFF').map(u => (
+                <div key={u.id} className="list-item" style={{ borderLeft: '4px solid #3b82f6', padding: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#f8fafc' }}>👤 {u.name}</div>
+                      <div style={{ fontSize: '12px', color: '#94a3b8' }}>🏪 {stores.find(s => s.id === u.storeId)?.name || '-'}</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <input 
+                        type="number" 
+                        value={u.monthlyQuota || ''} 
+                        onChange={async (e) => {
+                          try {
+                            await updateDoc(doc(db, 'user', u.id), { monthlyQuota: parseFloat(e.target.value) || 0 })
+                            fetchData()
+                          } catch (error) { console.error(error) }
+                        }}
+                        placeholder="0"
+                        style={{ 
+                          width: '150px', padding: '0.5rem', borderRadius: '0.5rem',
+                          backgroundColor: '#334155', border: '1px solid #475569',
+                          color: '#f8fafc', fontSize: '14px', textAlign: 'right'
+                        }}
+                      />
+                      <span style={{ fontSize: '12px', color: '#94a3b8' }}>TL</span>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#f59e0b', marginTop: '0.5rem' }}>
+                    📊 Hedef: {formatCurrency(u.monthlyQuota || 0)}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}

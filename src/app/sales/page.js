@@ -28,7 +28,23 @@ export default function SalesPage() {
   // Aylık kota ayarları
   const MONTHLY_QUOTA = 500000 // 500.000 TL aylık kota
 
-  useEffect(() => { if (user) fetchSales() }, [user])
+  // Aylık kota
+  const [monthlyQuota, setMonthlyQuota] = useState(500000)
+
+  useEffect(() => { 
+    if (user) {
+      fetchSales()
+      fetchQuota()
+    }
+  }, [user])
+
+  const fetchQuota = async () => {
+    try {
+      if (user.monthlyQuota) {
+        setMonthlyQuota(user.monthlyQuota)
+      }
+    } catch (error) { console.error('Kota yükleme hatası:', error) }
+  }
 
   if (authLoading) {
     return (
@@ -66,8 +82,8 @@ export default function SalesPage() {
 
   const monthlySales = getMonthlySales()
   const monthlyTotal = monthlySales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
-  const quotaPercentage = Math.min((monthlyTotal / MONTHLY_QUOTA) * 100, 100)
-  const remainingQuota = Math.max(MONTHLY_QUOTA - monthlyTotal, 0)
+  const quotaPercentage = Math.min((monthlyTotal / monthlyQuota) * 100, 100)
+  const remainingQuota = Math.max(monthlyQuota - monthlyTotal, 0)
 
   const fetchSales = async () => {
     try {
@@ -217,7 +233,7 @@ export default function SalesPage() {
               Kullanılan: <span style={{ color: '#3b82f6', fontWeight: '600' }}>{formatCurrency(monthlyTotal)}</span>
             </span>
             <span style={{ fontSize: '13px', color: '#94a3b8' }}>
-              Hedef: <span style={{ color: '#10b981', fontWeight: '600' }}>{formatCurrency(MONTHLY_QUOTA)}</span>
+              Hedef: <span style={{ color: '#10b981', fontWeight: '600' }}>{formatCurrency(monthlyQuota)}</span>
             </span>
           </div>
           
@@ -260,7 +276,7 @@ export default function SalesPage() {
             }}>
               Kalan: {formatCurrency(remainingQuota)}
             </span>
-            <span style={{ fontSize: '11px', color: '#64748b' }}>{formatCurrency(MONTHLY_QUOTA)}</span>
+            <span style={{ fontSize: '11px', color: '#64748b' }}>{formatCurrency(monthlyQuota)}</span>
           </div>
         </div>
       </div>
