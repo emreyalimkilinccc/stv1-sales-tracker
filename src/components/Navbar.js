@@ -1,16 +1,48 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
 import { usePathname } from 'next/navigation'
+import { collection, query, where, onSnapshot } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
 
 export default function Navbar() {
   const { user, signOut } = useAuth()
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [notifications, setNotifications] = useState(0)
 
   const isActive = (path) => pathname === path
+
+  useEffect(() => {
+    if (!user) return
+    
+    // Bildirimleri dinle - sentBy alanı olan satışlar
+    const q = query(collection(db, 'sales'), where('sentBy', '!=', null))
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      let count = 0
+      snapshot.forEach(doc => {
+        const data = doc.data()
+        // Eğer henüz görüntülenmemiş bir bildirim varsa say
+        if (!data.lastViewedByManager || data.lastViewedByManager !== user.uid) {
+          count++
+        }
+      })
+      setNotifications(count)
+      
+      // Sesli bildirim
+      if (count > 0) {
+        try {
+          const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2JkI+LfXR0e4aXnJqUin11dXyGmZ2blYl8dXV9h5qem5SJfXR1fIeanpuUin11dXyHmp6blIp9dXV8')
+          audio.volume = 0.3
+          audio.play().catch(() => {})
+        } catch (e) {}
+      }
+    })
+
+    return () => unsubscribe()
+  }, [user])
 
   if (!user) return null
 
@@ -44,7 +76,42 @@ export default function Navbar() {
             <span style={{ fontSize: '18px', fontWeight: '700', color: '#f8fafc' }}>STV1</span>
           </Link>
 
-          <div className="flex items-center" style={{ gap: '0.75rem' }}>
+          <div className="flex items-center" style={{ gap: '0.5rem' }}>
+            {/* Zil İkonu - Bildirimler */}
+            {['MANAGER', 'ADMIN'].includes(user.role) && (
+              <div style={{ position: 'relative' }}>
+                <Link href="/reports" style={{
+                  width: '38px', height: '38px',
+                  borderRadius: '10px',
+                  border: '1px solid #334155',
+                  backgroundColor: 'transparent',
+                  color: '#94a3b8',
+                  fontSize: '18px',
+                  cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  textDecoration: 'none'
+                }}>
+                  🔔
+                </Link>
+                {notifications > 0 && (
+                  <div style={{
+                    position: 'absolute', top: '-4px', right: '-4px',
+                    width: '20px', height: '20px',
+                    borderRadius: '50%',
+                    backgroundColor: '#ef4444',
+                    color: '#fff',
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: '2px solid #1e293b'
+                  }}>
+                    {notifications}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Rol Badge */}
             <div style={{
               padding: '0.375rem 0.75rem',
               borderRadius: '9999px',
@@ -56,6 +123,8 @@ export default function Navbar() {
             }}>
               {user.role === 'ADMIN' ? '👑 Yönetici' : user.role === 'MANAGER' ? '👔 Müdür' : '👤 Personel'}
             </div>
+
+            {/* Menü Butonu */}
             <button onClick={() => setMenuOpen(!menuOpen)} style={{
               width: '38px', height: '38px',
               borderRadius: '10px',

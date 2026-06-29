@@ -19,7 +19,7 @@ export default function ReportsPage() {
   const [selectedStaff, setSelectedStaff] = useState('')
   const [allStaff, setAllStaff] = useState([])
 
-  useEffect(() => { if (user && user.role !== 'STAFF') { fetchReport(); fetchStaffList() } }, [user, dateRange, groupBy])
+  useEffect(() => { if (user && user.role !== 'STAFF') { fetchReport(); fetchStaffList() } }, [user, dateRange, groupBy, selectedStaff])
 
   const fetchStaffList = async () => {
     try {
@@ -48,6 +48,7 @@ export default function ReportsPage() {
       const snapshot = await getDocs(salesQuery)
       let sales = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => { const d = new Date(s.date); return d >= startDate && d <= endDate })
       
+      // Kullanıcı filtresi
       if (selectedStaff) { sales = sales.filter(s => s.userId === selectedStaff) }
       
       let groupedData = {}
@@ -55,8 +56,45 @@ export default function ReportsPage() {
       else if (groupBy === 'week') { groupedData = sales.reduce((acc, s) => { const d = new Date(s.date); const ws = new Date(d); ws.setDate(d.getDate() - d.getDay()); const k = ws.toISOString().split('T')[0]; if (!acc[k]) acc[k] = { week: k, amount: 0, count: 0, items: 0 }; acc[k].amount += parseFloat(s.amount || 0); acc[k].count++; acc[k].items += parseInt(s.itemCount) || 0; return acc }, {}) }
       else { groupedData = sales.reduce((acc, s) => { const k = s.date.substring(0, 7); if (!acc[k]) acc[k] = { month: k, amount: 0, count: 0, items: 0 }; acc[k].amount += parseFloat(s.amount || 0); acc[k].count++; acc[k].items += parseInt(s.itemCount) || 0; return acc }, {}) }
       
-      const dailyStats = Object.values(groupedData)
-      setData({ groupedData: dailyStats, totalSales: sales.length, totalAmount: sales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0) })
+      // Seçili kullanıcının kotası ve mağaza kotası
+      let selectedUserData = null
+      if (selectedStaff) {
+        const staffDoc = allStaff.find(s => s.id === selectedStaff)
+        if (staffDoc) {
+          const monthSales = sales.filter(s => {
+            const d = new Date(s.date)
+            const now = new Date()
+            return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+          })
+          const monthlyTotal = monthSales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
+          selectedUserData = {
+            name: staffDoc.name,
+            monthlyQuota: staffDoc.monthlyQuota || 500000,
+            monthlyTotal: monthlyTotal,
+            percentage: Math.min((monthlyTotal / (staffDoc.monthlyQuota || 500000)) * 100, 100)
+          }
+        }
+      }
+      
+      // Mağaza kotası
+      const storeDoc = allStaff.find(s => s.storeId === user.storeId)
+      const storeQuota = storeDoc?.monthlyQuota || 500000
+      const monthSalesAll = sales.filter(s => {
+        const d = new Date(s.date)
+        const now = new Date()
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+      })
+      const storeMonthlyTotal = monthSalesAll.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
+      
+      setData({
+        groupedData: Object.values(groupedData),
+        totalSales: sales.length,
+        totalAmount: sales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0),
+        selectedUserData,
+        storeQuota,
+        storeMonthlyTotal,
+        storePercentage: Math.min((storeMonthlyTotal / storeQuota) * 100, 100)
+      })
     } catch (error) { console.error('Error:', error) } finally { setLoading(false) }
   }
 
@@ -70,6 +108,7 @@ export default function ReportsPage() {
         <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px' }}>Satış raporlarını görüntüleyin</p>
       </div>
 
+      {/* Tarih Filtresi */}
       <div className="card">
         <div className="flex flex-wrap gap-2" style={{ marginBottom: '1rem' }}>
           {[
@@ -82,9 +121,9 @@ export default function ReportsPage() {
         </div>
         <div className="flex gap-3" style={{ marginBottom: '1rem' }}>
           <input type="date" value={dateRange.start} onChange={(e) => setDateRange(p => ({ ...p, start: e.target.value }))}
-            style={{ flex: 1, padding: '0.625rem', borderRadius: '0.75rem', fontSize: '13px', minWidth: 0, backgroundColor: '#334155', border: '1px solid #475569', color: '#f8fafc' }} />
+            style={{ flex: 1, padding: '0.625rem', borderRadius: '0.75rem', fontSize: '13px', backgroundColor: '#334155', border: '1px solid #475569', color: '#f8fafc' }} />
           <input type="date" value={dateRange.end} onChange={(e) => setDateRange(p => ({ ...p, end: e.target.value }))}
-            style={{ flex: 1, padding: '0.625rem', borderRadius: '0.75rem', fontSize: '13px', minWidth: 0, backgroundColor: '#334155', border: '1px solid #475569', color: '#f8fafc' }} />
+            style={{ flex: 1, padding: '0.625rem', borderRadius: '0.75rem', fontSize: '13px', backgroundColor: '#334155', border: '1px solid #475569', color: '#f8fafc' }} />
         </div>
         <select value={groupBy} onChange={(e) => setGroupBy(e.target.value)} style={{ width: '100%', padding: '0.625rem', borderRadius: '0.75rem', fontSize: '13px', backgroundColor: '#334155', border: '1px solid #475569', color: '#f8fafc', marginBottom: '1rem' }}>
           <option value="day">📊 Günlük</option><option value="week">📊 Haftalık</option><option value="month">📊 Aylık</option>
@@ -104,6 +143,38 @@ export default function ReportsPage() {
         )}
       </div>
 
+      {/* Seçili Kullanıcı Bireysel Kota + Mağaza Kotası */}
+      {data && data.selectedUserData && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+          {/* Bireysel Kota */}
+          <div className="card">
+            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#f8fafc', marginBottom: '0.75rem' }}>👤 {data.selectedUserData.name} - Aylık Kota</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.375rem' }}>
+              <span style={{ fontSize: '11px', color: '#94a3b8' }}>Kullanılan: <span style={{ color: '#3b82f6', fontWeight: '600' }}>{formatCurrency(data.selectedUserData.monthlyTotal)}</span></span>
+              <span style={{ fontSize: '11px', color: '#94a3b8' }}>Hedef: <span style={{ color: '#10b981', fontWeight: '600' }}>{formatCurrency(data.selectedUserData.monthlyQuota)}</span></span>
+            </div>
+            <div style={{ height: '16px', backgroundColor: '#0f172a', borderRadius: '8px', overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${data.selectedUserData.percentage}%`, background: data.selectedUserData.percentage >= 100 ? 'linear-gradient(90deg, #ef4444, #dc2626)' : data.selectedUserData.percentage >= 75 ? 'linear-gradient(90deg, #f59e0b, #d97706)' : 'linear-gradient(90deg, #3b82f6, #2563eb)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontSize: '9px', fontWeight: '600', color: '#fff' }}>%{data.selectedUserData.percentage.toFixed(1)}</span>
+              </div>
+            </div>
+          </div>
+          {/* Mağaza Kotası */}
+          <div className="card">
+            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#f8fafc', marginBottom: '0.75rem' }}>🏪 Mağaza Kotası</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.375rem' }}>
+              <span style={{ fontSize: '11px', color: '#94a3b8' }}>Kullanılan: <span style={{ color: '#3b82f6', fontWeight: '600' }}>{formatCurrency(data.storeMonthlyTotal)}</span></span>
+              <span style={{ fontSize: '11px', color: '#94a3b8' }}>Hedef: <span style={{ color: '#10b981', fontWeight: '600' }}>{formatCurrency(data.storeQuota)}</span></span>
+            </div>
+            <div style={{ height: '16px', backgroundColor: '#0f172a', borderRadius: '8px', overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${data.storePercentage}%`, background: data.storePercentage >= 100 ? 'linear-gradient(90deg, #ef4444, #dc2626)' : data.storePercentage >= 75 ? 'linear-gradient(90deg, #f59e0b, #d97706)' : 'linear-gradient(90deg, #10b981, #059669)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontSize: '9px', fontWeight: '600', color: '#fff' }}>%{data.storePercentage.toFixed(1)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {data && (
         <>
           <div className="grid grid-cols-3" style={{ gap: '0.75rem', marginBottom: '1rem' }}>
@@ -119,9 +190,10 @@ export default function ReportsPage() {
             ))}
           </div>
 
-          {/* GRAFİKLER - Tarih bilgilerinin altında */}
+          {/* Grafikler - Tarih bilgilerinin altında */}
           <DashboardCharts dailyStats={data.groupedData} staffStats={[]} />
 
+          {/* Satış Detayları */}
           <div className="card" style={{ marginTop: '1rem' }}>
             <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>📊 Satış Detayları</h3>
             <div className="space-y-3">
@@ -140,6 +212,28 @@ export default function ReportsPage() {
               ))}
             </div>
           </div>
+
+          {/* Gönderilen Satışlar (Sadece Düzenleme İsteği Olanlar) */}
+          {data.groupedData?.some(row => row.sentBy) && (
+            <div className="card" style={{ marginTop: '1rem' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>📨 Gönderilen Satışlar</h3>
+              <div className="space-y-3">
+                {data.groupedData?.filter(row => row.sentBy).map((row, i) => (
+                  <div key={i} className="list-item" style={{ borderLeft: '4px solid #10b981' }}>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <div style={{ fontSize: '14px', fontWeight: '600', color: '#f8fafc', marginBottom: '0.25rem' }}>📅 {row.date || row.week || row.month}</div>
+                        <div style={{ fontSize: '12px', color: '#10b981' }}>📨 {row.sentBy} tarafından gönderildi</div>
+                      </div>
+                      <div style={{ fontSize: '16px', fontWeight: '700', color: '#10b981' }}>
+                        {formatCurrency(row.amount)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>
