@@ -63,7 +63,7 @@ export default function SalesPage() {
   const handleSubmit = async (formData) => {
     if (!user) { alert('Kullanıcı bilgisi bulunamadı.'); return }
     try {
-      const saleData = { ...formData, amount: parseFloat(formData.amount) || 0, itemCount: parseInt(formData.itemCount) || 0, bonusItemCount: parseInt(formData.bonusItemCount) || 0, userId: user.uid, userName: user.name || user.email || 'Bilinmeyen', storeId: user.storeId || null, createdAt: new Date().toISOString() }
+      const saleData = { ...formData, amount: parseFloat(formData.amount) || 0, cost: parseFloat(formData.cost) || 0, itemCount: parseInt(formData.itemCount) || 0, bonusItemCount: parseInt(formData.bonusItemCount) || 0, userId: user.uid, userName: user.name || user.email || 'Bilinmeyen', storeId: user.storeId || null, createdAt: new Date().toISOString() }
       if (editingSale) { await updateDoc(doc(db, 'sales', editingSale.id), saleData); setEditingSale(null) }
       else { await addDoc(collection(db, 'sales'), saleData) }
       fetchSales()
@@ -90,7 +90,7 @@ export default function SalesPage() {
   const handleSaveEdit = async (formData) => {
     if (!formData) return
     try {
-      const saleData = { ...formData, amount: parseFloat(formData.amount) || 0, itemCount: parseInt(formData.itemCount) || 0, bonusItemCount: parseInt(formData.bonusItemCount) || 0, userId: editingSale.userId, userName: editingSale.userName, storeId: editingSale.storeId, lastEditedBy: user.name || user.email, lastEditNote: 'Düzenlendi', lastEditedAt: new Date().toISOString() }
+      const saleData = { ...formData, amount: parseFloat(formData.amount) || 0, cost: parseFloat(formData.cost) || 0, itemCount: parseInt(formData.itemCount) || 0, bonusItemCount: parseInt(formData.bonusItemCount) || 0, userId: editingSale.userId, userName: editingSale.userName, storeId: editingSale.storeId, lastEditedBy: user.name || user.email, lastEditNote: 'Düzenlendi', lastEditedAt: new Date().toISOString() }
       await updateDoc(doc(db, 'sales', editingSale.id), saleData)
       setEditingSale(null); fetchSales(); alert('Satış başarıyla güncellendi!')
     } catch (error) { alert('Güncellenemedi: ' + error.message) }
