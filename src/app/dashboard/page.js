@@ -15,9 +15,14 @@ export default function DashboardPage() {
   const [allStaff, setAllStaff] = useState([])
   const [storeQuota, setStoreQuota] = useState(0)
   const [userQuota, setUserQuota] = useState(0)
-  const [dateRange, setDateRange] = useState({
-    start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    end: new Date().toISOString().split('T')[0]
+  const [dateRange, setDateRange] = useState(() => {
+    const now = new Date()
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    return {
+      start: firstDay.toISOString().split('T')[0],
+      end: lastDay.toISOString().split('T')[0]
+    }
   })
 
   useEffect(() => { if (user) { fetchDashboard(); fetchStaffList(); fetchQuotas() } }, [user, dateRange])
@@ -49,10 +54,18 @@ export default function DashboardPage() {
   }
 
   const handlePeriodChange = (period) => {
-    const end = new Date(); let start = new Date()
-    if (period === 'week') start.setDate(start.getDate() - 7)
-    else if (period === 'month') start.setMonth(start.getMonth() - 1)
-    else if (period === 'year') start.setFullYear(start.getFullYear() - 1)
+    const now = new Date(); let start = new Date(); let end = new Date()
+    if (period === 'month') {
+      start = new Date(now.getFullYear(), now.getMonth(), 1)
+      end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    } else if (period === 'lastMonth') {
+      start = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+      end = new Date(now.getFullYear(), now.getMonth(), 0)
+    } else if (period === 'week') {
+      start.setDate(start.getDate() - 7)
+    } else if (period === 'year') {
+      start.setFullYear(start.getFullYear() - 1)
+    }
     setDateRange({ start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] })
   }
 
@@ -129,9 +142,10 @@ export default function DashboardPage() {
       <div className="card" style={{ marginBottom: '1rem' }}>
         <div className="flex flex-wrap items-center gap-2" style={{ marginBottom: '0.75rem' }}>
           {[
+            { key: 'month', label: '📅 Bu Ay', color: '#10b981' },
             { key: 'week', label: '📅 Son 7 Gün', color: '#3b82f6' },
-            { key: 'month', label: '📅 Son 30 Gün', color: '#8b5cf6' },
-            { key: 'year', label: '📅 Son 1 Yıl', color: '#10b981' }
+            { key: 'lastMonth', label: '📅 Geçen Ay', color: '#8b5cf6' },
+            { key: 'year', label: '📅 Son 1 Yıl', color: '#f59e0b' }
           ].map(p => (
             <button key={p.key} onClick={() => handlePeriodChange(p.key)} style={{
               padding: '0.5rem 0.75rem', borderRadius: '0.5rem', fontSize: '12px', fontWeight: '600',
