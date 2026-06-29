@@ -13,17 +13,29 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [selectedStaff, setSelectedStaff] = useState('')
   const [allStaff, setAllStaff] = useState([])
+  const [storeQuota, setStoreQuota] = useState(0)
   const [dateRange, setDateRange] = useState({
     start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     end: new Date().toISOString().split('T')[0]
   })
 
-  useEffect(() => { if (user) { fetchDashboard(); fetchStaffList() } }, [user, dateRange])
+  useEffect(() => { if (user) { fetchDashboard(); fetchStaffList(); fetchStoreQuota() } }, [user, dateRange])
 
   const fetchStaffList = async () => {
     try {
       const snapshot = await getDocs(collection(db, 'user'))
       setAllStaff(snapshot.docs.map(d => ({ id: d.id, ...d.data() })))
+    } catch (error) { console.error(error) }
+  }
+
+  const fetchStoreQuota = async () => {
+    try {
+      if (user.storeId) {
+        const storeDoc = await getDocs(query(collection(db, 'stores'), where('__name__', '==', user.storeId)))
+        if (!storeDoc.empty) {
+          setStoreQuota(storeDoc.docs[0].data().monthlyQuota || 0)
+        }
+      }
     } catch (error) { console.error(error) }
   }
 
@@ -83,6 +95,7 @@ export default function DashboardPage() {
         <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px' }}>Hoş geldiniz, {user?.name}</p>
       </div>
 
+      {/* Tarih Filtresi */}
       <div className="card" style={{ marginBottom: '1rem' }}>
         <div className="flex flex-wrap items-center gap-2" style={{ marginBottom: '0.75rem' }}>
           {[
@@ -104,7 +117,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* AYLIK KOTA ve MAĞAZA CİROSU */}
+      {/* AYLIK KOTA ve MAĞAZA CİROSU - Yönetim panelindeki değerlerden */}
       {user.role !== 'STAFF' && (
         <div className="card" style={{ marginBottom: '1rem' }}>
           <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>🎯 Aylık Kota & Mağaza Cirosu</h3>
@@ -133,14 +146,14 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Aylık Kota Çubuğu */}
+          {/* Aylık Kota Çubuğu - Yönetim panelindeki değerden */}
           <div style={{ marginTop: '0.75rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.375rem' }}>
               <span style={{ fontSize: '12px', color: '#94a3b8' }}>Kullanılan: <span style={{ color: '#3b82f6', fontWeight: '600' }}>{formatCurrency(data?.summary?.totalAmount || 0)}</span></span>
-              <span style={{ fontSize: '12px', color: '#94a3b8' }}>Hedef: <span style={{ color: '#10b981', fontWeight: '600' }}>{formatCurrency(user.monthlyQuota || 500000)}</span></span>
+              <span style={{ fontSize: '12px', color: '#94a3b8' }}>Hedef: <span style={{ color: '#10b981', fontWeight: '600' }}>{formatCurrency(storeQuota)}</span></span>
             </div>
             {(() => {
-              const quota = user.monthlyQuota || 500000
+              const quota = storeQuota || 1
               const pct = Math.min(((data?.summary?.totalAmount || 0) / quota) * 100, 100)
               return (
                 <div style={{ height: '20px', backgroundColor: '#0f172a', borderRadius: '10px', overflow: 'hidden' }}>
@@ -154,6 +167,7 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* İstatistikler */}
       <div className="grid grid-cols-2 md:grid-cols-4" style={{ gap: '0.75rem', marginBottom: '1rem' }}>
         {[
           { label: 'Toplam Satış', value: formatCurrency(data?.summary?.totalAmount || 0), icon: '💰', color: '#3b82f6' },
