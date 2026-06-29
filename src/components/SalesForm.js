@@ -69,7 +69,7 @@ export default function SalesForm({ onSubmit, initialData = null }) {
       </div>
 
       <div className="form-group">
-        <label className="form-label">💰 Satış</label>
+        <label className="form-label">💰 Satış Tutarı</label>
         <input type="number" name="amount" value={formData.amount} onChange={handleChange} required step="0.01" placeholder="Eksi girerseniz iptal/iade olur" className="form-input" style={{ color: parseFloat(formData.amount) < 0 ? '#ef4444' : undefined }} />
       </div>
 
