@@ -59,23 +59,33 @@ export default function DashboardPage() {
   const fetchDashboard = async () => {
     try {
       const startDate = new Date(dateRange.start); const endDate = new Date(dateRange.end); endDate.setHours(23, 59, 59, 999)
-      let salesQuery
-      if (user.role === 'STAFF') {
-        salesQuery = query(collection(db, 'sales'), where('userId', '==', user.uid), orderBy('date', 'desc'))
-      } else if (user.role === 'MANAGER') {
-        salesQuery = query(collection(db, 'sales'), where('storeId', '==', user.storeId), orderBy('date', 'desc'))
+      
+      // Mağaza satışları (tüm personel)
+      let storeSalesQuery
+      if (user.role === 'MANAGER') {
+        storeSalesQuery = query(collection(db, 'sales'), where('storeId', '==', user.storeId), orderBy('date', 'desc'))
       } else {
-        salesQuery = query(collection(db, 'sales'), orderBy('date', 'desc'))
+        storeSalesQuery = query(collection(db, 'sales'), orderBy('date', 'desc'))
       }
-      const snapshot = await getDocs(salesQuery)
-      const allSales = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
-      const sales = allSales.filter(s => { const d = new Date(s.date); return d >= startDate && d <= endDate })
+      const storeSnapshot = await getDocs(storeSalesQuery)
+      const allStoreSales = storeSnapshot.docs.map(d => ({ id: d.id, ...d.data() }))
+      const storeSales = allStoreSales.filter(s => { const d = new Date(s.date); return d >= startDate && d <= endDate })
       
-      const totalAmount = sales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
-      const totalItems = sales.reduce((sum, s) => sum + (parseInt(s.itemCount) || 0), 0)
-      const avgAmount = sales.length > 0 ? totalAmount / sales.length : 0
+      // Kişisel satışlar (sadece giriş yapan kişinin)
+      let personalSalesQuery = query(collection(db, 'sales'), where('userId', '==', user.uid), orderBy('date', 'desc'))
+      const personalSnapshot = await getDocs(personalSalesQuery)
+      const allPersonalSales = personalSnapshot.docs.map(d => ({ id: d.id, ...d.data() }))
+      const personalSales = allPersonalSales.filter(s => { const d = new Date(s.date); return d >= startDate && d <= endDate })
       
-      const dailyData = sales.reduce((acc, sale) => {
+      // Mağaza toplamı
+      const totalAmount = storeSales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
+      const totalItems = storeSales.reduce((sum, s) => sum + (parseInt(s.itemCount) || 0), 0)
+      const avgAmount = storeSales.length > 0 ? totalAmount / storeSales.length : 0
+      
+      // Kişisel toplam
+      const personalTotalAmount = personalSales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
+      
+      const dailyData = storeSales.reduce((acc, sale) => {
         const date = sale.date.split('T')[0]
         if (!acc[date]) acc[date] = { date, amount: 0, count: 0 }
         acc[date].amount += parseFloat(sale.amount) || 0; acc[date].count++; return acc
@@ -84,14 +94,14 @@ export default function DashboardPage() {
       
       let staffStats = []
       if (user.role !== 'STAFF') {
-        const staffData = sales.reduce((acc, sale) => {
+        const staffData = storeSales.reduce((acc, sale) => {
           if (!acc[sale.userId]) acc[sale.userId] = { userId: sale.userId, userName: sale.userName || 'Bilinmeyen', amount: 0, count: 0 }
           acc[sale.userId].amount += parseFloat(sale.amount) || 0; acc[sale.userId].count++; return acc
         }, {})
         staffStats = Object.values(staffData).sort((a, b) => b.amount - a.amount).slice(0, 10)
       }
       
-      setData({ summary: { totalAmount, totalItems, avgAmount, salesCount: sales.length }, dailyStats, staffStats })
+      setData({ summary: { totalAmount, totalItems, avgAmount, salesCount: storeSales.length, personalTotalAmount }, dailyStats, staffStats })
     } catch (error) { console.error('Error:', error) } finally { setLoading(false) }
   }
 
@@ -166,9 +176,9 @@ export default function DashboardPage() {
             {/* Bireysel Kota Grafiği - Kendi satışları */}
             <div style={{ backgroundColor: '#0f172a', borderRadius: '0.75rem', padding: '1rem', border: '1px solid #334155' }}>
               <div style={{ fontSize: '13px', fontWeight: '600', color: '#f8fafc', marginBottom: '0.5rem' }}>👤 Bireysel Kota</div>
-              <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '0.5rem' }}>Kullanılan: <span style={{ color: '#3b82f6', fontWeight: '600' }}>{formatCurrency(userQuota > 0 ? (data?.summary?.totalAmount || 0) * 0.3 : 0)}</span> / <span style={{ color: '#10b981', fontWeight: '600' }}>{formatCurrency(userQuota)}</span></div>
+              <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '0.5rem' }}>Kullanılan: <span style={{ color: '#3b82f6', fontWeight: '600' }}>{formatCurrency(data?.summary?.personalTotalAmount || 0)}</span> / <span style={{ color: '#10b981', fontWeight: '600' }}>{formatCurrency(userQuota)}</span></div>
               {(() => {
-                const userAmount = userQuota > 0 ? (data?.summary?.totalAmount || 0) * 0.3 : 0
+                const userAmount = data?.summary?.personalTotalAmount || 0
                 const pct = Math.min((userAmount / (userQuota || 1)) * 100, 100)
                 return (
                   <div style={{ height: '18px', backgroundColor: '#1e293b', borderRadius: '9px', overflow: 'hidden' }}>
