@@ -17,16 +17,19 @@ export default function ReportsPage() {
 
   const fetchPendingSales = async () => {
     try {
-      let salesQuery
-      if (user.role === 'MANAGER') {
-        salesQuery = query(collection(db, 'sales'), where('storeId', '==', user.storeId), where('sentBy', '!=', null), orderBy('sentAt', 'desc'))
-      } else {
-        salesQuery = query(collection(db, 'sales'), where('sentBy', '!=', null), orderBy('sentAt', 'desc'))
-      }
+      // Tüm satışları çek, gönderilenleri filtrele
+      const salesQuery = query(collection(db, 'sales'), orderBy('date', 'desc'))
       const snapshot = await getDocs(salesQuery)
-      const sales = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
-      // Düzenlenmiş olanları filtrele (lastEditedBy varsa yönetici düzeltmiş demektir)
-      const pending = sales.filter(s => !s.lastEditedBy)
+      const allSales = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
+      
+      // Gönderilmiş ama henüz düzenlenmemiş satışları filtrele
+      let pending = allSales.filter(s => s.sentBy && !s.lastEditedBy)
+      
+      // Mağaza müdürü ise sadece kendi mağazasını görsün
+      if (user.role === 'MANAGER') {
+        pending = pending.filter(s => s.storeId === user.storeId)
+      }
+      
       setPendingSales(pending)
     } catch (error) { console.error('Error:', error) } finally { setLoading(false) }
   }
