@@ -272,7 +272,6 @@ export default function DashboardPage() {
           { label: 'Toplam Ürün', value: data?.summary?.totalItems || 0, icon: '📦', color: '#10b981' },
           { label: 'Ortalama', value: formatCurrency(data?.summary?.avgAmount || 0), icon: '📈', color: '#f59e0b' },
           { label: 'Bonus Ürün', value: data?.summary?.totalBonusItems || 0, icon: '🎁', color: '#ec4899' },
-          { label: 'Kâr', value: formatCurrency(data?.summary?.totalProfit || 0), icon: '💵', color: (data?.summary?.totalProfit || 0) >= 0 ? '#10b981' : '#ef4444' },
           { label: 'İadeler', value: formatCurrency(data?.summary?.totalRefunds || 0), icon: '↩️', color: '#ef4444' }
         ].map((stat, i) => (
           <div key={i} style={{ backgroundColor: '#1e293b', borderRadius: '1rem', padding: '1rem', border: '1px solid #334155', position: 'relative', overflow: 'hidden' }}>
