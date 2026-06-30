@@ -47,7 +47,11 @@ export default function LotteryPage() {
 
       // Kategori filtresi
       if (selectedCategory !== 'all') {
-        allUsers = allUsers.filter(u => u.category === selectedCategory)
+        allUsers = allUsers.filter(u => {
+          // Mağaza müdürü her kategoride yer alsın
+          if (u.role === 'MANAGER') return true
+          return u.category === selectedCategory
+        })
       }
 
       const colors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#84cc16']
