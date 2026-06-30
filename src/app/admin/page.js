@@ -2,12 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
-import { collection, query, getDocs, addDoc, doc, setDoc, updateDoc, deleteDoc, where } from 'firebase/firestore'
+import { collection, query, getDocs, addDoc, doc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as firebaseSignOut } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
 import { formatCurrency } from '@/lib/utils'
-import LotteryWheel from '@/components/LotteryWheel'
 
 export default function AdminPage() {
   const { user } = useAuth()
@@ -20,52 +19,8 @@ export default function AdminPage() {
   const [editingUser, setEditingUser] = useState(null)
   const [newStore, setNewStore] = useState({ name: '', address: '', phone: '', monthlyQuota: '' })
   const [newUser, setNewUser] = useState({ salesCode: '', email: '', password: '', name: '', role: 'STAFF', storeId: '', monthlyQuota: '' })
-  const [activeLottery, setActiveLottery] = useState(null)
 
-  useEffect(() => { if (user && ['ADMIN', 'MANAGER'].includes(user.role)) { fetchData(); fetchActiveLottery() } }, [user])
-
-  const fetchActiveLottery = async () => {
-    try {
-      const now = new Date()
-      const todayStr = now.toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' })
-      const snapshot = await getDocs(query(collection(db, 'lottery'), where('date', '==', todayStr)))
-      if (!snapshot.empty) {
-        setActiveLottery({ id: snapshot.docs[0].id, ...snapshot.docs[0].data() })
-      } else {
-        setActiveLottery(null)
-      }
-    } catch (error) { console.error(error) }
-  }
-
-  const handleLotteryConfirm = async (winner) => {
-    try {
-      const now = new Date()
-      const todayStr = now.toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' })
-      const midnight = new Date(now)
-      midnight.setHours(24, 0, 0, 0)
-
-      if (activeLottery) {
-        await updateDoc(doc(db, 'lottery', activeLottery.id), { winner: winner.name, activatedAt: now.toISOString(), isActive: true })
-      } else {
-        await addDoc(collection(db, 'lottery'), {
-          date: todayStr, winner: winner.name, activatedAt: now.toISOString(),
-          expiresAt: midnight.toISOString(), isActive: true, createdBy: user.name || user.email
-        })
-      }
-      fetchActiveLottery()
-      alert(`🏆 ${winner.name} kazanan olarak ilan edildi!`)
-    } catch (error) { alert('Hata: ' + error.message) }
-  }
-
-  const handleLotteryEnd = async () => {
-    try {
-      if (activeLottery) {
-        await updateDoc(doc(db, 'lottery', activeLottery.id), { isActive: false })
-        setActiveLottery(null)
-        alert('Çekiliş sona erdi!')
-      }
-    } catch (error) { alert('Hata: ' + error.message) }
-  }
+  useEffect(() => { if (user && ['ADMIN', 'MANAGER'].includes(user.role)) fetchData() }, [user])
 
   const fetchData = async () => {
     try {
@@ -233,31 +188,6 @@ export default function AdminPage() {
                 </div>
               </div>
             ))}
-          </div>
-
-          {/* ÇEKİLİŞ BÖLÜMÜ */}
-          <div style={{ marginTop: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc' }}>🎰 Çekiliş</h3>
-              {activeLottery && activeLottery.isActive && (
-                <button onClick={handleLotteryEnd} style={{
-                  padding: '0.375rem 0.875rem', borderRadius: '0.5rem', fontSize: '12px', fontWeight: '600',
-                  backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)',
-                  cursor: 'pointer'
-                }}>⏹️ Bitir</button>
-              )}
-            </div>
-
-            {activeLottery && activeLottery.isActive && (
-              <div style={{ backgroundColor: '#0f172a', borderRadius: '0.75rem', padding: '1rem', border: '1px solid #10b981', marginBottom: '1rem' }}>
-                <div style={{ fontSize: '14px', fontWeight: '700', color: '#10b981' }}>🏆 Aktif Çekiliş</div>
-                <div style={{ fontSize: '14px', color: '#f8fafc', marginTop: '0.25rem' }}>Kazanan: <strong>{activeLottery.winner}</strong></div>
-              </div>
-            )}
-
-            <div className="card">
-              <LotteryWheel onWinner={handleLotteryConfirm} />
-            </div>
           </div>
         </div>
       )}
