@@ -6,13 +6,6 @@ import { collection, query, where, getDocs, addDoc, updateDoc, doc } from 'fireb
 import { db } from '@/lib/firebase'
 import LotteryWheel from '@/components/LotteryWheel'
 
-const CATEGORY_COLORS = {
-  'Giriş kat': '#3b82f6',
-  'Züccaciye': '#8b5cf6',
-  'Kasa': '#10b981',
-  'Mobilya': '#f59e0b'
-}
-
 export default function LotteryPage() {
   const { user } = useAuth()
   const [activeLottery, setActiveLottery] = useState(null)
@@ -54,7 +47,7 @@ export default function LotteryPage() {
 
       // Kategori filtresi
       if (selectedCategory !== 'all') {
-        allUsers = allUsers.filter(u => u.storeId === selectedCategory)
+        allUsers = allUsers.filter(u => u.category === selectedCategory)
       }
 
       const colors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#84cc16']
@@ -65,7 +58,7 @@ export default function LotteryPage() {
         color: colors[i % colors.length],
         emoji: emojis[u.role] || '👤',
         role: u.role === 'ADMIN' ? 'Yönetici' : u.role === 'MANAGER' ? 'Müdür' : 'Personel',
-        storeId: u.storeId || null
+        category: u.category || 'Kategorisiz'
       })))
     } catch (error) { console.error(error) }
   }
@@ -170,17 +163,21 @@ export default function LotteryPage() {
             color: selectedCategory === 'all' ? '#c4b5fd' : '#94a3b8',
             cursor: 'pointer', transition: 'all 0.2s ease'
           }}>👥 Tümü ({participants.length})</button>
-          {stores.map(s => {
-            const count = participants.filter(p => p.storeId === s.id).length
-            const color = CATEGORY_COLORS[s.name] || '#64748b'
+          {[
+            { name: 'Giriş kat', icon: '🚪', color: '#3b82f6' },
+            { name: 'Züccaciye', icon: '🍳', color: '#8b5cf6' },
+            { name: 'Kasa', icon: '🗄️', color: '#10b981' },
+            { name: 'Mobilya', icon: '🛋️', color: '#f59e0b' }
+          ].map(cat => {
+            const count = participants.filter(p => p.category === cat.name).length
             return (
-              <button key={s.id} onClick={() => setSelectedCategory(s.id)} style={{
+              <button key={cat.name} onClick={() => setSelectedCategory(cat.name)} style={{
                 padding: '0.5rem 1rem', borderRadius: '9999px', fontSize: '13px', fontWeight: '600',
-                border: selectedCategory === s.id ? `2px solid ${color}` : '1px solid #475569',
-                backgroundColor: selectedCategory === s.id ? `${color}20` : 'transparent',
-                color: selectedCategory === s.id ? color : '#94a3b8',
+                border: selectedCategory === cat.name ? `2px solid ${cat.color}` : '1px solid #475569',
+                backgroundColor: selectedCategory === cat.name ? `${cat.color}20` : 'transparent',
+                color: selectedCategory === cat.name ? cat.color : '#94a3b8',
                 cursor: 'pointer', transition: 'all 0.2s ease'
-              }}>{s.name} ({count})</button>
+              }}>{cat.icon} {cat.name} ({count})</button>
             )
           })}
         </div>
@@ -197,7 +194,7 @@ export default function LotteryPage() {
           <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc' }}>👥 Katılımcılar ({participants.length})</h3>
           {selectedCategory !== 'all' && (
             <span style={{ fontSize: '12px', color: '#8b5cf6', fontWeight: '600', padding: '0.25rem 0.75rem', borderRadius: '9999px', backgroundColor: 'rgba(139, 92, 246, 0.15)' }}>
-              {stores.find(s => s.id === selectedCategory)?.name || 'Kategori'}
+              {selectedCategory}
             </span>
           )}
         </div>
@@ -225,7 +222,7 @@ export default function LotteryPage() {
                   }}>{p.emoji}</div>
                   <div>
                     <div style={{ fontSize: '13px', fontWeight: '600', color: '#f8fafc' }}>{p.name}</div>
-                    <div style={{ fontSize: '11px', color: p.color }}>{p.role}</div>
+                    <div style={{ fontSize: '11px', color: p.color }}>{p.role} • {p.category}</div>
                   </div>
                   {isWinner && <div style={{ marginLeft: 'auto', fontSize: '16px' }}>🏆</div>}
                 </div>

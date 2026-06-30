@@ -18,7 +18,30 @@ export default function AdminPage() {
   const [showAddUser, setShowAddUser] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
   const [newStore, setNewStore] = useState({ name: '', address: '', phone: '', monthlyQuota: '' })
-  const [newUser, setNewUser] = useState({ salesCode: '', email: '', password: '', name: '', role: 'STAFF', storeId: '', monthlyQuota: '' })
+  const [newUser, setNewUser] = useState({ salesCode: '', email: '', password: '', name: '', role: 'STAFF', storeId: '', monthlyQuota: '', category: '' })
+
+  const CATEGORY_MAP = {
+    'Emre YALIMKILINÇ': 'Giriş kat', 'Derya DEMİR': 'Giriş kat', 'Sevim TEKİN': 'Giriş kat',
+    'Onur VARAN': 'Giriş kat', 'Merve KARAASLAN': 'Giriş kat', 'Fatih': 'Giriş kat',
+    'Seda SOYDAN': 'Kasa', 'Şennur ŞAHİN': 'Kasa', 'Betül Merve GÜNGÖR': 'Kasa',
+    'Bilge': 'Züccaciye', 'ELİF DEMİR': 'Züccaciye',
+    'Rabia ÇALHAN': 'Mobilya', 'Nurdagül MENEKŞE': 'Mobilya'
+  }
+
+  const handleBulkCategorize = async () => {
+    try {
+      let updated = 0
+      for (const u of users) {
+        const cat = CATEGORY_MAP[u.name]
+        if (cat && u.category !== cat) {
+          await updateDoc(doc(db, 'user', u.id), { category: cat })
+          updated++
+        }
+      }
+      fetchData()
+      alert(`${updated} kullanıcının kategorisi güncellendi!`)
+    } catch (error) { alert('Hata: ' + error.message) }
+  }
 
   useEffect(() => { if (user && ['ADMIN', 'MANAGER'].includes(user.role)) fetchData() }, [user])
 
@@ -59,6 +82,7 @@ export default function AdminPage() {
         salesCode: newUser.salesCode,
         role: newUser.role, 
         storeId: newUser.storeId,
+        category: newUser.category,
         monthlyQuota: parseFloat(newUser.monthlyQuota) || 0,
         createdAt: new Date().toISOString() 
       })
@@ -66,7 +90,7 @@ export default function AdminPage() {
       setPendingAdminEmail(currentAdminEmail)
       setShowReauthModal(true)
       setShowAddUser(false)
-      setNewUser({ salesCode: '', email: '', password: '', name: '', role: 'STAFF', storeId: '', monthlyQuota: '' })
+      setNewUser({ salesCode: '', email: '', password: '', name: '', role: 'STAFF', storeId: '', monthlyQuota: '', category: '' })
       fetchData()
     } catch (error) { alert('Hata: ' + error.message) }
   }
@@ -202,6 +226,11 @@ export default function AdminPage() {
           }}>
             {showAddUser ? '✕ Kapat' : '➕ Personel Ekle'}
           </button>
+          <button onClick={handleBulkCategorize} style={{
+            width: '100%', marginBottom: '1rem', padding: '0.875rem',
+            background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+            color: 'white', fontWeight: '600', borderRadius: '0.75rem', border: 'none', cursor: 'pointer'
+          }}>🏷️ Kategorileri Güncelle</button>
 
           {showAddUser && (
             <div className="card">
@@ -231,6 +260,16 @@ export default function AdminPage() {
                   <label className="form-label">Mağaza</label>
                   <select value={newUser.storeId} onChange={(e) => setNewUser(p => ({ ...p, storeId: e.target.value }))} className="form-input">
                     <option value="">🏪 Mağaza Seçin</option>{stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">🏷️ Kategori</label>
+                  <select value={newUser.category} onChange={(e) => setNewUser(p => ({ ...p, category: e.target.value }))} className="form-input">
+                    <option value="">Kategori Seçin</option>
+                    <option value="Giriş kat">🚪 Giriş kat</option>
+                    <option value="Züccaciye">🍳 Züccaciye</option>
+                    <option value="Kasa">🗄️ Kasa</option>
+                    <option value="Mobilya">🛋️ Mobilya</option>
                   </select>
                 </div>
                 <div className="form-group">
@@ -272,6 +311,16 @@ export default function AdminPage() {
                   </select>
                 </div>
                 <div className="form-group">
+                  <label className="form-label">🏷️ Kategori</label>
+                  <select value={editingUser.category || ''} onChange={(e) => setEditingUser(p => ({ ...p, category: e.target.value }))} className="form-input">
+                    <option value="">Kategori Seçin</option>
+                    <option value="Giriş kat">🚪 Giriş kat</option>
+                    <option value="Züccaciye">🍳 Züccaciye</option>
+                    <option value="Kasa">🗄️ Kasa</option>
+                    <option value="Mobilya">🛋️ Mobilya</option>
+                  </select>
+                </div>
+                <div className="form-group">
                   <label className="form-label">🎯 Aylık Kota (TL)</label>
                   <input type="number" placeholder="Örn: 500000" value={editingUser.monthlyQuota || ''} onChange={(e) => setEditingUser(p => ({ ...p, monthlyQuota: e.target.value }))} className="form-input" />
                 </div>
@@ -297,6 +346,11 @@ export default function AdminPage() {
                     <div style={{ fontSize: '12px', color: '#f59e0b', marginTop: '0.25rem' }}>
                       🎯 Aylık Kota: <span style={{ fontWeight: '600' }}>{formatCurrency(u.monthlyQuota || 0)}</span>
                     </div>
+                    {u.category && (
+                      <div style={{ fontSize: '12px', color: '#8b5cf6', marginTop: '0.25rem' }}>
+                        🏷️ Kategori: <span style={{ fontWeight: '600' }}>{u.category}</span>
+                      </div>
+                    )}
                   </div>
                   <div style={{
                     padding: '0.375rem 0.75rem', borderRadius: '9999px',
