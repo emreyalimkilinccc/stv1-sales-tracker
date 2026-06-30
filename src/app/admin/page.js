@@ -24,7 +24,7 @@ export default function AdminPage() {
     'Emre YALIMKILINÇ': 'Giriş kat', 'Derya DEMİR': 'Giriş kat', 'Sevim TEKİN': 'Giriş kat',
     'Onur VARAN': 'Giriş kat', 'Merve KARAASLAN': 'Giriş kat', 'Fatih': 'Giriş kat',
     'Seda SOYDAN': 'Kasa', 'Şennur ŞAHİN': 'Kasa', 'Betül Merve GÜNGÖR': 'Kasa', 'Özge KEL': 'Kasa',
-    'Bilge': 'Züccaciye', 'Bilge TURAN': 'Züccaciye', 'ELİF DEMİR': 'Züccaciye',
+    'Bilge TURAN': 'Züccaciye', 'ELİF DEMİR': 'Züccaciye',
     'Rabia ÇALHAN': 'Mobilya', 'Nurdagül MENEKŞE': 'Mobilya'
   }
 
