@@ -6,27 +6,74 @@ import { collection, query, where, getDocs, addDoc, updateDoc, doc } from 'fireb
 import { db } from '@/lib/firebase'
 import LotteryWheel from '@/components/LotteryWheel'
 
-const PARTICIPANTS = [
-  { name: 'Emre YALIMKILINÇ', color: '#3b82f6', emoji: '👨‍💼' },
-  { name: 'Derya DEMİR', color: '#8b5cf6', emoji: '👩‍💼' },
-  { name: 'Sevim TEKİN', color: '#10b981', emoji: '👩‍💻' },
-  { name: 'Onur VARAN', color: '#f59e0b', emoji: '👨‍💻' },
-  { name: 'Merve KARAASLAN', color: '#ef4444', emoji: '👩‍💻' }
-]
+const CATEGORY_COLORS = {
+  'Giriş kat': '#3b82f6',
+  'Züccaciye': '#8b5cf6',
+  'Kasa': '#10b981',
+  'Mobilya': '#f59e0b'
+}
 
 export default function LotteryPage() {
   const { user } = useAuth()
   const [activeLottery, setActiveLottery] = useState(null)
   const [loading, setLoading] = useState(true)
   const [now, setNow] = useState(new Date())
+  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [participants, setParticipants] = useState([])
+  const [stores, setStores] = useState([])
 
   const canManage = user && (user.role === 'ADMIN' || user.role === 'MANAGER')
 
   useEffect(() => {
-    if (user) fetchActiveLottery()
+    if (user && canManage) { fetchActiveLottery(); fetchStores() }
     const timer = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(timer)
   }, [user])
+
+  useEffect(() => {
+    if (canManage) fetchParticipants()
+  }, [selectedCategory, stores])
+
+  const fetchStores = async () => {
+    try {
+      const snapshot = await getDocs(collection(db, 'stores'))
+      setStores(snapshot.docs.map(d => ({ id: d.id, ...d.data() })))
+    } catch (error) { console.error(error) }
+  }
+
+  const fetchParticipants = async () => {
+    try {
+      const snapshot = await getDocs(collection(db, 'user'))
+      let allUsers = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
+
+      // Sales kodu olmayan admin çekilişe katılmasın
+      allUsers = allUsers.filter(u => {
+        if (u.role === 'ADMIN' && (!u.salesCode || u.salesCode.trim() === '')) return false
+        return true
+      })
+
+      // Kategori filtresi
+      if (selectedCategory !== 'all') {
+        allUsers = allUsers.filter(u => u.storeId === selectedCategory)
+      }
+
+      const colors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#84cc16']
+      const emojis = { ADMIN: '👑', MANAGER: '👔', STAFF: '👤' }
+
+      setParticipants(allUsers.map((u, i) => ({
+        name: u.name || 'Bilinmeyen',
+        color: colors[i % colors.length],
+        emoji: emojis[u.role] || '👤',
+        role: u.role === 'ADMIN' ? 'Yönetici' : u.role === 'MANAGER' ? 'Müdür' : 'Personel',
+        storeId: u.storeId || null
+      })))
+    } catch (error) { console.error(error) }
+  }
+
+  const getStoreName = (storeId) => {
+    const store = stores.find(s => s.id === storeId)
+    return store ? store.name : 'Mağazasız'
+  }
 
   const fetchActiveLottery = async () => {
     try {
@@ -47,11 +94,15 @@ export default function LotteryPage() {
       const midnight = new Date(nowDate); midnight.setHours(24, 0, 0, 0)
 
       if (activeLottery) {
-        await updateDoc(doc(db, 'lottery', activeLottery.id), { winner: winner.name, activatedAt: nowDate.toISOString(), isActive: true })
+        await updateDoc(doc(db, 'lottery', activeLottery.id), {
+          winner: winner.name, activatedAt: nowDate.toISOString(), isActive: true,
+          category: selectedCategory
+        })
       } else {
         await addDoc(collection(db, 'lottery'), {
           date: todayStr, winner: winner.name, activatedAt: nowDate.toISOString(),
-          expiresAt: midnight.toISOString(), isActive: true, createdBy: user.name || user.email
+          expiresAt: midnight.toISOString(), isActive: true, createdBy: user.name || user.email,
+          category: selectedCategory
         })
       }
       fetchActiveLottery()
@@ -105,37 +156,83 @@ export default function LotteryPage() {
         </div>
       )}
 
+      {/* Kategori Filtresi */}
+      <div className="card" style={{ marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+          <span style={{ fontSize: '16px' }}>🏷️</span>
+          <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#f8fafc' }}>Kategori Seçin</h3>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <button onClick={() => setSelectedCategory('all')} style={{
+            padding: '0.5rem 1rem', borderRadius: '9999px', fontSize: '13px', fontWeight: '600',
+            border: selectedCategory === 'all' ? '2px solid #8b5cf6' : '1px solid #475569',
+            backgroundColor: selectedCategory === 'all' ? 'rgba(139, 92, 246, 0.2)' : 'transparent',
+            color: selectedCategory === 'all' ? '#c4b5fd' : '#94a3b8',
+            cursor: 'pointer', transition: 'all 0.2s ease'
+          }}>👥 Tümü ({participants.length})</button>
+          {stores.map(s => {
+            const count = participants.filter(p => p.storeId === s.id).length
+            const color = CATEGORY_COLORS[s.name] || '#64748b'
+            return (
+              <button key={s.id} onClick={() => setSelectedCategory(s.id)} style={{
+                padding: '0.5rem 1rem', borderRadius: '9999px', fontSize: '13px', fontWeight: '600',
+                border: selectedCategory === s.id ? `2px solid ${color}` : '1px solid #475569',
+                backgroundColor: selectedCategory === s.id ? `${color}20` : 'transparent',
+                color: selectedCategory === s.id ? color : '#94a3b8',
+                cursor: 'pointer', transition: 'all 0.2s ease'
+              }}>{s.name} ({count})</button>
+            )
+          })}
+        </div>
+      </div>
+
       {/* Çekiliş Çarkı */}
       <div className="card">
-        <LotteryWheel onWinner={handleConfirm} />
+        <LotteryWheel onWinner={handleConfirm} participants={participants} />
       </div>
 
       {/* Katılımcılar */}
       <div className="card" style={{ marginTop: '1rem' }}>
-        <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>👥 Katılımcılar</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.75rem' }}>
-          {PARTICIPANTS.map(p => {
-            const isWinner = activeLottery?.isActive && activeLottery?.winner === p.name
-            return (
-              <div key={p.name} style={{
-                backgroundColor: isWinner ? `${p.color}15` : '#0f172a',
-                borderRadius: '0.75rem', padding: '0.875rem',
-                border: `2px solid ${isWinner ? p.color : `${p.color}30`}`,
-                display: 'flex', alignItems: 'center', gap: '0.625rem',
-                boxShadow: isWinner ? `0 0 15px ${p.color}30` : 'none'
-              }}>
-                <div style={{
-                  width: '36px', height: '36px', borderRadius: '50%',
-                  backgroundColor: `${p.color}20`, border: `2px solid ${p.color}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '16px'
-                }}>{p.emoji}</div>
-                <div style={{ fontSize: '13px', fontWeight: '600', color: '#f8fafc' }}>{p.name}</div>
-                {isWinner && <div style={{ marginLeft: 'auto', fontSize: '16px' }}>🏆</div>}
-              </div>
-            )
-          })}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc' }}>👥 Katılımcılar ({participants.length})</h3>
+          {selectedCategory !== 'all' && (
+            <span style={{ fontSize: '12px', color: '#8b5cf6', fontWeight: '600', padding: '0.25rem 0.75rem', borderRadius: '9999px', backgroundColor: 'rgba(139, 92, 246, 0.15)' }}>
+              {stores.find(s => s.id === selectedCategory)?.name || 'Kategori'}
+            </span>
+          )}
         </div>
+        {participants.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8', fontSize: '14px' }}>
+            Bu kategoride katılımcı bulunmuyor
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.75rem' }}>
+            {participants.map(p => {
+              const isWinner = activeLottery?.isActive && activeLottery?.winner === p.name
+              return (
+                <div key={p.name} style={{
+                  backgroundColor: isWinner ? `${p.color}15` : '#0f172a',
+                  borderRadius: '0.75rem', padding: '0.875rem',
+                  border: `2px solid ${isWinner ? p.color : `${p.color}30`}`,
+                  display: 'flex', alignItems: 'center', gap: '0.625rem',
+                  boxShadow: isWinner ? `0 0 15px ${p.color}30` : 'none'
+                }}>
+                  <div style={{
+                    width: '36px', height: '36px', borderRadius: '50%',
+                    backgroundColor: `${p.color}20`, border: `2px solid ${p.color}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '16px'
+                  }}>{p.emoji}</div>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#f8fafc' }}>{p.name}</div>
+                    <div style={{ fontSize: '11px', color: p.color }}>{p.role}</div>
+                  </div>
+                  {isWinner && <div style={{ marginLeft: 'auto', fontSize: '16px' }}>🏆</div>}
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 
-const PARTICIPANTS = [
+const FALLBACK_PARTICIPANTS = [
   { name: 'Emre YALIMKILINÇ', color: '#3b82f6' },
   { name: 'Derya DEMİR', color: '#8b5cf6' },
   { name: 'Sevim TEKİN', color: '#10b981' },
@@ -10,7 +10,8 @@ const PARTICIPANTS = [
   { name: 'Merve KARAASLAN', color: '#ef4444' }
 ]
 
-export default function LotteryWheel({ onWinner }) {
+export default function LotteryWheel({ onWinner, participants: propParticipants }) {
+  const PARTICIPANTS = propParticipants && propParticipants.length > 0 ? propParticipants : FALLBACK_PARTICIPANTS
   const [spinning, setSpinning] = useState(false)
   const [winner, setWinner] = useState(null)
   const [currentName, setCurrentName] = useState('')
@@ -49,7 +50,7 @@ export default function LotteryWheel({ onWinner }) {
   }
 
   const spin = () => {
-    if (spinning) return
+    if (spinning || PARTICIPANTS.length < 2) return
     setSpinning(true)
     setShowResult(false)
     setWinner(null)
@@ -84,6 +85,14 @@ export default function LotteryWheel({ onWinner }) {
     return () => { if (intervalRef.current) clearTimeout(intervalRef.current) }
   }, [])
 
+  useEffect(() => {
+    setWinner(null)
+    setShowResult(false)
+    setCurrentName('')
+  }, [propParticipants])
+
+  const segmentAngle = 360 / PARTICIPANTS.length
+
   return (
     <div style={{ textAlign: 'center' }}>
       {/* Çark */}
@@ -94,18 +103,20 @@ export default function LotteryWheel({ onWinner }) {
         boxShadow: spinning ? '0 0 40px rgba(59, 130, 246, 0.5)' : '0 0 20px rgba(0,0,0,0.3)',
         transition: 'box-shadow 0.3s ease'
       }}>
-        {/* İsimler - Sabit Pozisyonda */}
+        {/* İsimler */}
         {PARTICIPANTS.map((p, i) => {
-          const angle = (i * 360 / PARTICIPANTS.length) + (360 / PARTICIPANTS.length / 2)
+          const angle = (i * segmentAngle) + (segmentAngle / 2)
           const rad = (angle * Math.PI) / 180
-          const x = 140 + Math.cos(rad) * 90
-          const y = 140 + Math.sin(rad) * 90
+          const radius = PARTICIPANTS.length <= 6 ? 90 : PARTICIPANTS.length <= 10 ? 80 : 70
+          const x = 140 + Math.cos(rad) * radius
+          const y = 140 + Math.sin(rad) * radius
           return (
-            <div key={p.name} style={{
+            <div key={p.name + i} style={{
               position: 'absolute',
               left: `${x}px`, top: `${y}px`,
               transform: 'translate(-50%, -50%)',
-              fontSize: '10px', fontWeight: '700', color: '#fff',
+              fontSize: PARTICIPANTS.length > 8 ? '8px' : '10px',
+              fontWeight: '700', color: '#fff',
               textShadow: '0 1px 3px rgba(0,0,0,0.8)',
               whiteSpace: 'nowrap'
             }}>
@@ -142,15 +153,15 @@ export default function LotteryWheel({ onWinner }) {
         marginBottom: '1.5rem', minHeight: '36px',
         animation: spinning ? 'pulse 0.1s infinite' : 'none'
       }}>
-        {spinning ? currentName : winner ? `🏆 ${winner.name}` : '🎯 Çarkı Döndür'}
+        {spinning ? currentName : winner ? `🏆 ${winner.name}` : PARTICIPANTS.length < 2 ? '⚠️ En az 2 katılımcı gerekli' : '🎯 Çarkı Döndür'}
       </div>
 
       {/* Butonlar */}
       {!winner && (
-        <button onClick={spin} disabled={spinning} style={{
+        <button onClick={spin} disabled={spinning || PARTICIPANTS.length < 2} style={{
           padding: '1rem 3rem', borderRadius: '9999px', fontSize: '18px', fontWeight: '700',
-          background: spinning ? 'linear-gradient(135deg, #64748b, #475569)' : 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
-          color: '#fff', border: 'none', cursor: spinning ? 'not-allowed' : 'pointer',
+          background: spinning || PARTICIPANTS.length < 2 ? 'linear-gradient(135deg, #64748b, #475569)' : 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+          color: '#fff', border: 'none', cursor: spinning || PARTICIPANTS.length < 2 ? 'not-allowed' : 'pointer',
           boxShadow: spinning ? 'none' : '0 4px 20px rgba(139, 92, 246, 0.4)',
           transition: 'all 0.3s ease'
         }}>
