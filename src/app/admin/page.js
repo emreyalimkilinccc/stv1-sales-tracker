@@ -346,19 +346,26 @@ export default function AdminPage() {
                     <div style={{ fontSize: '12px', color: '#f59e0b', marginTop: '0.25rem' }}>
                       🎯 Aylık Kota: <span style={{ fontWeight: '600' }}>{formatCurrency(u.monthlyQuota || 0)}</span>
                     </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.375rem' }}>
+                    <div style={{
+                      padding: '0.375rem 0.75rem', borderRadius: '9999px',
+                      fontSize: '11px', fontWeight: '600',
+                      backgroundColor: u.role === 'ADMIN' ? 'rgba(239, 68, 68, 0.15)' : u.role === 'MANAGER' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+                      color: u.role === 'ADMIN' ? '#fca5a5' : u.role === 'MANAGER' ? '#fcd34d' : '#93c5fd'
+                    }}>
+                      {u.role === 'ADMIN' ? 'Yönetici' : u.role === 'MANAGER' ? 'Mağaza Müdürü' : 'Personel'}
+                    </div>
                     {u.category && (
-                      <div style={{ fontSize: '12px', color: '#8b5cf6', marginTop: '0.25rem' }}>
-                        🏷️ Kategori: <span style={{ fontWeight: '600' }}>{u.category}</span>
+                      <div style={{
+                        padding: '0.25rem 0.625rem', borderRadius: '9999px',
+                        fontSize: '10px', fontWeight: '600',
+                        backgroundColor: 'rgba(139, 92, 246, 0.15)', color: '#c4b5fd',
+                        border: '1px solid rgba(139, 92, 246, 0.3)'
+                      }}>
+                        🏷️ {u.category}
                       </div>
                     )}
-                  </div>
-                  <div style={{
-                    padding: '0.375rem 0.75rem', borderRadius: '9999px',
-                    fontSize: '11px', fontWeight: '600',
-                    backgroundColor: u.role === 'ADMIN' ? 'rgba(239, 68, 68, 0.15)' : u.role === 'MANAGER' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(59, 130, 246, 0.15)',
-                    color: u.role === 'ADMIN' ? '#fca5a5' : u.role === 'MANAGER' ? '#fcd34d' : '#93c5fd'
-                  }}>
-                    {u.role === 'ADMIN' ? 'Yönetici' : u.role === 'MANAGER' ? 'Mağaza Müdürü' : 'Personel'}
                   </div>
                 </div>
                 <div className="flex justify-between items-center" style={{ borderTop: '1px solid #334155', paddingTop: '0.75rem' }}>
