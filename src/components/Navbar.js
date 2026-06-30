@@ -58,14 +58,12 @@ export default function Navbar() {
     { href: '/dashboard', label: 'Veriler', icon: '📊' },
     { href: '/sales', label: 'Satış', icon: '💰' },
     { href: '/reports', label: 'Raporlar', icon: '📈' },
-    { href: '/lottery', label: 'Çekiliş', icon: '🎰', adminOnly: true },
     { href: '/admin', label: 'Yönetim', icon: '⚙️' },
   ]
 
   const filteredItems = navItems.filter(item => {
     if (item.href === '/reports' && !['MANAGER', 'ADMIN'].includes(user.role)) return false
     if (item.href === '/admin' && !['MANAGER', 'ADMIN'].includes(user.role)) return false
-    if (item.adminOnly && !['MANAGER', 'ADMIN'].includes(user.role)) return false
     return true
   })
 
