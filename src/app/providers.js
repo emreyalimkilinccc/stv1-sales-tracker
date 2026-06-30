@@ -2,6 +2,7 @@
 
 import { AuthProvider } from '@/lib/auth-context'
 import { useEffect } from 'react'
+import LotteryCelebration from '@/components/LotteryCelebration'
 
 export function Providers({ children }) {
   useEffect(() => {
@@ -13,6 +14,7 @@ export function Providers({ children }) {
   return (
     <AuthProvider>
       {children}
+      <LotteryCelebration />
     </AuthProvider>
   )
 }
