@@ -6,6 +6,14 @@ import { collection, query, where, getDocs, addDoc, updateDoc, doc } from 'fireb
 import { db } from '@/lib/firebase'
 import LotteryWheel from '@/components/LotteryWheel'
 
+const CATEGORY_MAP = {
+  'Emre YALIMKILINÇ': 'Giriş kat', 'Derya DEMİR': 'Giriş kat', 'Sevim TEKİN': 'Giriş kat',
+  'Onur VARAN': 'Giriş kat', 'Merve KARAASLAN': 'Giriş kat',
+  'Bilge TURAN': 'Züccaciye', 'ELİF DEMİR': 'Züccaciye',
+  'Rabia ÇALHAN': 'Mobilya', 'Nurdagül MENEKŞE': 'Mobilya',
+  'Seda SOYDAN': 'Kasa', 'Özge KEL': 'Kasa', 'Şennur ŞAHİN': 'Kasa', 'Betül Merve GÜNGÖR': 'Kasa'
+}
+
 export default function LotteryPage() {
   const { user } = useAuth()
   const [activeLottery, setActiveLottery] = useState(null)
@@ -62,7 +70,7 @@ export default function LotteryPage() {
         color: colors[i % colors.length],
         emoji: emojis[u.role] || '👤',
         role: u.role === 'ADMIN' ? 'Yönetici' : u.role === 'MANAGER' ? 'Müdür' : 'Personel',
-        category: u.category || 'Kategorisiz'
+        category: u.category || CATEGORY_MAP[u.name] || 'Kategorisiz'
       })))
     } catch (error) { console.error(error) }
   }
