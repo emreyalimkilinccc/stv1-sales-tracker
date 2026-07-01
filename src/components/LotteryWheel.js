@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 
 const FALLBACK_PARTICIPANTS = [
   { name: 'Emre YALIMKILINÇ', color: '#3b82f6' },
@@ -14,154 +14,230 @@ export default function LotteryWheel({ onWinner, participants: propParticipants 
   const PARTICIPANTS = propParticipants && propParticipants.length > 0 ? propParticipants : FALLBACK_PARTICIPANTS
   const [spinning, setSpinning] = useState(false)
   const [winner, setWinner] = useState(null)
-  const [currentName, setCurrentName] = useState('')
   const [showResult, setShowResult] = useState(false)
-  const intervalRef = useRef(null)
+  const [rotation, setRotation] = useState(0)
+  const [highlightIdx, setHighlightIdx] = useState(-1)
+  const audioCtxRef = useRef(null)
+  const tickCountRef = useRef(0)
+  const tickTimerRef = useRef(null)
 
-  const playTickSound = () => {
+  const segmentAngle = 360 / PARTICIPANTS.length
+
+  const getAudioCtx = useCallback(() => {
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)()
+    }
+    return audioCtxRef.current
+  }, [])
+
+  const playTick = useCallback(() => {
     try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)()
+      const ctx = getAudioCtx()
       const osc = ctx.createOscillator()
       const gain = ctx.createGain()
       osc.connect(gain); gain.connect(ctx.destination)
-      osc.frequency.value = 800 + Math.random() * 400
-      osc.type = 'sine'
-      gain.gain.value = 0.1
-      osc.start(); osc.stop(ctx.currentTime + 0.05)
+      osc.frequency.value = 900 + Math.random() * 300
+      osc.type = 'triangle'
+      gain.gain.value = 0.08
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06)
+      osc.start(); osc.stop(ctx.currentTime + 0.06)
     } catch (e) {}
-  }
+  }, [getAudioCtx])
 
-  const playWinSound = () => {
+  const playWin = useCallback(() => {
     try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)()
-      const notes = [523, 659, 784, 1047]
-      notes.forEach((freq, i) => {
+      const ctx = getAudioCtx()
+      const melody = [523, 659, 784, 1047, 1319, 1568]
+      melody.forEach((freq, i) => {
         const osc = ctx.createOscillator()
         const gain = ctx.createGain()
         osc.connect(gain); gain.connect(ctx.destination)
         osc.frequency.value = freq
         osc.type = 'sine'
         gain.gain.value = 0.15
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5 + i * 0.2)
-        osc.start(ctx.currentTime + i * 0.15)
-        osc.stop(ctx.currentTime + 0.5 + i * 0.15)
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6 + i * 0.12)
+        osc.start(ctx.currentTime + i * 0.1)
+        osc.stop(ctx.currentTime + 0.6 + i * 0.12)
       })
     } catch (e) {}
-  }
+  }, [getAudioCtx])
 
-  const spin = () => {
+  const spin = useCallback(() => {
     if (spinning || PARTICIPANTS.length < 2) return
     setSpinning(true)
     setShowResult(false)
     setWinner(null)
+    setHighlightIdx(-1)
 
-    let speed = 50
-    let count = 0
-    const totalSpins = 40 + Math.floor(Math.random() * 20)
+    const winnerIdx = Math.floor(Math.random() * PARTICIPANTS.length)
+    const targetAngle = winnerIdx * segmentAngle
 
-    const tick = () => {
-      count++
-      const idx = count % PARTICIPANTS.length
-      setCurrentName(PARTICIPANTS[idx].name)
-      playTickSound()
+    const totalRotation = 360 * 10 + (360 - targetAngle - segmentAngle / 2)
+    const startRotation = rotation % 360
+    const finalRotation = rotation + totalRotation - startRotation + (360 - startRotation)
 
-      if (count < totalSpins) {
-        speed = 50 + (count / totalSpins) * 300
-        intervalRef.current = setTimeout(tick, speed)
+    setRotation(finalRotation)
+
+    const duration = 5000
+    const startTime = Date.now()
+    tickCountRef.current = 0
+
+    const tickInterval = () => {
+      const elapsed = Date.now() - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+
+      const currentAngle = (finalRotation - rotation) * eased
+      const currentIdx = Math.floor(((360 - (currentAngle % 360)) % 360) / segmentAngle) % PARTICIPANTS.length
+      setHighlightIdx(currentIdx)
+
+      const prevTick = Math.floor(progress * 30)
+      if (prevTick > tickCountRef.current) {
+        tickCountRef.current = prevTick
+        playTick()
+      }
+
+      if (progress < 1) {
+        tickTimerRef.current = requestAnimationFrame(tickInterval)
       } else {
-        const winnerIdx = Math.floor(Math.random() * PARTICIPANTS.length)
-        const winnerParticipant = PARTICIPANTS[winnerIdx]
-        setCurrentName(winnerParticipant.name)
-        setWinner(winnerParticipant)
+        setHighlightIdx(winnerIdx)
+        setWinner(PARTICIPANTS[winnerIdx])
         setSpinning(false)
-        playWinSound()
-        setTimeout(() => setShowResult(true), 500)
+        playWin()
+        setTimeout(() => setShowResult(true), 600)
       }
     }
-    tick()
-  }
+
+    tickTimerRef.current = requestAnimationFrame(tickInterval)
+  }, [spinning, PARTICIPANTS, segmentAngle, rotation, playTick, playWin])
 
   useEffect(() => {
-    return () => { if (intervalRef.current) clearTimeout(intervalRef.current) }
+    return () => { if (tickTimerRef.current) cancelAnimationFrame(tickTimerRef.current) }
   }, [])
 
   useEffect(() => {
     setWinner(null)
     setShowResult(false)
-    setCurrentName('')
+    setHighlightIdx(-1)
   }, [propParticipants])
 
-  const segmentAngle = 360 / PARTICIPANTS.length
+  const SIZE = 300
+  const CENTER = SIZE / 2
+  const WHEEL_R = SIZE / 2 - 5
+  const NAME_R = WHEEL_R * 0.65
 
   return (
     <div style={{ textAlign: 'center' }}>
-      {/* Çark */}
-      <div style={{
-        width: '280px', height: '280px', margin: '0 auto 1.5rem',
-        borderRadius: '50%', position: 'relative',
-        background: `conic-gradient(${PARTICIPANTS.map((p, i) => `${p.color} ${(i * 100 / PARTICIPANTS.length)}% ${((i + 1) * 100 / PARTICIPANTS.length)}%`).join(', ')})`,
-        boxShadow: spinning ? '0 0 40px rgba(59, 130, 246, 0.5)' : '0 0 20px rgba(0,0,0,0.3)',
-        transition: 'box-shadow 0.3s ease'
-      }}>
-        {/* İsimler */}
-        {PARTICIPANTS.map((p, i) => {
-          const angle = (i * segmentAngle) + (segmentAngle / 2)
-          const rad = (angle * Math.PI) / 180
-          const radius = PARTICIPANTS.length <= 6 ? 90 : PARTICIPANTS.length <= 10 ? 80 : 70
-          const x = 140 + Math.cos(rad) * radius
-          const y = 140 + Math.sin(rad) * radius
-          return (
-            <div key={p.name + i} style={{
-              position: 'absolute',
-              left: `${x}px`, top: `${y}px`,
-              transform: 'translate(-50%, -50%)',
-              fontSize: PARTICIPANTS.length > 8 ? '8px' : '10px',
-              fontWeight: '700', color: '#fff',
-              textShadow: '0 1px 3px rgba(0,0,0,0.8)',
-              whiteSpace: 'nowrap'
-            }}>
-              {p.name.split(' ')[0]}
-            </div>
-          )
-        })}
-        {/* Merkez */}
+      <div style={{ position: 'relative', width: `${SIZE}px`, height: `${SIZE + 20}px`, margin: '0 auto 1.5rem' }}>
+        {/* Ok - sabit üstte */}
+        <div style={{
+          position: 'absolute', top: 0, left: '50%',
+          transform: 'translateX(-50%)', zIndex: 10,
+          width: 0, height: 0,
+          borderLeft: '14px solid transparent', borderRight: '14px solid transparent',
+          borderTop: '26px solid #f59e0b',
+          filter: 'drop-shadow(0 2px 6px rgba(245, 158, 11, 0.5))'
+        }} />
+
+        {/* Dönen Çark */}
+        <div style={{
+          width: `${SIZE}px`, height: `${SIZE}px`,
+          borderRadius: '50%', position: 'relative',
+          transform: `rotate(${rotation}deg)`,
+          transition: spinning ? 'none' : 'transform 0.1s ease-out',
+          willChange: 'transform'
+        }}>
+          {/* Renkli dilimler */}
+          <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} style={{ position: 'absolute', top: 0, left: 0 }}>
+            {PARTICIPANTS.map((p, i) => {
+              const startAngle = (i * segmentAngle - 90) * (Math.PI / 180)
+              const endAngle = ((i + 1) * segmentAngle - 90) * (Math.PI / 180)
+              const x1 = CENTER + WHEEL_R * Math.cos(startAngle)
+              const y1 = CENTER + WHEEL_R * Math.sin(startAngle)
+              const x2 = CENTER + WHEEL_R * Math.cos(endAngle)
+              const y2 = CENTER + WHEEL_R * Math.sin(endAngle)
+              const largeArc = segmentAngle > 180 ? 1 : 0
+              return (
+                <g key={i}>
+                  <path
+                    d={`M ${CENTER} ${CENTER} L ${x1} ${y1} A ${WHEEL_R} ${WHEEL_R} 0 ${largeArc} 1 ${x2} ${y2} Z`}
+                    fill={p.color}
+                    stroke="#0f172a"
+                    strokeWidth="2"
+                  />
+                  {/* Çizgi */}
+                  <line x1={CENTER} y1={CENTER} x2={x2} y2={y2} stroke="#0f172a" strokeWidth="2" opacity="0.5" />
+                </g>
+              )
+            })}
+          </svg>
+
+          {/* İsimler - çarkla birlikte döner */}
+          {PARTICIPANTS.map((p, i) => {
+            const angle = (i * segmentAngle + segmentAngle / 2 - 90) * (Math.PI / 180)
+            const x = CENTER + NAME_R * Math.cos(angle)
+            const y = CENTER + NAME_R * Math.sin(angle)
+            const textAngle = i * segmentAngle + segmentAngle / 2
+            return (
+              <div key={p.name + i} style={{
+                position: 'absolute',
+                left: `${x}px`, top: `${y}px`,
+                transform: `translate(-50%, -50%) rotate(${textAngle}deg)`,
+                fontSize: PARTICIPANTS.length > 6 ? '9px' : '11px',
+                fontWeight: '800', color: '#fff',
+                textShadow: '0 1px 4px rgba(0,0,0,0.9)',
+                whiteSpace: 'nowrap', letterSpacing: '0.3px'
+              }}>
+                {p.name.split(' ')[0]}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Merkez daire - sabit */}
         <div style={{
           position: 'absolute', top: '50%', left: '50%',
           transform: 'translate(-50%, -50%)',
-          width: '60px', height: '60px', borderRadius: '50%',
-          backgroundColor: '#0f172a', border: '3px solid #334155',
+          width: '56px', height: '56px', borderRadius: '50%',
+          backgroundColor: '#0f172a', border: '3px solid #475569',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '24px', zIndex: 2
+          fontSize: '22px', zIndex: 5,
+          boxShadow: spinning ? '0 0 25px rgba(139,92,246,0.4)' : winner ? '0 0 25px rgba(16,185,129,0.4)' : '0 0 10px rgba(0,0,0,0.3)',
+          transition: 'box-shadow 0.3s ease'
         }}>
           {spinning ? '🎰' : winner ? '🏆' : '🎯'}
         </div>
-        {/* Ok */}
-        <div style={{
-          position: 'absolute', top: '-8px', left: '50%',
-          transform: 'translateX(-50%)',
-          width: 0, height: 0,
-          borderLeft: '12px solid transparent', borderRight: '12px solid transparent',
-          borderTop: '20px solid #f8fafc',
-          filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
-          zIndex: 3
-        }} />
       </div>
 
-      {/* Dönen İsim */}
+      {/* Seçilen İsim */}
       <div style={{
-        fontSize: '24px', fontWeight: '700', color: spinning ? '#f59e0b' : winner ? '#10b981' : '#f8fafc',
+        fontSize: '24px', fontWeight: '700',
+        color: spinning ? '#f59e0b' : winner ? '#10b981' : '#f8fafc',
         marginBottom: '1.5rem', minHeight: '36px',
-        animation: spinning ? 'pulse 0.1s infinite' : 'none'
+        transition: 'color 0.3s ease'
       }}>
-        {spinning ? currentName : winner ? `🏆 ${winner.name}` : PARTICIPANTS.length < 2 ? '⚠️ En az 2 katılımcı gerekli' : '🎯 Çarkı Döndür'}
+        {spinning && highlightIdx >= 0 ? (
+          <span style={{ color: PARTICIPANTS[highlightIdx]?.color || '#f59e0b' }}>
+            {PARTICIPANTS[highlightIdx]?.name}
+          </span>
+        ) : winner ? (
+          `🏆 ${winner.name}`
+        ) : PARTICIPANTS.length < 2 ? (
+          '⚠️ En az 2 katılımcı gerekli'
+        ) : (
+          '🎯 Çarkı Döndür'
+        )}
       </div>
 
-      {/* Butonlar */}
+      {/* Buton */}
       {!winner && (
         <button onClick={spin} disabled={spinning || PARTICIPANTS.length < 2} style={{
           padding: '1rem 3rem', borderRadius: '9999px', fontSize: '18px', fontWeight: '700',
-          background: spinning || PARTICIPANTS.length < 2 ? 'linear-gradient(135deg, #64748b, #475569)' : 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
-          color: '#fff', border: 'none', cursor: spinning || PARTICIPANTS.length < 2 ? 'not-allowed' : 'pointer',
+          background: spinning || PARTICIPANTS.length < 2
+            ? 'linear-gradient(135deg, #475569, #334155)'
+            : 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+          color: '#fff', border: 'none',
+          cursor: spinning || PARTICIPANTS.length < 2 ? 'not-allowed' : 'pointer',
           boxShadow: spinning ? 'none' : '0 4px 20px rgba(139, 92, 246, 0.4)',
           transition: 'all 0.3s ease'
         }}>
@@ -171,7 +247,7 @@ export default function LotteryWheel({ onWinner, participants: propParticipants 
 
       {/* Sonuç */}
       {showResult && winner && (
-        <div style={{ animation: 'fadeIn 0.5s ease' }}>
+        <div style={{ animation: 'fadeIn 0.5s ease', marginTop: '1rem' }}>
           <div style={{ fontSize: '48px', marginBottom: '0.5rem' }}>🎉</div>
           <div style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '1rem' }}>Kazanan kişi</div>
           <button onClick={() => onWinner(winner)} style={{
