@@ -36,8 +36,6 @@ export default function DashboardCharts({ dailyStats, staffStats, categoryStats 
         }}>🖨️ Yazdır / PDF</button>
       </div>
 
-  return (
-    <div className="space-y-4">
       {/* Günlük Satışlar */}
       <div style={{ backgroundColor: '#1e293b', borderRadius: '1rem', padding: '1.25rem', border: '1px solid #334155' }}>
         <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1.25rem' }}>📊 Günlük Satışlar</h3>
