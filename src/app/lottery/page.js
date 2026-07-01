@@ -53,25 +53,30 @@ export default function LotteryPage() {
         return true
       })
 
+      // Kategorileri her zaman CATEGORY_MAP'ten ata (Firestore'dan bağımsız)
+      const categorized = allUsers.map(u => ({
+        ...u,
+        category: CATEGORY_MAP[u.name] || 'Kategorisiz'
+      }))
+
       // Kategori filtresi
+      let filtered = categorized
       if (selectedCategory !== 'all') {
-        allUsers = allUsers.filter(u => {
-          // Mağaza müdürü her kategoride yer alsın
+        filtered = categorized.filter(u => {
           if (u.role === 'MANAGER') return true
-          const userCategory = u.category || CATEGORY_MAP[u.name] || ''
-          return userCategory === selectedCategory
+          return u.category === selectedCategory
         })
       }
 
       const colors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#84cc16']
       const emojis = { ADMIN: '👑', MANAGER: '👔', STAFF: '👤' }
 
-      setParticipants(allUsers.map((u, i) => ({
+      setParticipants(filtered.map((u, i) => ({
         name: u.name || 'Bilinmeyen',
         color: colors[i % colors.length],
         emoji: emojis[u.role] || '👤',
         role: u.role === 'ADMIN' ? 'Yönetici' : u.role === 'MANAGER' ? 'Müdür' : 'Personel',
-        category: u.category || CATEGORY_MAP[u.name] || 'Kategorisiz'
+        category: u.category
       })))
     } catch (error) { console.error(error) }
   }
