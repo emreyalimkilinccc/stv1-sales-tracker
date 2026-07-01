@@ -21,11 +21,19 @@ export default function AdminPage() {
   const [newUser, setNewUser] = useState({ salesCode: '', email: '', password: '', name: '', role: 'STAFF', storeId: '', monthlyQuota: '', category: '' })
 
   const CATEGORY_MAP = {
-    'Emre YALIMKILINÇ': 'Giriş kat', 'Derya DEMİR': 'Giriş kat', 'Sevim TEKİN': 'Giriş kat',
-    'Onur VARAN': 'Giriş kat', 'Merve KARAASLAN': 'Giriş kat', 'Fatih': 'Giriş kat',
-    'Seda SOYDAN': 'Kasa', 'Şennur ŞAHİN': 'Kasa', 'Betül Merve GÜNGÖR': 'Kasa', 'Özge KEL': 'Kasa',
-    'Bilge TURAN': 'Züccaciye', 'ELİF DEMİR': 'Züccaciye',
-    'Rabia ÇALHAN': 'Mobilya', 'Nurdagül MENEKŞE': 'Mobilya'
+    'Emre YALIMKILINÇ': 'Giriş kat',
+    'Derya DEMİR': 'Giriş kat',
+    'Sevim TEKİN': 'Giriş kat',
+    'Onur VARAN': 'Giriş kat',
+    'Merve KARAASLAN': 'Giriş kat',
+    'Bilge TURAN': 'Züccaciye',
+    'ELİF DEMİR': 'Züccaciye',
+    'Rabia ÇALHAN': 'Mobilya',
+    'Nurdagül MENEKŞE': 'Mobilya',
+    'Seda SOYDAN': 'Kasa',
+    'Özge KEL': 'Kasa',
+    'Şennur ŞAHİN': 'Kasa',
+    'Betül Merve GÜNGÖR': 'Kasa'
   }
 
   const handleBulkCategorize = async () => {
