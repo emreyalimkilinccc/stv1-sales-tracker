@@ -58,7 +58,8 @@ export default function LotteryPage() {
         allUsers = allUsers.filter(u => {
           // Mağaza müdürü her kategoride yer alsın
           if (u.role === 'MANAGER') return true
-          return u.category === selectedCategory
+          const userCategory = u.category || CATEGORY_MAP[u.name] || ''
+          return userCategory === selectedCategory
         })
       }
 
