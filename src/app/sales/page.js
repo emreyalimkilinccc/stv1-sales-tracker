@@ -25,8 +25,9 @@ export default function SalesPage() {
   const [filterDateEnd, setFilterDateEnd] = useState('')
   const [filterStaff, setFilterStaff] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
+  const [selectedSeller, setSelectedSeller] = useState(null)
 
-  useEffect(() => { if (user) { fetchSales(); if (canEdit) fetchStaffList() } }, [user])
+  useEffect(() => { if (user) { fetchSales(); if (canEdit) fetchStaffList(); setSelectedSeller(user) } }, [user])
 
   const fetchStaffList = async () => {
     try {
@@ -74,7 +75,8 @@ export default function SalesPage() {
   const handleSubmit = async (formData) => {
     if (!user) { alert('Kullanıcı bilgisi bulunamadı.'); return }
     try {
-      const saleData = { ...formData, amount: parseFloat(formData.amount) || 0, cost: parseFloat(formData.cost) || 0, itemCount: parseInt(formData.itemCount) || 0, bonusItemCount: parseInt(formData.bonusItemCount) || 0, userId: user.uid, userName: user.name || user.email || 'Bilinmeyen', storeId: user.storeId || null, createdAt: new Date().toISOString() }
+      const seller = selectedSeller || user
+      const saleData = { ...formData, amount: parseFloat(formData.amount) || 0, cost: parseFloat(formData.cost) || 0, itemCount: parseInt(formData.itemCount) || 0, bonusItemCount: parseInt(formData.bonusItemCount) || 0, userId: seller.id || user.uid, userName: seller.name || user.name || 'Bilinmeyen', storeId: seller.storeId || user.storeId || null, createdAt: new Date().toISOString() }
       if (editingSale) { await updateDoc(doc(db, 'sales', editingSale.id), saleData); setEditingSale(null) }
       else { await addDoc(collection(db, 'sales'), saleData) }
       fetchSales()
@@ -168,6 +170,27 @@ export default function SalesPage() {
       {/* Yeni Satış Formu */}
       <div className="card" style={{ marginBottom: '1rem' }}>
         <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>{editingSale ? '✏️ Satışı Düzenle' : '➕ Yeni Satış Ekle'}</h2>
+
+        {/* Satıcı Seçimi (Admin/Müdür) */}
+        {canEdit && !editingSale && (
+          <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#0f172a', borderRadius: '0.75rem', border: '1px solid #334155' }}>
+            <label style={{ fontSize: '12px', color: '#94a3b8', display: 'block', marginBottom: '0.375rem' }}>👤 Bu satışı kime yazalım?</label>
+            <select value={selectedSeller?.id || ''} onChange={(e) => {
+              const s = allStaff.find(s => s.id === e.target.value)
+              setSelectedSeller(s || user)
+            }} style={{ width: '100%', padding: '0.625rem', borderRadius: '0.5rem', fontSize: '13px', backgroundColor: '#334155', border: '1px solid #475569', color: '#f8fafc' }}>
+              {allStaff.map(s => (
+                <option key={s.id} value={s.id}>{s.name} {s.id === user.uid ? '(Ben)' : ''} — {s.role === 'ADMIN' ? 'Yönetici' : s.role === 'MANAGER' ? 'Müdür' : 'Personel'}</option>
+              ))}
+            </select>
+            {selectedSeller && selectedSeller.id !== user.uid && (
+              <div style={{ fontSize: '11px', color: '#f59e0b', marginTop: '0.375rem', fontWeight: '600' }}>
+                ⚠️ {selectedSeller.name} adına satış kaydedilecek
+              </div>
+            )}
+          </div>
+        )}
+
         <SalesForm onSubmit={editingSale ? handleSaveEdit : handleSubmit} initialData={editingSale} />
         {editingSale && <button onClick={() => setEditingSale(null)} style={{ width: '100%', marginTop: '0.75rem', padding: '0.75rem', backgroundColor: '#334155', color: '#94a3b8', border: 'none', borderRadius: '0.5rem', cursor: 'pointer' }}>✕ İptal</button>}
       </div>
