@@ -120,6 +120,7 @@ export default function AdminPage() {
         name: editingUser.name, 
         role: editingUser.role, 
         storeId: editingUser.storeId,
+        category: editingUser.category || '',
         monthlyQuota: parseFloat(editingUser.monthlyQuota) || 0
       }); 
       setEditingUser(null); 
