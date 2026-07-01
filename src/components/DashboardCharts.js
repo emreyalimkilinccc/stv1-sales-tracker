@@ -23,6 +23,19 @@ export default function DashboardCharts({ dailyStats, staffStats, categoryStats 
   const maxAmount = Math.max(...dailyStats.map(d => d.amount))
   const totalCatAmount = categoryStats ? categoryStats.reduce((sum, c) => sum + c.amount, 0) : 0
 
+  const handlePrint = () => window.print()
+
+  return (
+    <div className="space-y-4" id="dashboard-charts">
+      {/* Dışa Aktar Butonu */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <button onClick={handlePrint} style={{
+          padding: '0.5rem 1rem', borderRadius: '0.5rem', fontSize: '12px', fontWeight: '600',
+          backgroundColor: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.3)',
+          cursor: 'pointer'
+        }}>🖨️ Yazdır / PDF</button>
+      </div>
+
   return (
     <div className="space-y-4">
       {/* Günlük Satışlar */}

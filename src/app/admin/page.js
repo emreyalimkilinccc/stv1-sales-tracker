@@ -129,7 +129,8 @@ export default function AdminPage() {
   }
 
   const handleDeleteUser = async (userId) => {
-    if (!confirm('Silmek istediğinize emin misiniz?')) return
+    const u = users.find(u => u.id === userId)
+    if (!confirm(`⚠️ "${u?.name || 'Bu kullanıcı'}" silinecek!\n\nBu işlem geri alınamaz. Devam etmek istediğinize emin misiniz?`)) return
     try { await deleteDoc(doc(db, 'user', userId)); fetchData() } catch (error) { alert('Hata: ' + error.message) }
   }
 
@@ -386,6 +387,11 @@ export default function AdminPage() {
                         backgroundColor: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6',
                         border: 'none', cursor: 'pointer', fontWeight: '500'
                       }}>✏️ Düzenle</button>
+                      <button onClick={() => { navigator.clipboard.writeText('123456'); alert(`${u.name} kişisinin varsayılan şifresi: 123456\nPanoya kopyalandı!`) }} style={{
+                        padding: '0.5rem 0.875rem', borderRadius: '0.5rem', fontSize: '12px',
+                        backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b',
+                        border: 'none', cursor: 'pointer', fontWeight: '500'
+                      }}>🔑 Şifre</button>
                       <button onClick={() => handleDeleteUser(u.id)} style={{
                         padding: '0.5rem 0.875rem', borderRadius: '0.5rem', fontSize: '12px',
                         backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444',

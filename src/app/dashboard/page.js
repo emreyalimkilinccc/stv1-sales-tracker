@@ -114,12 +114,20 @@ export default function DashboardPage() {
       const sales = allSales.filter(s => { return s.date >= startStr && s.date <= endStr })
       
       const totalAmount = sales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
-      const totalCost = sales.reduce((sum, s) => sum + (parseFloat(s.cost) || 0), 0)
       const totalRefunds = sales.filter(s => (parseFloat(s.amount) || 0) < 0).reduce((sum, s) => sum + Math.abs(parseFloat(s.amount) || 0), 0)
-      const totalProfit = totalAmount - totalCost
       const totalItems = sales.reduce((sum, s) => sum + (parseInt(s.itemCount) || 0), 0)
       const totalBonusItems = sales.reduce((sum, s) => sum + (parseInt(s.bonusItemCount) || 0), 0)
       const avgAmount = sales.length > 0 ? totalAmount / sales.length : 0
+
+      // Geçen ay verisi (kıyaslama)
+      const td = getTurkeyDate()
+      const prevMonthLast = new Date(td.year, td.month, 0)
+      const prevMonthFirst = new Date(td.year, td.month - 1, 1)
+      const prevStartStr = formatDate(prevMonthFirst.getFullYear(), prevMonthFirst.getMonth(), prevMonthFirst.getDate())
+      const prevEndStr = formatDate(prevMonthLast.getFullYear(), prevMonthLast.getMonth(), prevMonthLast.getDate())
+      const prevSales = allSales.filter(s => s.date >= prevStartStr && s.date <= prevEndStr)
+      const prevTotalAmount = prevSales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
+      const monthChange = prevTotalAmount > 0 ? ((totalAmount - prevTotalAmount) / prevTotalAmount * 100) : 0
       
       // Kişisel satışlar (MANAGER/ADMIN için ayrı)
       let personalTotalAmount = totalAmount
@@ -150,11 +158,19 @@ export default function DashboardPage() {
       }, {})
       const categoryStats = Object.values(categoryData).sort((a, b) => b.amount - a.amount)
       
-      setData({ summary: { totalAmount, totalCost, totalProfit, totalRefunds, totalItems, totalBonusItems, avgAmount, salesCount: sales.length, personalTotalAmount }, dailyStats, staffStats, categoryStats })
+      setData({ summary: { totalAmount, totalRefunds, totalItems, totalBonusItems, avgAmount, salesCount: sales.length, personalTotalAmount, monthChange, prevTotalAmount }, dailyStats, staffStats, categoryStats })
     } catch (error) { console.error('Error:', error) } finally { setLoading(false) }
   }
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><div style={{ fontSize: '48px' }}>⏳</div></div>
+  if (loading) return (
+    <div className="px-4 py-6 max-w-7xl mx-auto">
+      <div style={{ height: '100px', backgroundColor: '#1e293b', borderRadius: '1rem', marginBottom: '1rem', animation: 'pulse 1.5s infinite' }} />
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6" style={{ gap: '0.75rem', marginBottom: '1rem' }}>
+        {[1,2,3,4,5,6].map(i => <div key={i} style={{ height: '80px', backgroundColor: '#1e293b', borderRadius: '1rem', animation: `pulse ${1 + i * 0.1}s infinite` }} />)}
+      </div>
+      <div style={{ height: '300px', backgroundColor: '#1e293b', borderRadius: '1rem', animation: 'pulse 2s infinite' }} />
+    </div>
+  )
 
   return (
     <div className="px-4 py-6 max-w-7xl mx-auto">
@@ -267,7 +283,7 @@ export default function DashboardPage() {
       {/* İstatistikler */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6" style={{ gap: '0.75rem', marginBottom: '1rem' }}>
         {[
-          { label: 'Toplam Satış', value: formatCurrency(data?.summary?.totalAmount || 0), icon: '💰', color: '#3b82f6' },
+          { label: 'Toplam Satış', value: formatCurrency(data?.summary?.totalAmount || 0), icon: '💰', color: '#3b82f6', sub: data?.summary?.monthChange ? `${data.summary.monthChange >= 0 ? '📈' : '📉'} Geçen aya göre %${Math.abs(data.summary.monthChange).toFixed(1)} ${data.summary.monthChange >= 0 ? 'artış' : 'düşüş'}` : null, subColor: (data?.summary?.monthChange || 0) >= 0 ? '#10b981' : '#ef4444' },
           { label: 'İşlem', value: data?.summary?.salesCount || 0, icon: '🧾', color: '#8b5cf6' },
           { label: 'Toplam Ürün', value: data?.summary?.totalItems || 0, icon: '📦', color: '#10b981' },
           { label: 'Ortalama', value: formatCurrency(data?.summary?.avgAmount || 0), icon: '📈', color: '#f59e0b' },
@@ -278,9 +294,40 @@ export default function DashboardPage() {
             <div style={{ position: 'absolute', top: '-8px', right: '-8px', width: '56px', height: '56px', borderRadius: '50%', backgroundColor: `${stat.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>{stat.icon}</div>
             <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '0.375rem' }}>{stat.label}</div>
             <div style={{ fontSize: '18px', fontWeight: '700', color: stat.color }}>{stat.value}</div>
+            {stat.sub && <div style={{ fontSize: '10px', color: stat.subColor, marginTop: '0.25rem' }}>{stat.sub}</div>}
           </div>
         ))}
       </div>
+
+      {/* Bildirimler - Kota Uyarısı + Hedef Tebriği */}
+      {(() => {
+        const notifications = []
+        if (user.role === 'STAFF' && userQuota > 0) {
+          const pct = (data?.summary?.totalAmount || 0) / userQuota * 100
+          if (pct >= 100) notifications.push({ icon: '🎉', text: 'Tebrikler! Aylık kota hedefinizi aştınız!', color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' })
+          else if (pct >= 80) notifications.push({ icon: '⚠️', text: `Kota hedefinizin %${pct.toFixed(0)}'ine ulaştınız!`, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' })
+          else if (pct >= 50) notifications.push({ icon: '📊', text: `Kota hedefinizin yarısına ulaştınız (%${pct.toFixed(0)})`, color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.1)' })
+        }
+        if (storeQuota > 0 && user.role !== 'STAFF') {
+          const pct = (data?.summary?.totalAmount || 0) / storeQuota * 100
+          if (pct >= 100) notifications.push({ icon: '🏪', text: 'Mağaza kota hedefi tamamlandı!', color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' })
+          else if (pct >= 80) notifications.push({ icon: '🏪⚠️', text: `Mağaza kotasının %${pct.toFixed(0)}'ine ulaşıldı!`, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' })
+        }
+        if (notifications.length === 0) return null
+        return (
+          <div style={{ marginBottom: '1rem' }}>
+            {notifications.map((n, i) => (
+              <div key={i} style={{
+                backgroundColor: n.bg, border: `1px solid ${n.color}40`, borderRadius: '0.75rem',
+                padding: '0.75rem 1rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem',
+                fontSize: '13px', fontWeight: '600', color: n.color
+              }}>
+                <span style={{ fontSize: '18px' }}>{n.icon}</span> {n.text}
+              </div>
+            ))}
+          </div>
+        )
+      })()}
 
       <DashboardCharts dailyStats={data?.dailyStats} staffStats={data?.staffStats} categoryStats={data?.categoryStats} />
     </div>

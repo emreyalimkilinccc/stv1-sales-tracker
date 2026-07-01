@@ -203,3 +203,10 @@ a:hover { color: #60a5fa; }
   color: #94a3b8;
   margin-bottom: 0.375rem;
 }
+
+@media print {
+  body { background: #fff !important; color: #000 !important; }
+  nav, .btn, button, input, select, form, .page-header { display: none !important; }
+  .card { background: #fff !important; border: 1px solid #ccc !important; break-inside: avoid; }
+  * { color: #000 !important; background: transparent !important; }
+}

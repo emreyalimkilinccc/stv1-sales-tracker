@@ -24,6 +24,7 @@ export default function SalesPage() {
   const [filterDateStart, setFilterDateStart] = useState('')
   const [filterDateEnd, setFilterDateEnd] = useState('')
   const [filterStaff, setFilterStaff] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => { if (user) { fetchSales(); if (canEdit) fetchStaffList() } }, [user])
 
@@ -39,8 +40,16 @@ export default function SalesPage() {
     if (filterDateStart) result = result.filter(s => s.date >= filterDateStart)
     if (filterDateEnd) result = result.filter(s => s.date <= filterDateEnd)
     if (filterStaff) result = result.filter(s => s.userId === filterStaff)
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase()
+      result = result.filter(s =>
+        (s.customerPhone || '').toLowerCase().includes(q) ||
+        (s.userName || '').toLowerCase().includes(q) ||
+        (s.category || '').toLowerCase().includes(q)
+      )
+    }
     setFilteredSales(result)
-  }, [sales, filterDateStart, filterDateEnd, filterStaff])
+  }, [sales, filterDateStart, filterDateEnd, filterStaff, searchQuery])
 
   if (authLoading) return <div className="px-4 py-6 max-w-7xl mx-auto"><div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>⏳ Yükleniyor...</div></div>
   if (!user) return <div className="px-4 py-6 max-w-7xl mx-auto"><div style={{ textAlign: 'center', padding: '2rem', color: '#ef4444' }}>🔑 Lütfen giriş yapın</div></div>
@@ -167,6 +176,10 @@ export default function SalesPage() {
       {canEdit && (
         <div className="card" style={{ marginBottom: '1rem' }}>
           <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#f8fafc', marginBottom: '0.75rem' }}>🔍 Filtreler</h3>
+          <div style={{ marginBottom: '0.75rem' }}>
+            <input type="text" placeholder="🔍 Müşteri no, isim veya kategori ara..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', fontSize: '13px', backgroundColor: '#334155', border: '1px solid #475569', color: '#f8fafc' }} />
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem' }}>
             <div>
               <label style={{ fontSize: '11px', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>Başlangıç Tarihi</label>
@@ -195,6 +208,25 @@ export default function SalesPage() {
           </div>
         </div>
       )}
+
+      {/* Hızlı Özet */}
+      <div className="card" style={{ marginBottom: '1rem' }}>
+        <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#f8fafc', marginBottom: '0.75rem' }}>📋 Son Satışlar</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem' }}>
+          {[
+            { label: 'Bugün', value: formatCurrency(totalToday), icon: '📅', color: '#3b82f6' },
+            { label: 'İşlem', value: todaySales.length, icon: '🧾', color: '#8b5cf6' },
+            { label: 'Toplam', value: formatCurrency(displaySales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)), icon: '💰', color: '#10b981' },
+            { label: 'İadeler', value: formatCurrency(Math.abs(displaySales.filter(s => (parseFloat(s.amount) || 0) < 0).reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0))), icon: '↩️', color: '#ef4444' }
+          ].map((stat, i) => (
+            <div key={i} style={{ backgroundColor: '#0f172a', borderRadius: '0.75rem', padding: '0.75rem', border: '1px solid #334155', textAlign: 'center' }}>
+              <div style={{ fontSize: '18px', marginBottom: '0.25rem' }}>{stat.icon}</div>
+              <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '0.25rem' }}>{stat.label}</div>
+              <div style={{ fontSize: '15px', fontWeight: '700', color: stat.color }}>{stat.value}</div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* İstatistikler */}
       <div className="grid grid-cols-3" style={{ gap: '0.75rem', marginBottom: '1rem' }}>
