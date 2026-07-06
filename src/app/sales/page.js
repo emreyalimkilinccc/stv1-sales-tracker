@@ -6,10 +6,12 @@ import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, o
 import { db } from '@/lib/firebase'
 import { formatCurrency, formatCurrencyDecimal } from '@/lib/utils'
 import SalesForm from '@/components/SalesForm'
+import { useToast } from '@/components/Toast'
 import * as XLSX from 'xlsx'
 
 export default function SalesPage() {
   const { user, loading: authLoading } = useAuth()
+  const toast = useToast()
   const [sales, setSales] = useState([])
   const [filteredSales, setFilteredSales] = useState([])
   const [loading, setLoading] = useState(true)
@@ -73,29 +75,29 @@ export default function SalesPage() {
   }
 
   const handleSubmit = async (formData) => {
-    if (!user) { alert('Kullanıcı bilgisi bulunamadı.'); return }
+    if (!user) { toast.error('Kullanıcı bilgisi bulunamadı.'); return }
     try {
       const seller = selectedSeller || user
       const saleData = { ...formData, amount: parseFloat(formData.amount) || 0, cost: parseFloat(formData.cost) || 0, itemCount: parseInt(formData.itemCount) || 0, bonusItemCount: parseInt(formData.bonusItemCount) || 0, userId: seller.id || user.uid, userName: seller.name || user.name || 'Bilinmeyen', storeId: seller.storeId || user.storeId || null, createdAt: new Date().toISOString() }
       if (editingSale) { await updateDoc(doc(db, 'sales', editingSale.id), saleData); setEditingSale(null) }
       else { await addDoc(collection(db, 'sales'), saleData) }
       fetchSales()
-    } catch (error) { alert('Kaydedilemedi: ' + error.message) }
+    } catch (error) { toast.error('Kaydedilemedi: ' + error.message) }
   }
 
   const handleDelete = async (id) => {
     if (!confirm('Silmek istediğinize emin misiniz?')) return
-    try { await deleteDoc(doc(db, 'sales', id)); fetchSales() } catch (error) { alert('Silinemedi: ' + error.message) }
+    try { await deleteDoc(doc(db, 'sales', id)); fetchSales() } catch (error) { toast.error('Silinemedi: ' + error.message) }
   }
 
   const handleSend = (sale) => { setSendingSale(sale); setSendData({ subject: '', description: '' }); setShowSendModal(true) }
 
   const handleSendSubmit = async () => {
-    if (!sendData.subject || !sendData.description) { alert('Konu ve açıklama zorunludur!'); return }
+    if (!sendData.subject || !sendData.description) { toast.warning('Konu ve açıklama zorunludur!'); return }
     try {
       await updateDoc(doc(db, 'sales', sendingSale.id), { sentBy: user.name || user.email, sentSubject: sendData.subject, sentDescription: sendData.description, sentAt: new Date().toISOString() })
-      setSendingSale(null); setSendData({ subject: '', description: '' }); fetchSales(); alert('Mesajınız başarıyla gönderildi!')
-    } catch (error) { alert('Gönderilemedi: ' + error.message) }
+      setSendingSale(null); setSendData({ subject: '', description: '' }); fetchSales(); toast.success('Mesajınız başarıyla gönderildi!')
+    } catch (error) { toast.error('Gönderilemedi: ' + error.message) }
   }
 
   const handleEdit = (sale) => { setEditingSale(sale) }
@@ -105,8 +107,8 @@ export default function SalesPage() {
     try {
       const saleData = { ...formData, amount: parseFloat(formData.amount) || 0, cost: parseFloat(formData.cost) || 0, itemCount: parseInt(formData.itemCount) || 0, bonusItemCount: parseInt(formData.bonusItemCount) || 0, userId: editingSale.userId, userName: editingSale.userName, storeId: editingSale.storeId, lastEditedBy: user.name || user.email, lastEditNote: 'Düzenlendi', lastEditedAt: new Date().toISOString() }
       await updateDoc(doc(db, 'sales', editingSale.id), saleData)
-      setEditingSale(null); fetchSales(); alert('Satış başarıyla güncellendi!')
-    } catch (error) { alert('Güncellenemedi: ' + error.message) }
+      setEditingSale(null); fetchSales(); toast.success('Satış başarıyla güncellendi!')
+    } catch (error) { toast.error('Güncellenemedi: ' + error.message) }
   }
 
   const handleExcelUpload = async (e) => {
@@ -145,10 +147,10 @@ export default function SalesPage() {
         }
         await batch.commit()
       }
-      alert(`${imported} satış başarıyla içe aktarıldı!`)
+      toast.success(`${imported} satış başarıyla içe aktarıldı!`)
       fetchSales()
     } catch (error) {
-      alert('İçe aktarma hatası: ' + error.message)
+      toast.error('İçe aktarma hatası: ' + error.message)
     } finally {
       setExcelLoading(false)
       e.target.value = ''

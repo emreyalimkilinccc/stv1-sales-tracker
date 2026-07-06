@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp, getCountFromServer } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
+import { useToast } from '@/components/Toast'
 
 export default function OylamaPage() {
   const { user } = useAuth()
+  const toast = useToast()
   const [polls, setPolls] = useState([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
@@ -59,7 +61,7 @@ export default function OylamaPage() {
     e.preventDefault()
     const validOptions = newPoll.options.filter(o => o.trim() !== '')
     if (!newPoll.question.trim() || validOptions.length < 2) {
-      alert('Soru ve en az 2 seçenek gereklidir!')
+      toast.warning('Soru ve en az 2 seçenek gereklidir!')
       return
     }
     try {
@@ -74,7 +76,7 @@ export default function OylamaPage() {
       })
       setNewPoll({ question: '', options: ['', ''] })
       setShowCreate(false)
-    } catch (error) { alert('Hata: ' + error.message) }
+    } catch (error) { toast.error('Hata: ' + error.message) }
   }
 
   const handleVote = async (pollId, optionIndex) => {
@@ -93,19 +95,19 @@ export default function OylamaPage() {
       if (totalUsers > 0 && newVoters >= totalUsers) {
         await updateDoc(doc(db, 'polls', pollId), { isActive: false })
       }
-    } catch (error) { alert('Hata: ' + error.message) }
+    } catch (error) { toast.error('Hata: ' + error.message) }
   }
 
   const handleToggleActive = async (pollId, currentActive) => {
     try {
       await updateDoc(doc(db, 'polls', pollId), { isActive: !currentActive })
-    } catch (error) { alert('Hata: ' + error.message) }
+    } catch (error) { toast.error('Hata: ' + error.message) }
   }
 
   const handleConclude = async (pollId) => {
     try {
       await updateDoc(doc(db, 'polls', pollId), { isActive: false })
-    } catch (error) { alert('Hata: ' + error.message) }
+    } catch (error) { toast.error('Hata: ' + error.message) }
   }
 
   // Gece yarısı otomatik kapatma
@@ -139,7 +141,7 @@ export default function OylamaPage() {
         await deleteDoc(doc(db, 'votes', v.id))
       }
       await deleteDoc(doc(db, 'polls', pollId))
-    } catch (error) { alert('Hata: ' + error.message) }
+    } catch (error) { toast.error('Hata: ' + error.message) }
   }
 
   const handleAddOption = () => {
@@ -175,10 +177,10 @@ export default function OylamaPage() {
   const handleSaveEdit = async (pollId) => {
     try {
       const validOptions = editingPoll.options.filter(o => o.text.trim() !== '')
-      if (validOptions.length < 2) { alert('En az 2 seçenek gereklidir!'); return }
+      if (validOptions.length < 2) { toast.warning('En az 2 seçenek gereklidir!'); return }
       await updateDoc(doc(db, 'polls', pollId), { options: validOptions })
       setEditingPoll(null)
-    } catch (error) { alert('Hata: ' + error.message) }
+    } catch (error) { toast.error('Hata: ' + error.message) }
   }
 
   const handleAddEditOption = (pollId) => {

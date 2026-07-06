@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-context'
 import { collection, query, where, getDocs, addDoc, updateDoc, doc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import LotteryWheel from '@/components/LotteryWheel'
+import { useToast } from '@/components/Toast'
 
 const CATEGORY_MAP = {
   'Emre YALIMKILINÇ': 'Giriş kat', 'Derya DEMİR': 'Giriş kat', 'Sevim TEKİN': 'Giriş kat',
@@ -16,6 +17,7 @@ const CATEGORY_MAP = {
 
 export default function LotteryPage() {
   const { user } = useAuth()
+  const toast = useToast()
   const [activeLottery, setActiveLottery] = useState(null)
   const [loading, setLoading] = useState(true)
   const [now, setNow] = useState(new Date())
@@ -117,7 +119,7 @@ export default function LotteryPage() {
         })
       }
       fetchActiveLottery()
-    } catch (error) { alert('Hata: ' + error.message) }
+    } catch (error) { toast.error('Hata: ' + error.message) }
   }
 
   const handleEnd = async () => {
@@ -126,7 +128,7 @@ export default function LotteryPage() {
         await updateDoc(doc(db, 'lottery', activeLottery.id), { isActive: false })
         setActiveLottery(null)
       }
-    } catch (error) { alert('Hata: ' + error.message) }
+    } catch (error) { toast.error('Hata: ' + error.message) }
   }
 
   const timeUntilMidnight = () => {

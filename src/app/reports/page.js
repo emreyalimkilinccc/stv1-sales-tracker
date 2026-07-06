@@ -5,9 +5,11 @@ import { useAuth } from '@/lib/auth-context'
 import { collection, query, where, getDocs, updateDoc, doc, orderBy } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { formatCurrency, formatCurrencyDecimal } from '@/lib/utils'
+import { useToast } from '@/components/Toast'
 
 export default function ReportsPage() {
   const { user } = useAuth()
+  const toast = useToast()
   const [pendingSales, setPendingSales] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedSale, setSelectedSale] = useState(null)
@@ -98,8 +100,8 @@ export default function ReportsPage() {
       })
       setResponseNote('')
       fetchPendingSales()
-      alert('Satış onaylandı ve raporlar sayfasından kaldırıldı!')
-    } catch (error) { alert('Hata: ' + error.message) }
+      toast.success('Satış onaylandı ve raporlar sayfasından kaldırıldı!')
+    } catch (error) { toast.error('Hata: ' + error.message) }
   }
 
   if (!user || user.role === 'STAFF') return <div className="min-h-screen flex items-center justify-center"><div>🚫 Erişim yetkiniz yok</div></div>

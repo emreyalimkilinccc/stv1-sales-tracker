@@ -7,9 +7,11 @@ import { db } from '@/lib/firebase'
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as firebaseSignOut } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
 import { formatCurrency } from '@/lib/utils'
+import { useToast } from '@/components/Toast'
 
 export default function AdminPage() {
   const { user } = useAuth()
+  const toast = useToast()
   const [stores, setStores] = useState([])
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -47,8 +49,8 @@ export default function AdminPage() {
         }
       }
       fetchData()
-      alert(`${updated} kullanıcının kategorisi güncellendi!`)
-    } catch (error) { alert('Hata: ' + error.message) }
+      toast.success(`${updated} kullanıcının kategorisi güncellendi!`)
+    } catch (error) { toast.error('Hata: ' + error.message) }
   }
 
   useEffect(() => { if (user && ['ADMIN', 'MANAGER'].includes(user.role)) fetchData() }, [user])
@@ -100,7 +102,7 @@ export default function AdminPage() {
       setShowAddUser(false)
       setNewUser({ salesCode: '', email: '', password: '', name: '', role: 'STAFF', storeId: '', monthlyQuota: '', category: '' })
       fetchData()
-    } catch (error) { alert('Hata: ' + error.message) }
+    } catch (error) { toast.error('Hata: ' + error.message) }
   }
 
   const handleReauth = async (e) => {
@@ -110,7 +112,7 @@ export default function AdminPage() {
       setShowReauthModal(false)
       setReauthPassword('')
       setPendingAdminEmail('')
-    } catch (error) { alert('Hata: ' + error.message) }
+    } catch (error) { toast.error('Hata: ' + error.message) }
   }
 
   const handleUpdateUser = async (e) => {
@@ -125,20 +127,20 @@ export default function AdminPage() {
       }); 
       setEditingUser(null); 
       fetchData() 
-    } catch (error) { alert('Hata: ' + error.message) }
+    } catch (error) { toast.error('Hata: ' + error.message) }
   }
 
   const handleDeleteUser = async (userId) => {
     const u = users.find(u => u.id === userId)
     if (!confirm(`⚠️ "${u?.name || 'Bu kullanıcı'}" silinecek!\n\nBu işlem geri alınamaz. Devam etmek istediğinize emin misiniz?`)) return
-    try { await deleteDoc(doc(db, 'user', userId)); fetchData() } catch (error) { alert('Hata: ' + error.message) }
+    try { await deleteDoc(doc(db, 'user', userId)); fetchData() } catch (error) { toast.error('Hata: ' + error.message) }
   }
 
   const handleUpdateStoreQuota = async (storeId, newQuota) => {
     try {
       await updateDoc(doc(db, 'stores', storeId), { monthlyQuota: parseFloat(newQuota) || 0 })
       fetchData()
-    } catch (error) { alert('Hata: ' + error.message) }
+    } catch (error) { toast.error('Hata: ' + error.message) }
   }
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div style={{ fontSize: '48px' }}>⏳</div></div>
