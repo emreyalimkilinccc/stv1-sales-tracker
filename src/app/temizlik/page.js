@@ -225,10 +225,16 @@ export default function TemizlikPage() {
           const isToday = day.date === todayStr2
           const isMyDay = assigned.some(a => a.id === user.uid)
           const myCompletion = dayCompletions.find(c => c.userId === user.uid)
+          const isPast = day.date < todayStr2
+          const hasAssignment = assigned.length > 0
+          const isCompleted = dayCompletions.length > 0
+          const isNotDone = isPast && hasAssignment && !isCompleted
 
           return (
             <div key={day.key} className="card" style={{
-              borderLeft: `4px solid ${isToday ? '#10b981' : '#334155'}`, opacity: isToday ? 1 : 0.85
+              borderLeft: `4px solid ${isNotDone ? '#ef4444' : isToday ? '#10b981' : isCompleted ? '#10b981' : '#334155'}`,
+              opacity: isPast && !isCompleted ? 1 : (isToday ? 1 : 0.85),
+              backgroundColor: isNotDone ? 'rgba(239, 68, 68, 0.05)' : undefined
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -249,7 +255,8 @@ export default function TemizlikPage() {
                   )}
                   <span style={{ fontSize: '11px', color: '#64748b' }}>{day.date}</span>
                   {isToday && <span style={{ fontSize: '10px', backgroundColor: '#10b981', color: '#fff', padding: '0.15rem 0.5rem', borderRadius: '9999px', fontWeight: '600' }}>BUGÜN</span>}
-                  {myCompletion && <span style={{ fontSize: '10px', backgroundColor: '#10b981', color: '#fff', padding: '0.15rem 0.5rem', borderRadius: '9999px', fontWeight: '600' }}>✅ Tamamlandı</span>}
+                  {isNotDone && <span style={{ fontSize: '10px', backgroundColor: '#ef4444', color: '#fff', padding: '0.15rem 0.5rem', borderRadius: '9999px', fontWeight: '700' }}>❌ YAPILMADI</span>}
+                  {isCompleted && !isNotDone && <span style={{ fontSize: '10px', backgroundColor: '#10b981', color: '#fff', padding: '0.15rem 0.5rem', borderRadius: '9999px', fontWeight: '600' }}>✅ Tamamlandı</span>}
                 </div>
                 {canManage && (
                   <div style={{ display: 'flex', gap: '0.375rem' }}>
