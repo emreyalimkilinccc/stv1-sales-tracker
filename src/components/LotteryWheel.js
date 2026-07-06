@@ -18,8 +18,9 @@ export default function LotteryWheel({ onWinner, participants: propParticipants 
   const [rotation, setRotation] = useState(0)
   const [highlightIdx, setHighlightIdx] = useState(-1)
   const audioCtxRef = useRef(null)
-  const tickCountRef = useRef(0)
   const tickTimerRef = useRef(null)
+  const animRef = useRef(null)
+  const rotationRef = useRef(0)
 
   const segmentAngle = 360 / PARTICIPANTS.length
 
@@ -36,9 +37,9 @@ export default function LotteryWheel({ onWinner, participants: propParticipants 
       const osc = ctx.createOscillator()
       const gain = ctx.createGain()
       osc.connect(gain); gain.connect(ctx.destination)
-      osc.frequency.value = 900 + Math.random() * 300
+      osc.frequency.value = 800 + Math.random() * 400
       osc.type = 'triangle'
-      gain.gain.value = 0.08
+      gain.gain.value = 0.06
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06)
       osc.start(); osc.stop(ctx.currentTime + 0.06)
     } catch (e) {}
@@ -69,37 +70,50 @@ export default function LotteryWheel({ onWinner, participants: propParticipants 
     setWinner(null)
     setHighlightIdx(-1)
 
+    // Rastgele kazanan belirle
     const winnerIdx = Math.floor(Math.random() * PARTICIPANTS.length)
     const targetAngle = winnerIdx * segmentAngle
 
-    const totalRotation = 360 * 10 + (360 - targetAngle - segmentAngle / 2)
-    const startRotation = rotation % 360
-    const finalRotation = rotation + totalRotation - startRotation + (360 - startRotation)
+    // Kazanan dilimin tam ortasına gelecek şekilde döndür
+    // Ok üstte (0 derece), çark saat yönünde döner
+    // Kazanan dilimin açısı = winnerIdx * segmentAngle ile (winnerIdx+1) * segmentAngle arası
+    // Hedef: O dilimin tam ortası 0 dereceye (ok yönüne) gelmeli
+    const segmentMiddle = targetAngle + segmentAngle / 2
+    const totalRotation = rotationRef.current + 360 * 12 + (360 - segmentMiddle)
 
-    setRotation(finalRotation)
+    const duration = 6000
+    const startTime = performance.now()
+    const startRot = rotationRef.current
+    const deltaRot = totalRotation - startRot
+    let lastTick = -1
 
-    const duration = 5000
-    const startTime = Date.now()
-    tickCountRef.current = 0
-
-    const tickInterval = () => {
-      const elapsed = Date.now() - startTime
+    const animate = (now) => {
+      const elapsed = now - startTime
       const progress = Math.min(elapsed / duration, 1)
+      // Cubic ease-out: hızlı başlar, yavaş biter
       const eased = 1 - Math.pow(1 - progress, 3)
 
-      const currentAngle = (finalRotation - rotation) * eased
-      const currentIdx = Math.floor(((360 - (currentAngle % 360)) % 360) / segmentAngle) % PARTICIPANTS.length
+      const currentRot = startRot + deltaRot * eased
+      rotationRef.current = currentRot
+      setRotation(currentRot)
+
+      // Hangi dilimde olduğumuzu hesapla (ok yönünde en üstte)
+      const normalizedAngle = ((360 - (currentRot % 360)) % 360)
+      const currentIdx = Math.floor(normalizedAngle / segmentAngle) % PARTICIPANTS.length
       setHighlightIdx(currentIdx)
 
-      const prevTick = Math.floor(progress * 30)
-      if (prevTick > tickCountRef.current) {
-        tickCountRef.current = prevTick
+      // Tick sesi
+      const tickCount = Math.floor(progress * 40)
+      if (tickCount > lastTick) {
+        lastTick = tickCount
         playTick()
       }
 
       if (progress < 1) {
-        tickTimerRef.current = requestAnimationFrame(tickInterval)
+        animRef.current = requestAnimationFrame(animate)
       } else {
+        // Durdu
+        rotationRef.current = totalRot
         setHighlightIdx(winnerIdx)
         setWinner(PARTICIPANTS[winnerIdx])
         setSpinning(false)
@@ -108,11 +122,14 @@ export default function LotteryWheel({ onWinner, participants: propParticipants 
       }
     }
 
-    tickTimerRef.current = requestAnimationFrame(tickInterval)
-  }, [spinning, PARTICIPANTS, segmentAngle, rotation, playTick, playWin])
+    animRef.current = requestAnimationFrame(animate)
+  }, [spinning, PARTICIPANTS, segmentAngle, playTick, playWin])
 
   useEffect(() => {
-    return () => { if (tickTimerRef.current) cancelAnimationFrame(tickTimerRef.current) }
+    return () => {
+      if (animRef.current) cancelAnimationFrame(animRef.current)
+      if (tickTimerRef.current) clearTimeout(tickTimerRef.current)
+    }
   }, [])
 
   useEffect(() => {
@@ -124,7 +141,7 @@ export default function LotteryWheel({ onWinner, participants: propParticipants 
   const SIZE = 300
   const CENTER = SIZE / 2
   const WHEEL_R = SIZE / 2 - 5
-  const NAME_R = WHEEL_R * 0.65
+  const NAME_R = WHEEL_R * 0.62
 
   return (
     <div style={{ textAlign: 'center' }}>
@@ -135,8 +152,8 @@ export default function LotteryWheel({ onWinner, participants: propParticipants 
           transform: 'translateX(-50%)', zIndex: 10,
           width: 0, height: 0,
           borderLeft: '14px solid transparent', borderRight: '14px solid transparent',
-          borderTop: '26px solid #f59e0b',
-          filter: 'drop-shadow(0 2px 6px rgba(245, 158, 11, 0.5))'
+          borderTop: '28px solid #f59e0b',
+          filter: 'drop-shadow(0 3px 8px rgba(245, 158, 11, 0.6))'
         }} />
 
         {/* Dönen Çark */}
@@ -144,10 +161,9 @@ export default function LotteryWheel({ onWinner, participants: propParticipants 
           width: `${SIZE}px`, height: `${SIZE}px`,
           borderRadius: '50%', position: 'relative',
           transform: `rotate(${rotation}deg)`,
-          transition: spinning ? 'none' : 'transform 0.1s ease-out',
           willChange: 'transform'
         }}>
-          {/* Renkli dilimler */}
+          {/* SVG dilimler */}
           <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} style={{ position: 'absolute', top: 0, left: 0 }}>
             {PARTICIPANTS.map((p, i) => {
               const startAngle = (i * segmentAngle - 90) * (Math.PI / 180)
@@ -163,13 +179,14 @@ export default function LotteryWheel({ onWinner, participants: propParticipants 
                     d={`M ${CENTER} ${CENTER} L ${x1} ${y1} A ${WHEEL_R} ${WHEEL_R} 0 ${largeArc} 1 ${x2} ${y2} Z`}
                     fill={p.color}
                     stroke="#0f172a"
-                    strokeWidth="2"
+                    strokeWidth="2.5"
                   />
-                  {/* Çizgi */}
-                  <line x1={CENTER} y1={CENTER} x2={x2} y2={y2} stroke="#0f172a" strokeWidth="2" opacity="0.5" />
+                  <line x1={CENTER} y1={CENTER} x2={x2} y2={y2} stroke="#0f172a" strokeWidth="2" opacity="0.6" />
                 </g>
               )
             })}
+            {/* Dış halka */}
+            <circle cx={CENTER} cy={CENTER} r={WHEEL_R} fill="none" stroke="#475569" strokeWidth="4" />
           </svg>
 
           {/* İsimler - çarkla birlikte döner */}
@@ -202,7 +219,7 @@ export default function LotteryWheel({ onWinner, participants: propParticipants 
           backgroundColor: '#0f172a', border: '3px solid #475569',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: '22px', zIndex: 5,
-          boxShadow: spinning ? '0 0 25px rgba(139,92,246,0.4)' : winner ? '0 0 25px rgba(16,185,129,0.4)' : '0 0 10px rgba(0,0,0,0.3)',
+          boxShadow: spinning ? '0 0 30px rgba(139,92,246,0.5)' : winner ? '0 0 30px rgba(16,185,129,0.5)' : '0 0 10px rgba(0,0,0,0.3)',
           transition: 'box-shadow 0.3s ease'
         }}>
           {spinning ? '🎰' : winner ? '🏆' : '🎯'}
