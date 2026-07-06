@@ -7,14 +7,12 @@ import { db } from '@/lib/firebase'
 import { useToast } from '@/components/Toast'
 
 const DEFAULT_CHECKLIST = [
+  'Mutfak temizliği',
   'Zemin süpürme ve silme',
-  'Tezgah ve raf temizliği',
-  'Vitrin camı silme',
-  'Kasa alanı düzenleme',
   'Çöp boşaltma',
   'Tuvalet temizliği',
-  'Depo düzenleme',
-  'Dış cephe süpürme'
+  'Teras temizliği',
+  'Ortak alan temizliği'
 ]
 
 const DAY_ICONS = ['📌', '📍', '🔖', '🏷️', '📎', '🎯', '⭐']
