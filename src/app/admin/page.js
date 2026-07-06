@@ -24,6 +24,7 @@ export default function AdminPage() {
   const [newUser, setNewUser] = useState({ salesCode: '', email: '', password: '', name: '', role: 'STAFF', storeId: '', monthlyQuota: '', category: '' })
 
   const CATEGORY_MAP = {
+    'Emre YALIMKILINÇ': 'Giriş kat',
     'Derya DEMİR': 'Giriş kat',
     'Sevim TEKİN': 'Giriş kat',
     'Onur VARAN': 'Giriş kat',

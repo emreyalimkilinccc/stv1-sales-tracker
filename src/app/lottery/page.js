@@ -8,7 +8,7 @@ import LotteryWheel from '@/components/LotteryWheel'
 import { useToast } from '@/components/Toast'
 
 const CATEGORY_MAP = {
-  'Derya DEMİR': 'Giriş kat', 'Sevim TEKİN': 'Giriş kat',
+  'Emre YALIMKILINÇ': 'Giriş kat', 'Derya DEMİR': 'Giriş kat', 'Sevim TEKİN': 'Giriş kat',
   'Onur VARAN': 'Giriş kat', 'Merve KARAASLAN': 'Giriş kat',
   'Bilge TURAN': 'Züccaciye', 'ELİF DEMİR': 'Züccaciye',
   'Rabia ÇALHAN': 'Mobilya', 'Nurdagül MENEKŞE': 'Mobilya',
