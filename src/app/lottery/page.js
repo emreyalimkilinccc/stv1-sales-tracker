@@ -15,6 +15,16 @@ const CATEGORY_MAP = {
   'Seda SOYDAN': 'Kasa', 'Özge KEL': 'Kasa', 'Şennur ŞAHİN': 'Kasa', 'Betül Merve GÜNGÖR': 'Kasa'
 }
 
+// Esnek isim eşleştirme — büyük/küçük harf ve boşluk farkı tolere edilir
+const normalize = (s) => (s || '').toLowerCase().replace(/\s+/g, ' ').trim()
+function findCategory(userName) {
+  const norm = normalize(userName)
+  for (const [key, cat] of Object.entries(CATEGORY_MAP)) {
+    if (normalize(key) === norm) return cat
+  }
+  return 'Kategorisiz'
+}
+
 export default function LotteryPage() {
   const { user } = useAuth()
   const toast = useToast()
@@ -58,7 +68,7 @@ export default function LotteryPage() {
       // Kategorileri her zaman CATEGORY_MAP'ten ata (Firestore'dan bağımsız)
       const categorized = allUsers.map(u => ({
         ...u,
-        category: CATEGORY_MAP[u.name] || 'Kategorisiz'
+        category: findCategory(u.name)
       }))
 
       // Kategori filtresi
