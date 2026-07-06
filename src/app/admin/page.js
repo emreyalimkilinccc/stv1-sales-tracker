@@ -8,6 +8,7 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as 
 import { auth } from '@/lib/firebase'
 import { formatCurrency } from '@/lib/utils'
 import { useToast } from '@/components/Toast'
+import ActivityLogTab from '@/components/ActivityLogTab'
 
 export default function AdminPage() {
   const { user } = useAuth()
@@ -159,7 +160,8 @@ export default function AdminPage() {
         {[
           { key: 'stores', label: '🏪 Mağazalar', color: '#10b981' },
           { key: 'users', label: '👥 Personel', color: '#3b82f6' },
-          { key: 'quotas', label: '🎯 Kotalar', color: '#f59e0b' }
+          { key: 'quotas', label: '🎯 Kotalar', color: '#f59e0b' },
+          { key: 'log', label: '📋 Aktivite Logu', color: '#8b5cf6' }
         ].map(tab => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{
             padding: '0.75rem 1rem', fontSize: '13px', fontWeight: '600', borderRadius: '0.75rem',
@@ -483,6 +485,11 @@ export default function AdminPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* AKTİVİTE LOGU SEKMESİ */}
+      {activeTab === 'log' && (
+        <ActivityLogTab />
       )}
 
       {/* Admin Tekrar Giriş Modal'ı */}

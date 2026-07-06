@@ -1,9 +1,16 @@
 'use client'
 
-import { AuthProvider } from '@/lib/auth-context'
+import { AuthProvider, useAuth } from '@/lib/auth-context'
 import { useEffect } from 'react'
 import LotteryCelebration from '@/components/LotteryCelebration'
 import { ToastProvider } from '@/components/Toast'
+import { useSessionTimeout } from '@/hooks/useSessionTimeout'
+
+function SessionWrapper({ children }) {
+  const { user } = useAuth()
+  useSessionTimeout()
+  return <>{children}</>
+}
 
 export function Providers({ children }) {
   useEffect(() => {
@@ -15,8 +22,10 @@ export function Providers({ children }) {
   return (
     <ToastProvider>
       <AuthProvider>
-        {children}
-        <LotteryCelebration />
+        <SessionWrapper>
+          {children}
+          <LotteryCelebration />
+        </SessionWrapper>
       </AuthProvider>
     </ToastProvider>
   )
