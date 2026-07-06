@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback } from 'react'
 
 const FALLBACK_PARTICIPANTS = [
   { name: 'Emre YALIMKILINÇ', color: '#3b82f6' },
@@ -15,19 +15,17 @@ export default function LotteryWheel({ onWinner, participants: propParticipants 
   const [spinning, setSpinning] = useState(false)
   const [winner, setWinner] = useState(null)
   const [showResult, setShowResult] = useState(false)
-  const [rotation, setRotation] = useState(0)
   const [highlightIdx, setHighlightIdx] = useState(-1)
+  const [currentDisplayName, setCurrentDisplayName] = useState('')
+  const wheelRef = useRef(null)
   const audioCtxRef = useRef(null)
-  const tickTimerRef = useRef(null)
-  const animRef = useRef(null)
-  const rotationRef = useRef(0)
+  const tickIntervalRef = useRef(null)
+  const currentRotation = useRef(0)
 
   const segmentAngle = 360 / PARTICIPANTS.length
 
   const getAudioCtx = useCallback(() => {
-    if (!audioCtxRef.current) {
-      audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)()
-    }
+    if (!audioCtxRef.current) audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)()
     return audioCtxRef.current
   }, [])
 
@@ -37,28 +35,26 @@ export default function LotteryWheel({ onWinner, participants: propParticipants 
       const osc = ctx.createOscillator()
       const gain = ctx.createGain()
       osc.connect(gain); gain.connect(ctx.destination)
-      osc.frequency.value = 800 + Math.random() * 400
+      osc.frequency.value = 700 + Math.random() * 500
       osc.type = 'triangle'
       gain.gain.value = 0.06
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06)
-      osc.start(); osc.stop(ctx.currentTime + 0.06)
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05)
+      osc.start(); osc.stop(ctx.currentTime + 0.05)
     } catch (e) {}
   }, [getAudioCtx])
 
   const playWin = useCallback(() => {
     try {
       const ctx = getAudioCtx()
-      const melody = [523, 659, 784, 1047, 1319, 1568]
-      melody.forEach((freq, i) => {
+      ;[523, 659, 784, 1047, 1319].forEach((freq, i) => {
         const osc = ctx.createOscillator()
         const gain = ctx.createGain()
         osc.connect(gain); gain.connect(ctx.destination)
-        osc.frequency.value = freq
-        osc.type = 'sine'
+        osc.frequency.value = freq; osc.type = 'sine'
         gain.gain.value = 0.15
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6 + i * 0.12)
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5 + i * 0.12)
         osc.start(ctx.currentTime + i * 0.1)
-        osc.stop(ctx.currentTime + 0.6 + i * 0.12)
+        osc.stop(ctx.currentTime + 0.5 + i * 0.12)
       })
     } catch (e) {}
   }, [getAudioCtx])
@@ -68,75 +64,54 @@ export default function LotteryWheel({ onWinner, participants: propParticipants 
     setSpinning(true)
     setShowResult(false)
     setWinner(null)
-    setHighlightIdx(-1)
 
-    // Rastgele kazanan belirle
+    // Rastgele kazanan seç
     const winnerIdx = Math.floor(Math.random() * PARTICIPANTS.length)
-    const targetAngle = winnerIdx * segmentAngle
 
-    // Kazanan dilimin tam ortasına gelecek şekilde döndür
-    // Ok üstte (0 derece), çark saat yönünde döner
-    // Kazanan dilimin açısı = winnerIdx * segmentAngle ile (winnerIdx+1) * segmentAngle arası
-    // Hedef: O dilimin tam ortası 0 dereceye (ok yönüne) gelmeli
-    const segmentMiddle = targetAngle + segmentAngle / 2
-    const totalRotation = rotationRef.current + 360 * 12 + (360 - segmentMiddle)
+    // Hedef açı: kazanan dilimin tam ortası 0°'ye (ok yönüne) gelmeli
+    // Kazanan dilimin açısı: winnerIdx * segmentAngle ile (winnerIdx+1) * segmentAngle
+    // 0° = üst (ok yönü), saat yönünde pozitif
+    const targetAngle = winnerIdx * segmentAngle + segmentAngle / 2
 
-    const duration = 6000
-    const startTime = performance.now()
-    const startRot = rotationRef.current
-    const deltaRot = totalRotation - startRot
-    let lastTick = -1
+    // 12 tam tur + hedefe kadar
+    const totalSpin = 360 * 12 + (360 - targetAngle)
+    const finalRotation = currentRotation.current + totalSpin
 
-    const animate = (now) => {
-      const elapsed = now - startTime
-      const progress = Math.min(elapsed / duration, 1)
-      // Cubic ease-out: hızlı başlar, yavaş biter
+    // CSS transition ile döndür — tarayıcı kendi başina animasyon yapar
+    if (wheelRef.current) {
+      wheelRef.current.style.transition = 'transform 6s cubic-bezier(0.17, 0.67, 0.12, 0.99)'
+      wheelRef.current.style.transform = `rotate(${finalRotation}deg)`
+    }
+
+    currentRotation.current = finalRotation
+
+    // Tick sesi — 6 saniyede 40 kez
+    let tickCount = 0
+    const totalTicks = 40
+    tickIntervalRef.current = setInterval(() => {
+      tickCount++
+      const progress = tickCount / totalTicks
       const eased = 1 - Math.pow(1 - progress, 3)
+      const idx = Math.floor((eased * PARTICIPANTS.length * 3) % PARTICIPANTS.length)
+      setHighlightIdx(idx)
+      setCurrentDisplayName(PARTICIPANTS[idx].name)
+      playTick()
 
-      const currentRot = startRot + deltaRot * eased
-      rotationRef.current = currentRot
-      setRotation(currentRot)
-
-      // Hangi dilimde olduğumuzu hesapla (ok yönünde en üstte)
-      const normalizedAngle = ((360 - (currentRot % 360)) % 360)
-      const currentIdx = Math.floor(normalizedAngle / segmentAngle) % PARTICIPANTS.length
-      setHighlightIdx(currentIdx)
-
-      // Tick sesi
-      const tickCount = Math.floor(progress * 40)
-      if (tickCount > lastTick) {
-        lastTick = tickCount
-        playTick()
+      if (tickCount >= totalTicks) {
+        clearInterval(tickIntervalRef.current)
       }
+    }, 150)
 
-      if (progress < 1) {
-        animRef.current = requestAnimationFrame(animate)
-      } else {
-        // Durdu
-        rotationRef.current = totalRot
-        setHighlightIdx(winnerIdx)
-        setWinner(PARTICIPANTS[winnerIdx])
-        setSpinning(false)
-        playWin()
-        setTimeout(() => setShowResult(true), 600)
-      }
-    }
-
-    animRef.current = requestAnimationFrame(animate)
+    // 6 saniye sonra dur
+    setTimeout(() => {
+      setHighlightIdx(winnerIdx)
+      setCurrentDisplayName(PARTICIPANTS[winnerIdx].name)
+      setWinner(PARTICIPANTS[winnerIdx])
+      setSpinning(false)
+      playWin()
+      setTimeout(() => setShowResult(true), 600)
+    }, 6100)
   }, [spinning, PARTICIPANTS, segmentAngle, playTick, playWin])
-
-  useEffect(() => {
-    return () => {
-      if (animRef.current) cancelAnimationFrame(animRef.current)
-      if (tickTimerRef.current) clearTimeout(tickTimerRef.current)
-    }
-  }, [])
-
-  useEffect(() => {
-    setWinner(null)
-    setShowResult(false)
-    setHighlightIdx(-1)
-  }, [propParticipants])
 
   const SIZE = 300
   const CENTER = SIZE / 2
@@ -157,11 +132,9 @@ export default function LotteryWheel({ onWinner, participants: propParticipants 
         }} />
 
         {/* Dönen Çark */}
-        <div style={{
+        <div ref={wheelRef} style={{
           width: `${SIZE}px`, height: `${SIZE}px`,
-          borderRadius: '50%', position: 'relative',
-          transform: `rotate(${rotation}deg)`,
-          willChange: 'transform'
+          borderRadius: '50%', position: 'relative'
         }}>
           {/* SVG dilimler */}
           <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} style={{ position: 'absolute', top: 0, left: 0 }}>
@@ -185,7 +158,6 @@ export default function LotteryWheel({ onWinner, participants: propParticipants 
                 </g>
               )
             })}
-            {/* Dış halka */}
             <circle cx={CENTER} cy={CENTER} r={WHEEL_R} fill="none" stroke="#475569" strokeWidth="4" />
           </svg>
 
@@ -197,13 +169,12 @@ export default function LotteryWheel({ onWinner, participants: propParticipants 
             const textAngle = i * segmentAngle + segmentAngle / 2
             return (
               <div key={p.name + i} style={{
-                position: 'absolute',
-                left: `${x}px`, top: `${y}px`,
+                position: 'absolute', left: `${x}px`, top: `${y}px`,
                 transform: `translate(-50%, -50%) rotate(${textAngle}deg)`,
                 fontSize: PARTICIPANTS.length > 6 ? '9px' : '11px',
                 fontWeight: '800', color: '#fff',
                 textShadow: '0 1px 4px rgba(0,0,0,0.9)',
-                whiteSpace: 'nowrap', letterSpacing: '0.3px'
+                whiteSpace: 'nowrap', pointerEvents: 'none'
               }}>
                 {p.name.split(' ')[0]}
               </div>
@@ -230,33 +201,23 @@ export default function LotteryWheel({ onWinner, participants: propParticipants 
       <div style={{
         fontSize: '24px', fontWeight: '700',
         color: spinning ? '#f59e0b' : winner ? '#10b981' : '#f8fafc',
-        marginBottom: '1.5rem', minHeight: '36px',
-        transition: 'color 0.3s ease'
+        marginBottom: '1.5rem', minHeight: '36px'
       }}>
-        {spinning && highlightIdx >= 0 ? (
+        {spinning && currentDisplayName ? (
           <span style={{ color: PARTICIPANTS[highlightIdx]?.color || '#f59e0b' }}>
-            {PARTICIPANTS[highlightIdx]?.name}
+            {currentDisplayName}
           </span>
-        ) : winner ? (
-          `🏆 ${winner.name}`
-        ) : PARTICIPANTS.length < 2 ? (
-          '⚠️ En az 2 katılımcı gerekli'
-        ) : (
-          '🎯 Çarkı Döndür'
-        )}
+        ) : winner ? `🏆 ${winner.name}` : PARTICIPANTS.length < 2 ? '⚠️ En az 2 katılımcı gerekli' : '🎯 Çarkı Döndür'}
       </div>
 
       {/* Buton */}
       {!winner && (
         <button onClick={spin} disabled={spinning || PARTICIPANTS.length < 2} style={{
           padding: '1rem 3rem', borderRadius: '9999px', fontSize: '18px', fontWeight: '700',
-          background: spinning || PARTICIPANTS.length < 2
-            ? 'linear-gradient(135deg, #475569, #334155)'
-            : 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+          background: spinning || PARTICIPANTS.length < 2 ? 'linear-gradient(135deg, #475569, #334155)' : 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
           color: '#fff', border: 'none',
           cursor: spinning || PARTICIPANTS.length < 2 ? 'not-allowed' : 'pointer',
-          boxShadow: spinning ? 'none' : '0 4px 20px rgba(139, 92, 246, 0.4)',
-          transition: 'all 0.3s ease'
+          boxShadow: spinning ? 'none' : '0 4px 20px rgba(139, 92, 246, 0.4)'
         }}>
           {spinning ? '⏳ Dönüyor...' : '🎰 Çarkı Döndür'}
         </button>
