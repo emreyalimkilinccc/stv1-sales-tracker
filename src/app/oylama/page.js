@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
-import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from 'firebase/firestore'
+import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp, getCountFromServer } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 
 export default function OylamaPage() {
@@ -14,8 +14,22 @@ export default function OylamaPage() {
   const [userVotes, setUserVotes] = useState({})
   const [editingPoll, setEditingPoll] = useState(null)
   const [showClosed, setShowClosed] = useState(true)
+  const [totalUsers, setTotalUsers] = useState(0)
+  const [now, setNow] = useState(new Date())
 
   const canManage = user && (user.role === 'ADMIN' || user.role === 'MANAGER')
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  useEffect(() => {
+    if (!user) return
+    const snap = getCountFromServer(collection(db, 'user')).then(snap => {
+      setTotalUsers(snap.data().count)
+    }).catch(() => {})
+  }, [user])
 
   useEffect(() => {
     if (!user) return
@@ -55,7 +69,8 @@ export default function OylamaPage() {
         createdBy: user.name || user.email,
         createdById: user.uid,
         createdAt: serverTimestamp(),
-        isActive: true
+        isActive: true,
+        totalVoters: 0
       })
       setNewPoll({ question: '', options: ['', ''] })
       setShowCreate(false)
@@ -68,11 +83,16 @@ export default function OylamaPage() {
       const poll = polls.find(p => p.id === pollId)
       const newOptions = [...poll.options]
       newOptions[optionIndex].votes += 1
-      await updateDoc(doc(db, 'polls', pollId), { options: newOptions })
+      const newVoters = (poll.totalVoters || 0) + 1
+      await updateDoc(doc(db, 'polls', pollId), { options: newOptions, totalVoters: newVoters })
       await addDoc(collection(db, 'votes'), {
         pollId, userId: user.uid, userName: user.name || user.email,
         optionIndex, createdAt: serverTimestamp()
       })
+      // Tüm kullanıcılar oy verdiyse otomatik kapat
+      if (totalUsers > 0 && newVoters >= totalUsers) {
+        await updateDoc(doc(db, 'polls', pollId), { isActive: false })
+      }
     } catch (error) { alert('Hata: ' + error.message) }
   }
 
@@ -81,6 +101,35 @@ export default function OylamaPage() {
       await updateDoc(doc(db, 'polls', pollId), { isActive: !currentActive })
     } catch (error) { alert('Hata: ' + error.message) }
   }
+
+  const handleConclude = async (pollId) => {
+    try {
+      await updateDoc(doc(db, 'polls', pollId), { isActive: false })
+    } catch (error) { alert('Hata: ' + error.message) }
+  }
+
+  // Gece yarısı otomatik kapatma
+  useEffect(() => {
+    if (!user || polls.length === 0) return
+    const midnight = new Date(now)
+    midnight.setHours(24, 0, 0, 0)
+    if (now >= midnight) return
+
+    const checkMidnight = async () => {
+      for (const poll of polls) {
+        if (poll.isActive) {
+          const pollCreated = poll.createdAt?.toDate ? poll.createdAt.toDate() : new Date()
+          if (pollCreated.toDateString() === now.toDateString()) {
+            const pollMidnight = new Date(now); pollMidnight.setHours(24, 0, 0, 0)
+            if (now >= pollMidnight) {
+              await updateDoc(doc(db, 'polls', poll.id), { isActive: false })
+            }
+          }
+        }
+      }
+    }
+    checkMidnight()
+  }, [now, polls, user])
 
   const handleDeletePoll = async (pollId) => {
     if (!confirm('Bu oylamayı silmek istediğinize emin misiniz?')) return
@@ -206,6 +255,14 @@ export default function OylamaPage() {
             const totalVotes = poll.options.reduce((sum, o) => sum + o.votes, 0)
             const hasVoted = userVotes[poll.id] !== undefined
             const isEditing = editingPoll && editingPoll.id === poll.id
+            const voters = poll.totalVoters || totalVotes
+
+            // Geri sayım
+            const pollMidnight = new Date(now); pollMidnight.setHours(24, 0, 0, 0)
+            const remaining = pollMidnight - now
+            const rH = Math.floor(remaining / 3600000)
+            const rM = Math.floor((remaining % 3600000) / 60000)
+            const rS = Math.floor((remaining % 60000) / 1000)
 
             return (
               <div key={poll.id} className="card" style={{ marginBottom: '1rem', borderLeft: '4px solid #06b6d4' }}>
@@ -213,15 +270,19 @@ export default function OylamaPage() {
                   <div>
                     <div style={{ fontSize: '16px', fontWeight: '700', color: '#f8fafc' }}>❓ {poll.question}</div>
                     <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '0.25rem' }}>
-                      👤 {poll.createdBy} • 🗳️ {totalVotes} oy
+                      👤 {poll.createdBy} • 🗳️ {voters}/{totalUsers > 0 ? totalUsers : '?'} oy
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#f59e0b', marginTop: '0.25rem', fontWeight: '600' }}>
+                      ⏰ Bitiş: {String(rH).padStart(2,'0')}:{String(rM).padStart(2,'0')}:{String(rS).padStart(2,'0')}
+                      {totalUsers > 0 && voters >= totalUsers && ' — Tümü oy verdi!'}
                     </div>
                   </div>
                   {canManage && (
-                    <div style={{ display: 'flex', gap: '0.375rem' }}>
-                      <button onClick={() => handleToggleActive(poll.id, poll.isActive)} style={{
-                        padding: '0.375rem 0.625rem', borderRadius: '0.375rem', fontSize: '11px',
-                        backgroundColor: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none', cursor: 'pointer'
-                      }}>⏹️ Kapat</button>
+                    <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
+                      <button onClick={() => handleConclude(poll.id)} style={{
+                        padding: '0.375rem 0.625rem', borderRadius: '0.375rem', fontSize: '11px', fontWeight: '600',
+                        backgroundColor: 'rgba(16,185,129,0.15)', color: '#10b981', border: 'none', cursor: 'pointer'
+                      }}>🏁 Sonuçlandır</button>
                       <button onClick={() => handleDeletePoll(poll.id)} style={{
                         padding: '0.375rem 0.625rem', borderRadius: '0.375rem', fontSize: '11px',
                         backgroundColor: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none', cursor: 'pointer'
