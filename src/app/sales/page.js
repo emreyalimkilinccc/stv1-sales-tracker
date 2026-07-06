@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
+import { useRouter } from 'next/navigation'
 import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, orderBy, writeBatch } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { formatCurrency, formatCurrencyDecimal } from '@/lib/utils'
@@ -11,10 +12,11 @@ import * as XLSX from 'xlsx'
 
 export default function SalesPage() {
   const { user, loading: authLoading } = useAuth()
-  const toast = useToast()
+  const router = useRouter()
   const [sales, setSales] = useState([])
   const [filteredSales, setFilteredSales] = useState([])
   const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
   const [editingSale, setEditingSale] = useState(null)
   const [sendingSale, setSendingSale] = useState(null)
   const [sendData, setSendData] = useState({ subject: '', description: '' })
@@ -76,13 +78,16 @@ export default function SalesPage() {
 
   const handleSubmit = async (formData) => {
     if (!user) { toast.error('Kullanıcı bilgisi bulunamadı.'); return }
+    if (submitting) return
+    setSubmitting(true)
     try {
       const seller = selectedSeller || user
       const saleData = { ...formData, amount: parseFloat(formData.amount) || 0, cost: parseFloat(formData.cost) || 0, itemCount: parseInt(formData.itemCount) || 0, bonusItemCount: parseInt(formData.bonusItemCount) || 0, userId: seller.id || user.uid, userName: seller.name || user.name || 'Bilinmeyen', storeId: seller.storeId || user.storeId || null, createdAt: new Date().toISOString() }
       if (editingSale) { await updateDoc(doc(db, 'sales', editingSale.id), saleData); setEditingSale(null) }
       else { await addDoc(collection(db, 'sales'), saleData) }
-      fetchSales()
-    } catch (error) { toast.error('Kaydedilemedi: ' + error.message) }
+      toast.success('Satış başarıyla kaydedildi!')
+      router.push('/dashboard')
+    } catch (error) { toast.error('Kaydedilemedi: ' + error.message) } finally { setSubmitting(false) }
   }
 
   const handleDelete = async (id) => {
