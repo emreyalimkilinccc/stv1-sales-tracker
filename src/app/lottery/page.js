@@ -80,11 +80,12 @@ export default function LotteryPage() {
         })
       }
 
-      // Tekrarlanan kullanıcıları kaldır (id bazında)
-      const seen = new Set()
+      // Tekrarlanan kullanıcıları kaldır (isim bazında)
+      const seenNames = new Set()
       filtered = filtered.filter(u => {
-        if (seen.has(u.id)) return false
-        seen.add(u.id)
+        const nameKey = normalize(u.name)
+        if (seenNames.has(nameKey)) return false
+        seenNames.add(nameKey)
         return true
       })
 
