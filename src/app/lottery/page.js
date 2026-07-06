@@ -80,6 +80,14 @@ export default function LotteryPage() {
         })
       }
 
+      // Tekrarlanan kullanıcıları kaldır (id bazında)
+      const seen = new Set()
+      filtered = filtered.filter(u => {
+        if (seen.has(u.id)) return false
+        seen.add(u.id)
+        return true
+      })
+
       const colors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#84cc16']
       const emojis = { ADMIN: '👑', MANAGER: '👔', STAFF: '👤' }
 
@@ -192,7 +200,7 @@ export default function LotteryPage() {
             backgroundColor: selectedCategory === 'all' ? 'rgba(139, 92, 246, 0.2)' : 'transparent',
             color: selectedCategory === 'all' ? '#c4b5fd' : '#94a3b8',
             cursor: 'pointer', transition: 'all 0.2s ease'
-          }}>👥 Tümü ({participants.length})</button>
+          }}>👥 Tüm Kullanıcılar ({participants.length})</button>
           {[
             { name: 'Giriş kat', icon: '🚪', color: '#3b82f6' },
             { name: 'Züccaciye', icon: '🍳', color: '#8b5cf6' },
