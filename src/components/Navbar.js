@@ -59,6 +59,7 @@ export default function Navbar() {
     { href: '/dashboard', label: 'Veriler', icon: '📊' },
     { href: '/sales', label: 'Satış', icon: '💰' },
     { href: '/reports', label: 'Raporlar', icon: '📈' },
+    { href: '/temizlik', label: 'Temizlik', icon: '🧹' },
     { href: '/oylama', label: 'Oylama', icon: '🗳️' },
     { href: '/lottery', label: 'Çekiliş', icon: '🎰', adminOnly: true },
     { href: '/admin', label: 'Yönetim', icon: '⚙️' },
