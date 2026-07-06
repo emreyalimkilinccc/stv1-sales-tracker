@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
+import { requestNotificationPermission } from '@/lib/notifications'
 import { usePathname } from 'next/navigation'
 import { collection, query, where, onSnapshot } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
@@ -134,6 +135,15 @@ export default function Navbar() {
             }}>
               {user.role === 'ADMIN' ? '👑 Yönetici' : user.role === 'MANAGER' ? '👔 Müdür' : '👤 Personel'}
             </div>
+
+            {/* Bildirim İzni */}
+            {Notification && Notification.permission !== 'granted' && (
+              <button onClick={async () => { await requestNotificationPermission() }} style={{
+                width: '38px', height: '38px', borderRadius: '10px', border: '1px solid #f59e0b',
+                backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', fontSize: '16px',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }} title="Bildirimleri aç">🔔</button>
+            )}
 
             {/* Menü Butonu */}
             <button onClick={() => setMenuOpen(!menuOpen)} style={{
