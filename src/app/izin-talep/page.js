@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
-import { collection, query, where, getDocs, addDoc, updateDoc, doc, onSnapshot, orderBy } from 'firebase/firestore'
+import { collection, query, where, getDocs, addDoc, updateDoc, doc, onSnapshot } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useToast } from '@/components/Toast'
 
@@ -47,11 +47,13 @@ export default function IzinTalepPage() {
   useEffect(() => {
     if (!user) return
     const q = canManage
-      ? query(collection(db, 'leaveRequests'), orderBy('createdAt', 'desc'))
-      : query(collection(db, 'leaveRequests'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'))
+      ? collection(db, 'leaveRequests')
+      : query(collection(db, 'leaveRequests'), where('userId', '==', user.uid))
 
     const unsubscribe = onSnapshot(q, (snap) => {
-      setRequests(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+      const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      docs.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
+      setRequests(docs)
       setLoading(false)
     })
     return () => unsubscribe()
