@@ -290,8 +290,8 @@ export default function TemizlikPage() {
                 <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '0.5rem' }}>Atama yapılmamış</div>
               )}
 
-              {/* CheckedList + Foto — Sadece atanan kişi veya bugün */}
-              {(isMyDay || isToday) && (
+              {/* CheckedList + Foto — Sadece atanan kişi */}
+              {isMyDay && (
                 <div style={{ padding: '0.75rem', backgroundColor: '#0f172a', borderRadius: '0.75rem', border: '1px solid #334155' }}>
                   {!myCompletion ? (
                     <>
