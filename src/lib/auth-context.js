@@ -80,16 +80,17 @@ export function AuthProvider({ children }) {
       throw new Error('Satış kodu bulunamadı')
     }
 
-    const userDoc = querySnapshot.docs[0]
-    const userData = userDoc.data()
-    const firestoreDocId = userDoc.id
+    const userData = querySnapshot.docs[0].data()
     
+    // Basit giriş — onAuthStateChanged her şeyi halledecek
     const result = await signInWithEmailAndPassword(auth, userData.email, password)
     
-    if (firestoreDocId !== result.user.uid) {
-      const { id: oldId, ...rest } = userData
-      await setDoc(doc(db, 'user', result.user.uid), {
-        ...rest,
+    // Sync doc (arka planda, hata olursa umursama)
+    const uid = result.user.uid
+    const docId = querySnapshot.docs[0].id
+    if (docId !== uid) {
+      setDoc(doc(db, 'user', uid), {
+        ...userData,
         email: userData.email,
         salesCode: userData.salesCode || salesCode,
         name: userData.name,
@@ -98,18 +99,15 @@ export function AuthProvider({ children }) {
         category: userData.category || '',
         monthlyQuota: userData.monthlyQuota || 0,
         createdAt: userData.createdAt || new Date().toISOString()
-      })
+      }).catch(() => {})
     }
     
+    // Anlık user set et
     setUser({
-      uid: result.user.uid,
-      email: result.user.email,
-      name: userData.name || '',
-      role: userData.role || 'STAFF',
-      salesCode: userData.salesCode || salesCode,
-      storeId: userData.storeId || null,
-      category: userData.category || '',
-      monthlyQuota: userData.monthlyQuota || 0
+      uid, email: result.user.email, name: userData.name || '',
+      role: userData.role || 'STAFF', salesCode: userData.salesCode || salesCode,
+      storeId: userData.storeId || null, category: userData.category || '',
+      monthlyQuota: userData.monthlyQuota || 0, loading: false
     })
     
     return result
