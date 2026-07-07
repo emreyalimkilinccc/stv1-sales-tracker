@@ -67,6 +67,7 @@ export default function Navbar() {
     { href: '/temizlik', label: 'Temizlik', icon: '🧹' },
     { href: '/izin-talep', label: 'İzin Talep', icon: '📅' },
     { href: '/oylama', label: 'Oylama', icon: '🗳️' },
+    { href: '/kullanim-talimati', label: 'Kullanım Talimatı', icon: '📖' },
     { href: '/lottery', label: 'Çekiliş', icon: '🎰', adminOnly: true },
     { href: '/admin', label: 'Yönetim', icon: '⚙️' },
   ]
