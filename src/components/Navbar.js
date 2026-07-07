@@ -62,6 +62,7 @@ export default function Navbar() {
     { href: '/musteriler', label: 'Müşteriler', icon: '👥' },
     { href: '/teslim', label: 'Müşteri Teslim', icon: '📦' },
     { href: '/envanter', label: 'Envanter', icon: '📦' },
+    { href: '/gelen-urunler', label: 'Gelen Ürünler', icon: '📥' },
     { href: '/reports', label: 'Raporlar', icon: '📈' },
     { href: '/temizlik', label: 'Temizlik', icon: '🧹' },
     { href: '/izin-talep', label: 'İzin Talep', icon: '📅' },
