@@ -139,7 +139,7 @@ export default function Navbar() {
             </div>
 
             {/* Bildirim İzni */}
-            {Notification && Notification.permission !== 'granted' && (
+            {typeof Notification !== 'undefined' && Notification.permission !== 'granted' && (
               <button onClick={async () => { await requestNotificationPermission() }} style={{
                 width: '38px', height: '38px', borderRadius: '10px', border: '1px solid #f59e0b',
                 backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', fontSize: '16px',
