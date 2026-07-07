@@ -161,7 +161,8 @@ export default function AdminPage() {
           { key: 'stores', label: '🏪 Mağazalar', color: '#10b981' },
           { key: 'users', label: '👥 Personel', color: '#3b82f6' },
           { key: 'quotas', label: '🎯 Kotalar', color: '#f59e0b' },
-          { key: 'log', label: '📋 Aktivite Logu', color: '#8b5cf6' }
+          { key: 'log', label: '📋 Aktivite Logu', color: '#8b5cf6' },
+          { key: 'backup', label: '💾 Veri Yedekle', color: '#06b6d4' }
         ].map(tab => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{
             padding: '0.75rem 1rem', fontSize: '13px', fontWeight: '600', borderRadius: '0.75rem',
@@ -490,6 +491,36 @@ export default function AdminPage() {
       {/* AKTİVİTE LOGU SEKMESİ */}
       {activeTab === 'log' && (
         <ActivityLogTab />
+      )}
+
+      {/* VERİ YEDEKLEME SEKMESİ */}
+      {activeTab === 'backup' && (
+        <div className="card">
+          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>💾 Veri Yedekleme</h3>
+          <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '1rem' }}>Tüm verilerinizi JSON dosyası olarak indirin.</p>
+          <button onClick={async () => {
+            try {
+              const collections = ['user', 'stores', 'sales', 'customers', 'inventory', 'cleaningSchedule', 'cleaningCompletions', 'leaveRequests', 'polls', 'votes', 'lottery']
+              const backup = { exportDate: new Date().toISOString(), data: {} }
+              for (const col of collections) {
+                const snap = await getDocs(collection(db, col))
+                backup.data[col] = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+              }
+              const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' })
+              const url = URL.createObjectURL(blob)
+              const a = document.createElement('a')
+              a.href = url; a.download = `stv1-yedek-${new Date().toISOString().split('T')[0]}.json`
+              a.click(); URL.revokeObjectURL(url)
+              toast.success('Veri yedeklendi!')
+            } catch (error) { toast.error('Yedekleme hatası: ' + error.message) }
+          }} style={{
+            padding: '0.875rem 1.5rem', borderRadius: '0.75rem', fontSize: '14px', fontWeight: '600',
+            background: 'linear-gradient(135deg, #06b6d4, #0891b2)', color: '#fff', border: 'none', cursor: 'pointer'
+          }}>📥 JSON Olarak İndir</button>
+          <div style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: '#0f172a', borderRadius: '0.5rem', fontSize: '12px', color: '#64748b' }}>
+            ⚠️ Yedek dosyası tüm koleksiyonları (kullanıcılar, satışlar, mağazalar, envanter vb.) içerir.
+          </div>
+        </div>
       )}
 
       {/* Admin Tekrar Giriş Modal'ı */}

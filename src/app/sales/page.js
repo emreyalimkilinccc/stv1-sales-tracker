@@ -31,6 +31,8 @@ export default function SalesPage() {
   const [filterCategory, setFilterCategory] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedSeller, setSelectedSeller] = useState(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 20
 
   useEffect(() => { if (user) { fetchSales(); if (canEdit) fetchStaffList(); setSelectedSeller(user) } }, [user])
 
@@ -175,6 +177,8 @@ export default function SalesPage() {
   const totalToday = todaySales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
 
   const displaySales = canEdit ? filteredSales : sales
+  const totalPages = Math.ceil(displaySales.length / ITEMS_PER_PAGE)
+  const pagedSales = displaySales.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
 
   return (
     <div className="px-4 py-6 max-w-7xl mx-auto">
@@ -320,7 +324,7 @@ export default function SalesPage() {
         : displaySales.length === 0 ? <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>📭 Kayıt bulunamadı</div>
         : (
           <div className="space-y-3">
-            {displaySales.map(sale => {
+            {pagedSales.map(sale => {
               const isNegative = parseFloat(sale.amount) < 0
               return (
                 <div key={sale.id} style={{ backgroundColor: '#0f172a', borderRadius: '0.5rem', padding: '0.875rem', borderLeft: `4px solid ${isNegative ? '#ef4444' : '#3b82f6'}`, marginBottom: '0.5rem' }}>
@@ -357,6 +361,17 @@ export default function SalesPage() {
                 </div>
               )
             })}
+          </div>
+        )}
+
+        {/* Sayfalama */}
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #334155' }}>
+            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}
+              style={{ padding: '0.375rem 0.75rem', borderRadius: '0.375rem', fontSize: '12px', backgroundColor: currentPage === 1 ? '#334155' : '#3b82f6', color: currentPage === 1 ? '#64748b' : '#fff', border: 'none', cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}>⬅️</button>
+            <span style={{ fontSize: '13px', color: '#94a3b8' }}>{currentPage} / {totalPages}</span>
+            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}
+              style={{ padding: '0.375rem 0.75rem', borderRadius: '0.375rem', fontSize: '12px', backgroundColor: currentPage === totalPages ? '#334155' : '#3b82f6', color: currentPage === totalPages ? '#64748b' : '#fff', border: 'none', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer' }}>➡️</button>
           </div>
         )}
       </div>
