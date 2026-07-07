@@ -43,7 +43,10 @@ export function AuthProvider({ children }) {
           setUser({
             uid: firebaseUser.uid,
             email: firebaseUser.email,
-            role: 'STAFF'
+            role: 'STAFF',
+            name: '',
+            monthlyQuota: 0,
+            category: ''
           })
         }
       } else {
@@ -81,6 +84,7 @@ export function AuthProvider({ children }) {
     const userData = userDoc.data()
     const firestoreDocId = userDoc.id
     
+    // Firestore doc'u UID ile eşleşmiyorsa sync et
     const result = await signInWithEmailAndPassword(auth, userData.email, password)
     
     if (firestoreDocId !== result.user.uid) {
@@ -92,19 +96,13 @@ export function AuthProvider({ children }) {
         name: userData.name,
         role: userData.role || 'STAFF',
         storeId: userData.storeId || null,
+        category: userData.category || '',
+        monthlyQuota: userData.monthlyQuota || 0,
         createdAt: userData.createdAt || new Date().toISOString()
       })
     }
     
-    setUser({
-      uid: result.user.uid,
-      email: result.user.email,
-      name: userData.name,
-      role: userData.role || 'STAFF',
-      salesCode: userData.salesCode || salesCode,
-      storeId: userData.storeId || null
-    })
-    
+    // setUser çağırma — onAuthStateChanged zaten tetiklenecek
     return result
   }
 

@@ -46,6 +46,7 @@ export default function DashboardPage() {
 
   const fetchQuotas = async () => {
     try {
+      if (!user?.uid) return
       // Bireysel kota: user doc'undan (getDoc ile)
       const userDocSnap = await getDoc(doc(db, 'user', user.uid))
       if (userDocSnap.exists()) {
@@ -54,11 +55,13 @@ export default function DashboardPage() {
       }
       // Mağaza kotası: stores collection'ından
       if (user.storeId) {
-        const storeDocSnap = await getDoc(doc(db, 'stores', user.storeId))
-        if (storeDocSnap.exists()) {
-          const storeData = storeDocSnap.data()
-          setStoreQuota(storeData.monthlyQuota || 0)
-        }
+        try {
+          const storeDocSnap = await getDoc(doc(db, 'stores', user.storeId))
+          if (storeDocSnap.exists()) {
+            const storeData = storeDocSnap.data()
+            setStoreQuota(storeData.monthlyQuota || 0)
+          }
+        } catch (e) {}
       }
     } catch (error) { console.error(error) }
   }
