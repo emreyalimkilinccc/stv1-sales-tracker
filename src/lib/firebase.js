@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app'
-import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore'
+import { getFirestore } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
 
 const firebaseConfig = {
@@ -14,11 +14,5 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig)
 export const db = getFirestore(app)
-
-enableIndexedDbPersistence(db).catch((err) => {
-  if (err.code === 'failed-precondition') console.log('Offline persistence birden fazla sekme ile calistirilamaz')
-  else if (err.code === 'unimplemented') console.log('Tarayici offline desteklemiyor')
-})
-
 export const auth = getAuth(app)
 export default app
