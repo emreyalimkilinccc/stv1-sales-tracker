@@ -232,9 +232,9 @@ export default function TemizlikPage() {
 
           return (
             <div key={day.key} className="card" style={{
-              borderLeft: `4px solid ${isNotDone ? '#ef4444' : isToday ? '#10b981' : isCompleted ? '#10b981' : '#334155'}`,
-              opacity: isPast && !isCompleted ? 1 : (isToday ? 1 : 0.85),
-              backgroundColor: isNotDone ? 'rgba(239, 68, 68, 0.05)' : undefined
+              borderLeft: `4px solid ${!isMyDay ? '#334155' : isNotDone ? '#ef4444' : isToday ? '#10b981' : isCompleted ? '#10b981' : '#334155'}`,
+              opacity: isMyDay ? 1 : 0.5,
+              backgroundColor: isNotDone && isMyDay ? 'rgba(239, 68, 68, 0.05)' : undefined
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -254,9 +254,9 @@ export default function TemizlikPage() {
                     </span>
                   )}
                   <span style={{ fontSize: '11px', color: '#64748b' }}>{day.date}</span>
-                  {isToday && <span style={{ fontSize: '10px', backgroundColor: '#10b981', color: '#fff', padding: '0.15rem 0.5rem', borderRadius: '9999px', fontWeight: '600' }}>BUGÜN</span>}
-                  {isNotDone && <span style={{ fontSize: '10px', backgroundColor: '#ef4444', color: '#fff', padding: '0.15rem 0.5rem', borderRadius: '9999px', fontWeight: '700' }}>❌ YAPILMADI</span>}
-                  {isCompleted && !isNotDone && <span style={{ fontSize: '10px', backgroundColor: '#10b981', color: '#fff', padding: '0.15rem 0.5rem', borderRadius: '9999px', fontWeight: '600' }}>✅ Tamamlandı</span>}
+                  {isMyDay && isToday && <span style={{ fontSize: '10px', backgroundColor: '#10b981', color: '#fff', padding: '0.15rem 0.5rem', borderRadius: '9999px', fontWeight: '600' }}>BUGÜN</span>}
+                  {isMyDay && isNotDone && <span style={{ fontSize: '10px', backgroundColor: '#ef4444', color: '#fff', padding: '0.15rem 0.5rem', borderRadius: '9999px', fontWeight: '700' }}>❌ YAPILMADI</span>}
+                  {isMyDay && isCompleted && !isNotDone && <span style={{ fontSize: '10px', backgroundColor: '#10b981', color: '#fff', padding: '0.15rem 0.5rem', borderRadius: '9999px', fontWeight: '600' }}>✅ Tamamlandı</span>}
                 </div>
                 {canManage && (
                   <div style={{ display: 'flex', gap: '0.375rem' }}>
@@ -349,8 +349,8 @@ export default function TemizlikPage() {
                 </div>
               )}
 
-              {/* Tamamlanan Görevler Özeti */}
-              {dayCompletions.length > 0 && (
+              {/* Tamamlanan Görevler Özeti — Sadece atanan kişi */}
+              {isMyDay && dayCompletions.length > 0 && (
                 <div style={{ marginTop: '0.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.375rem' }}>
                   {dayCompletions.map(c => (
                     <span key={c.id} style={{
