@@ -100,9 +100,44 @@ const SECTIONS = [
     icon: '👥', title: 'Müşteri Yönetimi',
     color: '#06b6d4',
     content: [
-      'Müşterilerinizi ekleyin ve düzenleyin',
+      'Herkes yeni müşteri ekleyebilir',
+      'Düzenleme ve silme sadece Yönetici/Müdür tarafından yapılabilir',
       'Telefon, email ve adres bilgilerini kaydedin',
       'Satın alma geçmişini görüntüleyebilirsiniz'
+    ]
+  },
+  {
+    icon: '📦', title: 'Envanter Takibi',
+    color: '#f59e0b',
+    content: [
+      'Herkes yeni ürün ekleyebilir',
+      'Herkes stok adedini +/- ile güncelleyebilir',
+      'Düzenleme ve silme sadece Yönetici/Müdür tarafından yapılabilir',
+      'Stok azalırsa otomatik uyarı görünür',
+      'Minimum stok seviyesini belirleyebilirsiniz'
+    ]
+  },
+  {
+    icon: '📥', title: 'Gelen Ürünler',
+    color: '#f97316',
+    content: [
+      'Herkes yeni gelen ürün kaydı oluşturabilir',
+      '📷 ile irsaliye/fatura fotoğrafı çekin',
+      'Tedarikçi, kategori ve miktar bilgisi girin',
+      'Durum takibi: Alındı → Kontrol → Rafa Kaldırıldı',
+      'Durum değiştirme sadece Yönetici/Müdür tarafından yapılabilir'
+    ]
+  },
+  {
+    icon: '📦', title: 'Müşteri Teslim',
+    color: '#ec4899',
+    content: [
+      'Herkes yeni teslim kaydı oluşturabilir',
+      'Müşteri seçin veya elle yazın',
+      '📷 ile belge fotoğrafı çekin (teslim fişi, imza, ürün fotoğrafı)',
+      'Durum takibi: Teslim Edildi / Bekleyen / İptal',
+      'Durum değiştirme sadece Yönetici/Müdür tarafından yapılabilir',
+      'Fotoğrafları büyüterek görüntüleyebilirsiniz'
     ]
   },
   {
@@ -185,6 +220,25 @@ export default function KullanimTalimatiPage() {
             </ul>
           </div>
         ))}
+      </div>
+
+      {/* Yetki Kuralları */}
+      <div className="card" style={{ marginTop: '1.5rem', borderLeft: '4px solid #f59e0b' }}>
+        <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>🔑 Yetki Kuralları</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+          {[
+            { role: 'Personel', icon: '👤', color: '#3b82f6', abilities: ['Satış ekleme', 'Müşteri ekleme', 'Envanter ekleme', 'Gelen ürün ekleme', 'Teslim kaydı oluşturma', 'Temizlik görevi', 'İzin talebi'] },
+            { role: 'Mağaza Müdürü', icon: '👔', color: '#f59e0b', abilities: ['Tüm personel işlemleri', 'Satış düzenleme/silme', 'Müşteri düzenleme/silme', 'Envanter düzenleme/silme', 'Durum değiştirme', 'Çekiliş başlatma', 'Anket oluşturma', 'Kota yönetimi'] },
+            { role: 'Yönetici', icon: '👑', color: '#ef4444', abilities: ['Tüm müdür işlemleri', 'Kullanıcı ekleme/silme', 'Mağaza yönetimi', 'Veri yedekleme', 'Aktivite logu'] }
+          ].map(r => (
+            <div key={r.role} style={{ backgroundColor: '#0f172a', borderRadius: '0.75rem', padding: '1rem', border: `1px solid ${r.color}30` }}>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: r.color, marginBottom: '0.5rem' }}>{r.icon} {r.role}</div>
+              {r.abilities.map((a, i) => (
+                <div key={i} style={{ fontSize: '12px', color: '#94a3b8', padding: '0.15rem 0' }}>✅ {a}</div>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Alt Bilgi */}

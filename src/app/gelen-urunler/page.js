@@ -138,15 +138,13 @@ export default function GelenUrunlerPage() {
       </div>
 
       {/* Yeni Kayıt Butonu */}
-      {canManage && (
-        <button onClick={() => setShowForm(!showForm)} style={{
-          width: '100%', marginBottom: '1rem', padding: '0.875rem',
-          background: showForm ? '#334155' : 'linear-gradient(135deg, #f97316, #ea580c)',
-          color: showForm ? '#94a3b8' : 'white', fontWeight: '600', borderRadius: '0.75rem', border: 'none', cursor: 'pointer'
-        }}>
-          {showForm ? '✕ Kapat' : '➕ Yeni Gelen Ürün'}
+      <button onClick={() => setShowForm(!showForm)} style={{
+        width: '100%', marginBottom: '1rem', padding: '0.875rem',
+        background: showForm ? '#334155' : 'linear-gradient(135deg, #f97316, #ea580c)',
+        color: showForm ? '#94a3b8' : 'white', fontWeight: '600', borderRadius: '0.75rem', border: 'none', cursor: 'pointer'
+      }}>
+        {showForm ? '✕ Kapat' : '➕ Yeni Gelen Ürün'}
         </button>
-      )}
 
       {/* Form */}
       {showForm && (

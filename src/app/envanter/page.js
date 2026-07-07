@@ -176,12 +176,10 @@ export default function EnvanterPage() {
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
           <input type="text" placeholder="🔍 Ürün adı, SKU veya açıklama ara..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
             style={{ flex: 1, minWidth: '200px', padding: '0.625rem 1rem', borderRadius: '0.75rem', fontSize: '14px', backgroundColor: '#0f172a', border: '1px solid #334155', color: '#f8fafc' }} />
-          {canEdit && (
-            <button onClick={() => { setEditingItem(null); setFormData({ name: '', sku: '', category: '', quantity: '', minStock: '', price: '', cost: '', location: '', description: '' }); setShowModal(true) }}
-              className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}>
-              ➕ Yeni Ürün
-            </button>
-          )}
+          <button onClick={() => { setEditingItem(null); setFormData({ name: '', sku: '', category: '', quantity: '', minStock: '', price: '', cost: '', location: '', description: '' }); setShowModal(true) }}
+            className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}>
+            ➕ Yeni Ürün
+          </button>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}
@@ -236,13 +234,16 @@ export default function EnvanterPage() {
                       <div style={{ fontSize: '20px', fontWeight: '700', color: borderColor }}>{qty}</div>
                       <div style={{ fontSize: '10px', color: '#64748b' }}>min: {minStock}</div>
                       {item.price > 0 && <div style={{ fontSize: '12px', color: '#94a3b8' }}>{formatCurrency(item.price)}</div>}
-                      {canEdit && (
-                        <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.5rem', justifyContent: 'flex-end' }}>
-                          <button onClick={() => quickStockUpdate(item, -1)} style={{ padding: '0.3rem 0.5rem', borderRadius: '0.375rem', fontSize: '12px', backgroundColor: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none', cursor: 'pointer', fontWeight: '700' }}>-</button>
-                          <button onClick={() => quickStockUpdate(item, 1)} style={{ padding: '0.3rem 0.5rem', borderRadius: '0.375rem', fontSize: '12px', backgroundColor: 'rgba(16,185,129,0.15)', color: '#10b981', border: 'none', cursor: 'pointer', fontWeight: '700' }}>+</button>
-                          <button onClick={() => handleEdit(item)} style={{ padding: '0.3rem 0.5rem', borderRadius: '0.375rem', fontSize: '11px', backgroundColor: 'rgba(59,130,246,0.15)', color: '#3b82f6', border: 'none', cursor: 'pointer' }}>✏️</button>
-                          <button onClick={() => handleDelete(item.id)} style={{ padding: '0.3rem 0.5rem', borderRadius: '0.375rem', fontSize: '11px', backgroundColor: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none', cursor: 'pointer' }}>🗑️</button>
-                        </div>
+                      <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.5rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+                        <button onClick={() => quickStockUpdate(item, -1)} style={{ padding: '0.3rem 0.5rem', borderRadius: '0.375rem', fontSize: '12px', backgroundColor: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none', cursor: 'pointer', fontWeight: '700' }}>-</button>
+                        <button onClick={() => quickStockUpdate(item, 1)} style={{ padding: '0.3rem 0.5rem', borderRadius: '0.375rem', fontSize: '12px', backgroundColor: 'rgba(16,185,129,0.15)', color: '#10b981', border: 'none', cursor: 'pointer', fontWeight: '700' }}>+</button>
+                        {canEdit && (
+                          <>
+                            <button onClick={() => handleEdit(item)} style={{ padding: '0.3rem 0.5rem', borderRadius: '0.375rem', fontSize: '11px', backgroundColor: 'rgba(59,130,246,0.15)', color: '#3b82f6', border: 'none', cursor: 'pointer' }}>✏️</button>
+                            <button onClick={() => handleDelete(item.id)} style={{ padding: '0.3rem 0.5rem', borderRadius: '0.375rem', fontSize: '11px', backgroundColor: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none', cursor: 'pointer' }}>🗑️</button>
+                          </>
+                        )}
+                      </div>
                       )}
                     </div>
                   </div>

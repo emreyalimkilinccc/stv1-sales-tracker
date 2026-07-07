@@ -141,12 +141,10 @@ export default function MusterilerPage() {
       <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
         <input type="text" placeholder="🔍 İsim, telefon veya e-posta ara..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
           style={{ flex: 1, minWidth: '200px', padding: '0.625rem 1rem', borderRadius: '0.75rem', fontSize: '14px', backgroundColor: '#1e293b', border: '1px solid #334155', color: '#f8fafc' }} />
-        {canEdit && (
-          <button onClick={() => { setEditingCustomer(null); setFormData({ name: '', phone: '', email: '', address: '', note: '' }); setShowModal(true) }}
-            className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}>
-            ➕ Yeni Müşteri
-          </button>
-        )}
+        <button onClick={() => { setEditingCustomer(null); setFormData({ name: '', phone: '', email: '', address: '', note: '' }); setShowModal(true) }}
+          className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}>
+          ➕ Yeni Müşteri
+        </button>
       </div>
 
       {/* Customer List */}
