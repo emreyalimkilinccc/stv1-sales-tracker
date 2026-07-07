@@ -118,14 +118,31 @@ export default function DashboardPage() {
       const startStr = dateRange.start
       const endStr = dateRange.end || formatDate(endDate.getFullYear(), endDate.getMonth(), endDate.getDate())
       
-      // STAFF: sadece kendi satışları
+      // STAFF: sadece kendi satışları (userId veya userName ile)
       // MANAGER: mağaza satışları
       // ADMIN: tüm satışlar
       let allSales = []
       try {
         if (user.role === 'STAFF') {
-          const snap = await getDocs(query(collection(db, 'sales'), where('userId', '==', user.uid)))
-          allSales = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+          // userId veya userName ile eşleşen satışları çek
+          const snap1 = await getDocs(query(collection(db, 'sales'), where('userId', '==', user.uid)))
+          const byUid = snap1.docs.map(d => ({ id: d.id, ...d.data() }))
+          
+          // userName ile de dene (eğer userId farklıysa)
+          const name = user.name || ''
+          let byName = []
+          if (name) {
+            const snap2 = await getDocs(query(collection(db, 'sales'), where('userName', '==', name)))
+            byName = snap2.docs.map(d => ({ id: d.id, ...d.data() }))
+          }
+          
+          // İkisini birleştir, tekrarları kaldır
+          const seen = new Set()
+          allSales = [...byUid, ...byName].filter(s => {
+            if (seen.has(s.id)) return false
+            seen.add(s.id)
+            return true
+          })
         } else if (user.role === 'MANAGER') {
           const snap = await getDocs(query(collection(db, 'sales'), where('storeId', '==', user.storeId)))
           allSales = snap.docs.map(d => ({ id: d.id, ...d.data() }))
@@ -153,10 +170,10 @@ export default function DashboardPage() {
       const prevTotalAmount = prevSales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
       const monthChange = prevTotalAmount > 0 ? ((totalAmount - prevTotalAmount) / prevTotalAmount * 100) : 0
       
-      // Kişisel satışlar (MANAGER/ADMIN için ayrı)
+      // Kişisel satışlar (MANAGER/ADMIN için ayrı, STAFF için zaten tümü kendi)
       let personalTotalAmount = totalAmount
       if (user.role !== 'STAFF') {
-        personalTotalAmount = sales.filter(s => s.userId === user.uid).reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
+        personalTotalAmount = sales.filter(s => s.userId === user.uid || s.userName === (user.name || '')).reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
       }
       
       const dailyData = sales.reduce((acc, sale) => {
