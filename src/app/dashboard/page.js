@@ -105,6 +105,7 @@ export default function DashboardPage() {
 
   const fetchDashboard = async () => {
     try {
+      if (!user?.uid) return
       const startDate = new Date(dateRange.start)
       let endDate
       if (dateRange.end) {
@@ -114,24 +115,26 @@ export default function DashboardPage() {
       }
       endDate.setHours(23, 59, 59, 999)
       
-      // Tarih karşılaştırmaları için string formatında yap
       const startStr = dateRange.start
       const endStr = dateRange.end || formatDate(endDate.getFullYear(), endDate.getMonth(), endDate.getDate())
       
-      // STAFF: sadece kendi satışları (orderBy yok, composite index gerektirmez)
+      // STAFF: sadece kendi satışları
       // MANAGER: mağaza satışları
       // ADMIN: tüm satışlar
       let allSales = []
-      if (user.role === 'STAFF') {
-        const snap = await getDocs(query(collection(db, 'sales'), where('userId', '==', user.uid)))
-        allSales = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-      } else if (user.role === 'MANAGER') {
-        const snap = await getDocs(query(collection(db, 'sales'), where('storeId', '==', user.storeId)))
-        allSales = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-      } else {
-        const snap = await getDocs(collection(db, 'sales'))
-        allSales = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-      }
+      try {
+        if (user.role === 'STAFF') {
+          const snap = await getDocs(query(collection(db, 'sales'), where('userId', '==', user.uid)))
+          allSales = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        } else if (user.role === 'MANAGER') {
+          const snap = await getDocs(query(collection(db, 'sales'), where('storeId', '==', user.storeId)))
+          allSales = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        } else {
+          const snap = await getDocs(collection(db, 'sales'))
+          allSales = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        }
+      } catch (qErr) { console.error('Firestore query error:', qErr) }
+      
       const sales = allSales.filter(s => { return s.date >= startStr && s.date <= endStr })
       
       const totalAmount = sales.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
