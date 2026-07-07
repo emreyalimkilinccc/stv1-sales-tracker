@@ -118,30 +118,18 @@ export default function DashboardPage() {
       const startStr = dateRange.start
       const endStr = dateRange.end || formatDate(endDate.getFullYear(), endDate.getMonth(), endDate.getDate())
       
-      // STAFF: sadece kendi satışları (userId veya userName ile)
+      // STAFF: sadece kendi satışları (tüm satışlardan filtrele)
       // MANAGER: mağaza satışları
       // ADMIN: tüm satışlar
       let allSales = []
       try {
         if (user.role === 'STAFF') {
-          // userId veya userName ile eşleşen satışları çek
-          const snap1 = await getDocs(query(collection(db, 'sales'), where('userId', '==', user.uid)))
-          const byUid = snap1.docs.map(d => ({ id: d.id, ...d.data() }))
-          
-          // userName ile de dene (eğer userId farklıysa)
-          const name = user.name || ''
-          let byName = []
-          if (name) {
-            const snap2 = await getDocs(query(collection(db, 'sales'), where('userName', '==', name)))
-            byName = snap2.docs.map(d => ({ id: d.id, ...d.data() }))
-          }
-          
-          // İkisini birleştir, tekrarları kaldır
-          const seen = new Set()
-          allSales = [...byUid, ...byName].filter(s => {
-            if (seen.has(s.id)) return false
-            seen.add(s.id)
-            return true
+          // Tüm satışları çek, client-side filtrele (userId, userName, email ile eşleştir)
+          const snap = await getDocs(collection(db, 'sales'))
+          const name = (user.name || '').trim()
+          const email = user.email || ''
+          allSales = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => {
+            return s.userId === user.uid || (s.userName || '').trim() === name || (s.userName || '').toLowerCase() === name.toLowerCase() || s.userEmail === email
           })
         } else if (user.role === 'MANAGER') {
           const snap = await getDocs(query(collection(db, 'sales'), where('storeId', '==', user.storeId)))
