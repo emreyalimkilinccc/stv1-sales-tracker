@@ -60,6 +60,7 @@ export default function Navbar() {
     { href: '/dashboard', label: 'Veriler', icon: '📊' },
     { href: '/sales', label: 'Satış', icon: '💰' },
     { href: '/musteriler', label: 'Müşteriler', icon: '👥' },
+    { href: '/teslim', label: 'Müşteri Teslim', icon: '📦' },
     { href: '/envanter', label: 'Envanter', icon: '📦' },
     { href: '/reports', label: 'Raporlar', icon: '📈' },
     { href: '/temizlik', label: 'Temizlik', icon: '🧹' },
