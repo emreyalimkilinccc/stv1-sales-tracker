@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/lib/auth-context'
-import { collection, query, where, getDocs, addDoc, doc, updateDoc, orderBy, limit } from 'firebase/firestore'
+import { collection, query, where, getDocs, addDoc, doc, updateDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { formatCurrency } from '@/lib/utils'
 import { useToast } from '@/components/Toast'
@@ -114,7 +114,7 @@ export default function BarkodPage() {
       }
 
       // Search sales by customer phone (barcode might be a phone)
-      const salesQ = query(collection(db, 'sales'), where('customerPhone', '==', code), orderBy('date', 'desc'), limit(10))
+      const salesQ = query(collection(db, 'sales'), where('customerPhone', '==', code))
       const salesSnap = await getDocs(salesQ)
       if (!salesSnap.empty) {
         setSalesMatch(salesSnap.docs.map(d => ({ id: d.id, ...d.data() })))
@@ -144,7 +144,7 @@ export default function BarkodPage() {
 
   const fetchRecentScans = async () => {
     try {
-      const q = query(collection(db, 'barcodeScans'), orderBy('scannedAt', 'desc'), limit(20))
+      const q = query(collection(db, 'barcodeScans'))
       const snapshot = await getDocs(q)
       setRecentScans(snapshot.docs.map(d => ({ id: d.id, ...d.data() })))
     } catch (error) { console.error(error) }
