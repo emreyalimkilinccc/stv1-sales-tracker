@@ -290,8 +290,8 @@ export default function TemizlikPage() {
                 <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '0.5rem' }}>Atama yapılmamış</div>
               )}
 
-              {/* CheckedList + Foto — Sadece atanan kişi */}
-              {isMyDay && (
+              {/* CheckedList + Foto — Sadece bugünkü atanan kişi */}
+              {isMyDay && isToday && (
                 <div style={{ padding: '0.75rem', backgroundColor: '#0f172a', borderRadius: '0.75rem', border: '1px solid #334155' }}>
                   {!myCompletion ? (
                     <>
@@ -349,8 +349,8 @@ export default function TemizlikPage() {
                 </div>
               )}
 
-              {/* Tamamlanan Görevler Özeti — Sadece atanan kişi */}
-              {isMyDay && dayCompletions.length > 0 && (
+              {/* Tamamlanan Görevler Özeti — Sadece bugünkü atanan kişi */}
+              {isMyDay && isToday && dayCompletions.length > 0 && (
                 <div style={{ marginTop: '0.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.375rem' }}>
                   {dayCompletions.map(c => (
                     <span key={c.id} style={{
