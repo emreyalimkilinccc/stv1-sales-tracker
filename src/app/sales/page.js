@@ -28,6 +28,7 @@ export default function SalesPage() {
   const [filterDateStart, setFilterDateStart] = useState('')
   const [filterDateEnd, setFilterDateEnd] = useState('')
   const [filterStaff, setFilterStaff] = useState('')
+  const [filterCategory, setFilterCategory] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedSeller, setSelectedSeller] = useState(null)
 
@@ -45,6 +46,7 @@ export default function SalesPage() {
     if (filterDateStart) result = result.filter(s => s.date >= filterDateStart)
     if (filterDateEnd) result = result.filter(s => s.date <= filterDateEnd)
     if (filterStaff) result = result.filter(s => s.userId === filterStaff)
+    if (filterCategory) result = result.filter(s => s.category === filterCategory)
     if (searchQuery) {
       const q = searchQuery.toLowerCase()
       result = result.filter(s =>
@@ -54,7 +56,7 @@ export default function SalesPage() {
       )
     }
     setFilteredSales(result)
-  }, [sales, filterDateStart, filterDateEnd, filterStaff, searchQuery])
+  }, [sales, filterDateStart, filterDateEnd, filterStaff, filterCategory, searchQuery])
 
   if (authLoading) return <div className="px-4 py-6 max-w-7xl mx-auto"><div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>⏳ Yükleniyor...</div></div>
   if (!user) return <div className="px-4 py-6 max-w-7xl mx-auto"><div style={{ textAlign: 'center', padding: '2rem', color: '#ef4444' }}>🔑 Lütfen giriş yapın</div></div>
@@ -229,8 +231,19 @@ export default function SalesPage() {
                 {allStaff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
+            <div>
+              <label style={{ fontSize: '11px', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>Kategori</label>
+              <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}
+                style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', fontSize: '12px', backgroundColor: '#334155', border: '1px solid #475569', color: '#f8fafc' }}>
+                <option value="">Tümü</option>
+                <option value="Giriş kat">🚪 Giriş kat</option>
+                <option value="Züccaciye">🍳 Züccaciye</option>
+                <option value="Kasa">🗄️ Kasa</option>
+                <option value="Mobilya">🛋️ Mobilya</option>
+              </select>
+            </div>
             <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-              <button onClick={() => { setFilterDateStart(''); setFilterDateEnd(''); setFilterStaff('') }}
+              <button onClick={() => { setFilterDateStart(''); setFilterDateEnd(''); setFilterStaff(''); setFilterCategory('') }}
                 style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', fontSize: '12px', backgroundColor: '#ef4444', color: '#fff', border: 'none', cursor: 'pointer' }}>
                 ✕ Temizle
               </button>
