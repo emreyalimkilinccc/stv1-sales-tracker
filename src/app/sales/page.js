@@ -85,7 +85,14 @@ export default function SalesPage() {
     try {
       const seller = selectedSeller || user
       const saleData = { ...formData, amount: parseFloat(formData.amount) || 0, cost: parseFloat(formData.cost) || 0, itemCount: parseInt(formData.itemCount) || 0, bonusItemCount: parseInt(formData.bonusItemCount) || 0, userId: seller.id || user.uid, userName: seller.name || user.name || 'Bilinmeyen', storeId: seller.storeId || user.storeId || null, createdAt: new Date().toISOString() }
-      if (editingSale) { await updateDoc(doc(db, 'sales', editingSale.id), saleData); setEditingSale(null) }
+      if (editingSale) { 
+        await updateDoc(doc(db, 'sales', editingSale.id), {
+          ...saleData,
+          lastEditedBy: user.name || user.email,
+          lastEditedAt: new Date().toISOString()
+        }); 
+        setEditingSale(null) 
+      }
       else { await addDoc(collection(db, 'sales'), saleData) }
       toast.success('Satış başarıyla kaydedildi!')
       router.push('/dashboard')
@@ -290,10 +297,23 @@ export default function SalesPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc' }}>📋 Satış Geçmişi</h3>
           {canEdit && (
-            <label style={{ padding: '0.375rem 0.75rem', borderRadius: '0.5rem', fontSize: '12px', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)', cursor: 'pointer', fontWeight: '600' }}>
-              📁 {excelLoading ? 'Yükleniyor...' : 'Excel Yükle'}
-              <input type="file" accept=".xlsx,.xls,.csv" onChange={handleExcelUpload} style={{ display: 'none' }} disabled={excelLoading} />
-            </label>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <label style={{ padding: '0.375rem 0.75rem', borderRadius: '0.5rem', fontSize: '12px', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)', cursor: 'pointer', fontWeight: '600' }}>
+                📁 {excelLoading ? 'Yükleniyor...' : 'Excel Yükle'}
+                <input type="file" accept=".xlsx,.xls,.csv" onChange={handleExcelUpload} style={{ display: 'none' }} disabled={excelLoading} />
+              </label>
+              <button onClick={() => {
+                import('xlsx').then(XLSX => {
+                  const wb = XLSX.utils.book_new()
+                  const ws = XLSX.utils.aoa_to_sheet([['Tarih', 'Saat', 'Tutar', 'Maliyet', 'Ürün Sayısı', 'Bonus', 'Müşteri', 'Kategori'], ['2026-07-01', '10', '5000', '3000', '5', '2', '123', 'Kasa']])
+                  XLSX.utils.book_append_sheet(wb, ws, 'Satış Şablonu')
+                  XLSX.writeFile(wb, 'stv1-satis-sablonu.xlsx')
+                  toast.success('Şablon indirildi!')
+                })
+              }} style={{ padding: '0.375rem 0.75rem', borderRadius: '0.5rem', fontSize: '12px', backgroundColor: 'rgba(59,130,246,0.15)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.3)', cursor: 'pointer', fontWeight: '600' }}>
+                📥 Şablon İndir
+              </button>
+            </div>
           )}
         </div>
         {loading ? <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>⏳ Yükleniyor...</div>

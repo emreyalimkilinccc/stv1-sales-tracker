@@ -13,6 +13,7 @@ export default function Navbar() {
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
   const [notifications, setNotifications] = useState(0)
+  const [notifPrefs, setNotifPrefs] = useState({ sales: true, quota: true, cleaning: true, leave: true })
 
   const isActive = (path) => pathname === path
 
@@ -207,6 +208,23 @@ export default function Navbar() {
               <span>🔐</span>
               <span>Şifre Değiştir</span>
             </Link>
+            {/* Bildirim Tercihleri */}
+            <div style={{ padding: '0.75rem 1rem', marginBottom: '0.375rem' }}>
+              <div style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', marginBottom: '0.5rem' }}>🔔 Bildirim Tercihleri</div>
+              {[
+                { key: 'sales', label: 'Satış bildirimleri' },
+                { key: 'quota', label: 'Kota uyarıları' },
+                { key: 'cleaning', label: 'Temizlik hatırlatması' },
+                { key: 'leave', label: 'İzin talep bildirimi' }
+              ].map(pref => (
+                <label key={pref.key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.25rem 0', fontSize: '12px', color: '#94a3b8', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={notifPrefs[pref.key]} onChange={() => setNotifPrefs(p => ({ ...p, [pref.key]: !p[pref.key] }))}
+                    style={{ accentColor: '#3b82f6' }} />
+                  {pref.label}
+                </label>
+              ))}
+            </div>
+
             <button onClick={() => { signOut(); setMenuOpen(false) }} className="flex items-center" style={{
               width: '100%', color: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)',
               border: 'none', borderRadius: '0.75rem', fontSize: '15px', cursor: 'pointer',
