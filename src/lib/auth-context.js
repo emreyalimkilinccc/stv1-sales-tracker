@@ -77,10 +77,14 @@ export function AuthProvider({ children }) {
     const querySnapshot = await getDocs(q)
     
     if (querySnapshot.empty) {
-      throw new Error('Satış kodu bulunamadı')
+      throw new Error('Satış kodu bulunamadı: ' + salesCode)
     }
 
     const userData = querySnapshot.docs[0].data()
+    
+    if (!userData.email) {
+      throw new Error('Kullanıcı email adresi bulunamadı')
+    }
     
     // Basit giriş — onAuthStateChanged her şeyi halledecek
     const result = await signInWithEmailAndPassword(auth, userData.email, password)
