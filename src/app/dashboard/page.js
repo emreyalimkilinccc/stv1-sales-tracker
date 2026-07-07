@@ -18,9 +18,14 @@ export default function DashboardPage() {
   const [userQuota, setUserQuota] = useState(0)
   const [userGoal, setUserGoal] = useState(0)
   const getTurkeyDate = () => {
-    const now = new Date()
-    const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Istanbul', year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(now)
-    return { year: parseInt(parts.find(p => p.type === 'year').value), month: parseInt(parts.find(p => p.type === 'month').value) - 1, day: parseInt(parts.find(p => p.type === 'day').value) }
+    try {
+      const now = new Date()
+      const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Istanbul', year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(now)
+      return { year: parseInt(parts.find(p => p.type === 'year').value), month: parseInt(parts.find(p => p.type === 'month').value) - 1, day: parseInt(parts.find(p => p.type === 'day').value) }
+    } catch (e) {
+      const now = new Date()
+      return { year: now.getFullYear(), month: now.getMonth(), day: now.getDate() }
+    }
   }
 
   const formatDate = (y, m, d) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
