@@ -244,7 +244,6 @@ export default function EnvanterPage() {
                           </>
                         )}
                       </div>
-                      )}
                     </div>
                   </div>
                 </div>
