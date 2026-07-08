@@ -93,11 +93,14 @@ export default function SalesPage() {
           lastEditedBy: user.name || user.email,
           lastEditedAt: new Date().toISOString()
         }); 
-        setEditingSale(null) 
+        setEditingSale(null)
+        toast.success('Satış güncellendi!')
       }
-      else { await addDoc(collection(db, 'sales'), saleData) }
-      toast.success('Satış başarıyla kaydedildi!')
-      router.push('/dashboard')
+      else {
+        await addDoc(collection(db, 'sales'), saleData)
+        toast.success('Satış başarıyla kaydedildi!')
+        setTimeout(() => router.push('/dashboard'), 300)
+      }
     } catch (error) { toast.error('Kaydedilemedi: ' + error.message) } finally { setSubmitting(false) }
   }
 
