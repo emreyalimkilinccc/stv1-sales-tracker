@@ -13,6 +13,7 @@ import * as XLSX from 'xlsx'
 export default function SalesPage() {
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
+  const toast = useToast()
   const [sales, setSales] = useState([])
   const [filteredSales, setFilteredSales] = useState([])
   const [loading, setLoading] = useState(true)
