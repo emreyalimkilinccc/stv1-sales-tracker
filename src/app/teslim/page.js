@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/lib/auth-context'
-import { collection, query, where, getDocs, addDoc, updateDoc, doc, onSnapshot } from 'firebase/firestore'
+import { collection, query, where, getDocs, addDoc, updateDoc, doc, onSnapshot, deleteDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { formatCurrency } from '@/lib/utils'
 import { useToast } from '@/components/Toast'
