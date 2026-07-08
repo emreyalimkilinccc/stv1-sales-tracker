@@ -30,6 +30,7 @@ export default function GelenUrunlerPage() {
   const [photos, setPhotos] = useState([])
   const [viewingPhotos, setViewingPhotos] = useState(null)
   const [showDetail, setShowDetail] = useState(null)
+  const [editingItem, setEditingItem] = useState(null)
 
   const [formData, setFormData] = useState({
     productName: '',
@@ -116,6 +117,40 @@ export default function GelenUrunlerPage() {
     } catch (error) { toast.error('Hata: ' + error.message) }
   }
 
+  const handleEdit = (item) => {
+    setFormData({
+      productName: item.productName || '',
+      supplier: item.supplier || '',
+      category: item.category || 'Giriş kat',
+      quantity: item.quantity || 1,
+      unitPrice: item.unitPrice || '',
+      notes: item.notes || ''
+    })
+    setPhotos(item.photos || [])
+    setEditingItem(item)
+    setShowForm(true)
+  }
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault()
+    if (!formData.productName.trim()) { toast.warning('Ürün adı gerekli!'); return }
+    try {
+      await updateDoc(doc(db, 'incomingProducts', editingItem.id), {
+        ...formData,
+        quantity: parseInt(formData.quantity) || 1,
+        unitPrice: parseFloat(formData.unitPrice) || 0,
+        photos,
+        editedBy: user.name || user.email,
+        editedAt: new Date().toISOString()
+      })
+      setFormData({ productName: '', supplier: '', category: 'Giriş kat', quantity: '1', unitPrice: '', notes: '' })
+      setPhotos([])
+      setEditingItem(null)
+      setShowForm(false)
+      toast.success('Ürün güncellendi!')
+    } catch (error) { toast.error('Hata: ' + error.message) }
+  }
+
   const filtered = items.filter(item => {
     if (filterStatus !== 'all' && item.status !== filterStatus) return false
     if (searchQuery) {
@@ -149,8 +184,8 @@ export default function GelenUrunlerPage() {
       {/* Form */}
       {showForm && (
         <div className="card">
-          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>📥 Gelen Ürün Kaydı</h3>
-          <form onSubmit={handleSubmit}>
+          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>{editingItem ? '✏️ Ürün Düzenle' : '📥 Gelen Ürün Kaydı'}</h3>
+          <form onSubmit={editingItem ? handleSaveEdit : handleSubmit}>
             <div className="form-group">
               <label className="form-label">📦 Ürün Adı</label>
               <input type="text" value={formData.productName} onChange={(e) => setFormData(p => ({ ...p, productName: e.target.value }))}
@@ -211,7 +246,7 @@ export default function GelenUrunlerPage() {
               <div style={{ fontSize: '11px', color: '#64748b' }}>📷 ile kamera açılır. İrsaliye, fatura, ürün fotoğrafı çekilebilir.</div>
             </div>
 
-            <button type="submit" className="btn btn-primary" style={{ width: '100%', background: 'linear-gradient(135deg, #f97316, #ea580c)' }}>📥 Kaydet</button>
+            <button type="submit" className="btn btn-primary" style={{ width: '100%', background: 'linear-gradient(135deg, #f97316, #ea580c)' }}>{editingItem ? '💾 Güncelle' : '📥 Kaydet'}</button>
           </form>
         </div>
       )}
@@ -298,10 +333,16 @@ export default function GelenUrunlerPage() {
                   }}>{val.icon}</button>
                 ))}
                 {canManage && (
-                  <button onClick={() => handleDelete(item.id)} style={{
-                    marginLeft: 'auto', padding: '0.375rem 0.625rem', borderRadius: '0.5rem', fontSize: '11px',
-                    backgroundColor: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none', cursor: 'pointer'
-                  }}>🗑️</button>
+                  <div style={{ display: 'flex', gap: '0.25rem', marginLeft: 'auto' }}>
+                    <button onClick={() => handleEdit(item)} style={{
+                      padding: '0.375rem 0.625rem', borderRadius: '0.5rem', fontSize: '11px',
+                      backgroundColor: 'rgba(59,130,246,0.15)', color: '#3b82f6', border: 'none', cursor: 'pointer'
+                    }}>✏️</button>
+                    <button onClick={() => handleDelete(item.id)} style={{
+                      padding: '0.375rem 0.625rem', borderRadius: '0.5rem', fontSize: '11px',
+                      backgroundColor: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none', cursor: 'pointer'
+                    }}>🗑️</button>
+                  </div>
                 )}
               </div>
             </div>

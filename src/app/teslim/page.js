@@ -27,6 +27,7 @@ export default function TeslimPage() {
   const [filterStatus, setFilterStatus] = useState('all')
   const [photos, setPhotos] = useState([])
   const [viewingPhotos, setViewingPhotos] = useState(null)
+  const [editingDelivery, setEditingDelivery] = useState(null)
 
   const [formData, setFormData] = useState({
     customerName: '',
@@ -111,6 +112,47 @@ export default function TeslimPage() {
     } catch (error) { toast.error('Hata: ' + error.message) }
   }
 
+  const handleEdit = (delivery) => {
+    setFormData({
+      customerName: delivery.customerName || '',
+      customerPhone: delivery.customerPhone || '',
+      product: delivery.product || '',
+      amount: delivery.amount || '',
+      notes: delivery.notes || '',
+      status: delivery.status || 'delivered'
+    })
+    setPhotos(delivery.photos || [])
+    setEditingDelivery(delivery)
+    setShowForm(true)
+  }
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault()
+    if (!formData.customerName.trim()) { toast.warning('Müşteri adı gerekli!'); return }
+    try {
+      await updateDoc(doc(db, 'deliveries', editingDelivery.id), {
+        ...formData,
+        amount: parseFloat(formData.amount) || 0,
+        photos,
+        editedBy: user.name || user.email,
+        editedAt: new Date().toISOString()
+      })
+      setFormData({ customerName: '', customerPhone: '', product: '', amount: '', notes: '', status: 'delivered' })
+      setPhotos([])
+      setEditingDelivery(null)
+      setShowForm(false)
+      toast.success('Teslim kaydı güncellendi!')
+    } catch (error) { toast.error('Hata: ' + error.message) }
+  }
+
+  const handleDelete = async (id) => {
+    if (!confirm('Bu teslim kaydını silmek istediğinize emin misiniz?')) return
+    try {
+      await deleteDoc(doc(db, 'deliveries', id))
+      toast.success('Kayıt silindi!')
+    } catch (error) { toast.error('Hata: ' + error.message) }
+  }
+
   const handleCustomerSelect = (e) => {
     const custId = e.target.value
     if (!custId) { setFormData(p => ({ ...p, customerName: '', customerPhone: '' })); return }
@@ -150,7 +192,7 @@ export default function TeslimPage() {
       {showForm && (
         <div className="card">
           <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>📦 Yeni Teslim Kaydı</h3>
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={editingDelivery ? handleSaveEdit : handleSubmit}>
             {/* Müşteri Seçimi veya Elle Girme */}
             <div className="form-group">
               <label className="form-label">👤 Müşteri</label>
@@ -211,7 +253,7 @@ export default function TeslimPage() {
               <div style={{ fontSize: '11px', color: '#64748b' }}>📷 ile kamera açılır veya galeriden seçilir. Teslim fişi, imza, ürün fotoğrafı.</div>
             </div>
 
-            <button type="submit" className="btn btn-primary" style={{ width: '100%', background: 'linear-gradient(135deg, #ec4899, #be185d)' }}>📦 Kaydet</button>
+            <button type="submit" className="btn btn-primary" style={{ width: '100%', background: 'linear-gradient(135deg, #ec4899, #be185d)' }}>{editingDelivery ? '💾 Güncelle' : '📦 Kaydet'}</button>
           </form>
         </div>
       )}
@@ -273,9 +315,9 @@ export default function TeslimPage() {
                 </div>
               )}
 
-              {/* Durum Değiştirme */}
+              {/* Durum Değiştirme + Düzenle + Sil */}
               {canManage && (
-                <div style={{ display: 'flex', gap: '0.375rem', marginTop: '0.75rem' }}>
+                <div style={{ display: 'flex', gap: '0.375rem', marginTop: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
                   {Object.entries(DELIVERY_STATUS).map(([key, val]) => (
                     <button key={key} onClick={() => handleStatusChange(d.id, key)} disabled={d.status === key} style={{
                       padding: '0.375rem 0.75rem', borderRadius: '0.5rem', fontSize: '11px', fontWeight: '600',
@@ -284,6 +326,16 @@ export default function TeslimPage() {
                       cursor: d.status === key ? 'default' : 'pointer', opacity: d.status === key ? 0.6 : 1
                     }}>{val.icon} {val.label}</button>
                   ))}
+                  <button onClick={() => handleEdit(d)} style={{
+                    padding: '0.375rem 0.75rem', borderRadius: '0.5rem', fontSize: '11px', fontWeight: '600',
+                    backgroundColor: 'rgba(59,130,246,0.15)', color: '#3b82f6',
+                    border: 'none', cursor: 'pointer'
+                  }}>✏️ Düzenle</button>
+                  <button onClick={() => handleDelete(d.id)} style={{
+                    padding: '0.375rem 0.75rem', borderRadius: '0.5rem', fontSize: '11px', fontWeight: '600',
+                    backgroundColor: 'rgba(239,68,68,0.15)', color: '#ef4444',
+                    border: 'none', cursor: 'pointer', marginLeft: 'auto'
+                  }}>🗑️ Sil</button>
                 </div>
               )}
             </div>
