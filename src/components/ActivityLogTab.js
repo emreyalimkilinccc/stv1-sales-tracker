@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { collection, query, orderBy, getDocs, limit } from 'firebase/firestore'
+import { collection, getDocs } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { getActivityLabel } from '@/lib/activityLog'
 
@@ -19,8 +19,14 @@ export default function ActivityLogTab() {
   useEffect(() => {
     const fetchLogs = async () => {
       try {
-        const snapshot = await getDocs(query(collection(db, 'activityLog'), orderBy('timestamp', 'desc'), limit(50)))
-        setLogs(snapshot.docs.map(d => ({ id: d.id, ...d.data() })))
+        const snapshot = await getDocs(collection(db, 'activityLog'))
+        const docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
+        docs.sort((a, b) => {
+          const tA = a.timestamp?.seconds || 0
+          const tB = b.timestamp?.seconds || 0
+          return tB - tA
+        })
+        setLogs(docs.slice(0, 50))
       } catch (error) { console.error(error) } finally { setLoading(false) }
     }
     fetchLogs()
