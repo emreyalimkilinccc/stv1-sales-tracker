@@ -22,6 +22,7 @@ export default function AdminPage() {
   const [showAddUser, setShowAddUser] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
   const [newStore, setNewStore] = useState({ name: '', address: '', phone: '', monthlyQuota: '' })
+  const [newUser, setNewUser] = useState({ salesCode: '', email: '', password: '', name: '', role: 'STAFF', storeId: '', monthlyQuota: '', category: '' })
 
   const fetchData = async () => {
     try {
@@ -29,6 +30,31 @@ export default function AdminPage() {
       const u = await getDocs(collection(db, 'user')); setUsers(u.docs.map(d => ({ id: d.id, ...d.data() })))
     } catch (error) { console.error('Error:', error) } finally { setLoading(false) }
   }
+
+  const CATEGORY_MAP = {
+    'Emre YALIMKILINÇ': 'Giriş kat', 'Derya DEMİR': 'Giriş kat', 'Sevim TEKİN': 'Giriş kat',
+    'Onur VARAN': 'Giriş kat', 'Merve KARAASLAN': 'Giriş kat',
+    'Bilge TURAN': 'Züccaciye', 'ELİF DEMİR': 'Züccaciye',
+    'Rabia ÇALHAN': 'Mobilya', 'Nurdagül MENEKŞE': 'Mobilya',
+    'Seda SOYDAN': 'Kasa', 'Özge KEL': 'Kasa', 'Şennur ŞAHİN': 'Kasa', 'Betül Merve GÜNGÖR': 'Kasa'
+  }
+
+  const handleBulkCategorize = async () => {
+    try {
+      let updated = 0
+      for (const u of users) {
+        const cat = CATEGORY_MAP[u.name]
+        if (cat && u.category !== cat) {
+          await updateDoc(doc(db, 'user', u.id), { category: cat })
+          updated++
+        }
+      }
+      fetchData()
+      toast.success(`${updated} kullanıcının kategorisi güncellendi!`)
+    } catch (error) { toast.error('Hata: ' + error.message) }
+  }
+
+  useEffect(() => { if (user && ['ADMIN', 'MANAGER'].includes(user.role)) fetchData() }, [user])
 
   const handleAddStore = async (e) => {
     e.preventDefault()
