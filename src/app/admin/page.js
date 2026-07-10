@@ -18,43 +18,10 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('stores')
   const [showAddStore, setShowAddStore] = useState(false)
+  const [editingStore, setEditingStore] = useState(null)
   const [showAddUser, setShowAddUser] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
   const [newStore, setNewStore] = useState({ name: '', address: '', phone: '', monthlyQuota: '' })
-  const [newUser, setNewUser] = useState({ salesCode: '', email: '', password: '', name: '', role: 'STAFF', storeId: '', monthlyQuota: '', category: '' })
-
-  const CATEGORY_MAP = {
-    'Emre YALIMKILINÇ': 'Giriş kat',
-    'Derya DEMİR': 'Giriş kat',
-    'Sevim TEKİN': 'Giriş kat',
-    'Onur VARAN': 'Giriş kat',
-    'Merve KARAASLAN': 'Giriş kat',
-    'Bilge TURAN': 'Züccaciye',
-    'ELİF DEMİR': 'Züccaciye',
-    'Rabia ÇALHAN': 'Mobilya',
-    'Nurdagül MENEKŞE': 'Mobilya',
-    'Seda SOYDAN': 'Kasa',
-    'Özge KEL': 'Kasa',
-    'Şennur ŞAHİN': 'Kasa',
-    'Betül Merve GÜNGÖR': 'Kasa'
-  }
-
-  const handleBulkCategorize = async () => {
-    try {
-      let updated = 0
-      for (const u of users) {
-        const cat = CATEGORY_MAP[u.name]
-        if (cat && u.category !== cat) {
-          await updateDoc(doc(db, 'user', u.id), { category: cat })
-          updated++
-        }
-      }
-      fetchData()
-      toast.success(`${updated} kullanıcının kategorisi güncellendi!`)
-    } catch (error) { toast.error('Hata: ' + error.message) }
-  }
-
-  useEffect(() => { if (user && ['ADMIN', 'MANAGER'].includes(user.role)) fetchData() }, [user])
 
   const fetchData = async () => {
     try {
@@ -75,6 +42,38 @@ export default function AdminPage() {
       setNewStore({ name: '', address: '', phone: '', monthlyQuota: '' }); 
       fetchData() 
     } catch (error) { console.error(error) }
+  }
+
+  const handleEditStore = (store) => {
+    setEditingStore(store)
+    setNewStore({ name: store.name || '', address: store.address || '', phone: store.phone || '', monthlyQuota: store.monthlyQuota || '' })
+    setShowAddStore(true)
+  }
+
+  const handleUpdateStore = async (e) => {
+    e.preventDefault()
+    try {
+      await updateDoc(doc(db, 'stores', editingStore.id), {
+        name: newStore.name,
+        address: newStore.address,
+        phone: newStore.phone,
+        monthlyQuota: parseFloat(newStore.monthlyQuota) || 0
+      })
+      setShowAddStore(false)
+      setEditingStore(null)
+      setNewStore({ name: '', address: '', phone: '', monthlyQuota: '' })
+      fetchData()
+      toast.success('Mağaza güncellendi!')
+    } catch (error) { toast.error('Hata: ' + error.message) }
+  }
+
+  const handleDeleteStore = async (id) => {
+    if (!confirm('Bu mağazayı silmek istediğinize emin misiniz?')) return
+    try {
+      await deleteDoc(doc(db, 'stores', id))
+      fetchData()
+      toast.success('Mağaza silindi!')
+    } catch (error) { toast.error('Hata: ' + error.message) }
   }
 
   const [showReauthModal, setShowReauthModal] = useState(false)
@@ -191,8 +190,8 @@ export default function AdminPage() {
 
           {showAddStore && (
             <div className="card">
-              <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>🏪 Yeni Mağaza</h3>
-              <form onSubmit={handleAddStore}>
+              <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>{editingStore ? '✏️ Mağaza Düzenle' : '🏪 Yeni Mağaza'}</h3>
+              <form onSubmit={editingStore ? handleUpdateStore : handleAddStore}>
                 <div className="form-group">
                   <label className="form-label">Mağaza Adı</label>
                   <input type="text" placeholder="Mağaza Adı" value={newStore.name} onChange={(e) => setNewStore(p => ({ ...p, name: e.target.value }))} required className="form-input" />
@@ -210,8 +209,8 @@ export default function AdminPage() {
                   <input type="number" placeholder="Örn: 5000000" value={newStore.monthlyQuota} onChange={(e) => setNewStore(p => ({ ...p, monthlyQuota: e.target.value }))} className="form-input" />
                 </div>
                 <div className="flex" style={{ gap: '0.75rem', marginTop: '1.25rem' }}>
-                  <button type="button" onClick={() => setShowAddStore(false)} className="btn btn-secondary flex-1">İptal</button>
-                  <button type="submit" className="btn btn-primary flex-1">💾 Kaydet</button>
+                  <button type="button" onClick={() => { setShowAddStore(false); setEditingStore(null) }} className="btn btn-secondary flex-1">İptal</button>
+                  <button type="submit" className="btn btn-primary flex-1">{editingStore ? '💾 Güncelle' : '💾 Kaydet'}</button>
                 </div>
               </form>
             </div>
@@ -220,10 +219,24 @@ export default function AdminPage() {
           <div className="space-y-3">
             {stores.filter(s => user.role === 'ADMIN' || s.id === user.storeId).map(s => (
               <div key={s.id} className="list-item" style={{ borderLeft: '4px solid #10b981' }}>
-                <div style={{ fontSize: '15px', fontWeight: '600', color: '#f8fafc', marginBottom: '0.375rem' }}>🏪 {s.name}</div>
-                <div style={{ fontSize: '12px', color: '#94a3b8' }}>📍 {s.address || '-'} {s.phone ? `• 📞 ${s.phone}` : ''}</div>
-                <div style={{ fontSize: '12px', color: '#f59e0b', marginTop: '0.25rem' }}>
-                  🎯 Aylık Kota: <span style={{ fontWeight: '600' }}>{formatCurrency(s.monthlyQuota || 0)}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div>
+                    <div style={{ fontSize: '15px', fontWeight: '600', color: '#f8fafc', marginBottom: '0.375rem' }}>🏪 {s.name}</div>
+                    <div style={{ fontSize: '12px', color: '#94a3b8' }}>📍 {s.address || '-'} {s.phone ? `• 📞 ${s.phone}` : ''}</div>
+                    <div style={{ fontSize: '12px', color: '#f59e0b', marginTop: '0.25rem' }}>
+                      🎯 Aylık Kota: <span style={{ fontWeight: '600' }}>{formatCurrency(s.monthlyQuota || 0)}</span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.375rem' }}>
+                    <button onClick={() => handleEditStore(s)} style={{
+                      padding: '0.375rem 0.625rem', borderRadius: '0.375rem', fontSize: '11px',
+                      backgroundColor: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', border: 'none', cursor: 'pointer'
+                    }}>✏️ Düzenle</button>
+                    <button onClick={() => handleDeleteStore(s.id)} style={{
+                      padding: '0.375rem 0.625rem', borderRadius: '0.375rem', fontSize: '11px',
+                      backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: 'none', cursor: 'pointer'
+                    }}>🗑️ Sil</button>
+                  </div>
                 </div>
               </div>
             ))}
