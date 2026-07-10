@@ -8,6 +8,7 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as 
 import { auth } from '@/lib/firebase'
 import { formatCurrency } from '@/lib/utils'
 import { useToast } from '@/components/Toast'
+import { logActivity } from '@/lib/activityLog'
 import ActivityLogTab from '@/components/ActivityLogTab'
 
 export default function AdminPage() {
@@ -66,7 +67,8 @@ export default function AdminPage() {
       }); 
       setShowAddStore(false); 
       setNewStore({ name: '', address: '', phone: '', monthlyQuota: '' }); 
-      fetchData() 
+      fetchData()
+      logActivity('store_created', { name: newStore.name }, user.uid, user.name || user.email)
     } catch (error) { console.error(error) }
   }
 
@@ -99,6 +101,7 @@ export default function AdminPage() {
       await deleteDoc(doc(db, 'stores', id))
       fetchData()
       toast.success('Mağaza silindi!')
+      logActivity('store_deleted', { storeId: id }, user.uid, user.name || user.email)
     } catch (error) { toast.error('Hata: ' + error.message) }
   }
 
@@ -159,7 +162,7 @@ export default function AdminPage() {
   const handleDeleteUser = async (userId) => {
     const u = users.find(u => u.id === userId)
     if (!confirm(`⚠️ "${u?.name || 'Bu kullanıcı'}" silinecek!\n\nBu işlem geri alınamaz. Devam etmek istediğinize emin misiniz?`)) return
-    try { await deleteDoc(doc(db, 'user', userId)); fetchData() } catch (error) { toast.error('Hata: ' + error.message) }
+    try { await deleteDoc(doc(db, 'user', userId)); fetchData(); logActivity('user_deleted', { userId, name: u?.name }, user.uid, user.name || user.email) } catch (error) { toast.error('Hata: ' + error.message) }
   }
 
   const handleUpdateStoreQuota = async (storeId, newQuota) => {

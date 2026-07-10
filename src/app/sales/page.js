@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase'
 import { formatCurrency, formatCurrencyDecimal } from '@/lib/utils'
 import SalesForm from '@/components/SalesForm'
 import { useToast } from '@/components/Toast'
+import { logActivity } from '@/lib/activityLog'
 import * as XLSX from 'xlsx'
 
 export default function SalesPage() {
@@ -96,10 +97,12 @@ export default function SalesPage() {
         }); 
         setEditingSale(null)
         toast.success('Satış güncellendi!')
+        logActivity('sale_updated', { saleId: editingSale.id, amount: saleData.amount }, user.uid, user.name || user.email)
       }
       else {
         await addDoc(collection(db, 'sales'), saleData)
         toast.success('Satış başarıyla kaydedildi!')
+        logActivity('sale_created', { amount: saleData.amount, category: saleData.category, sellerName: seller.name }, user.uid, user.name || user.email)
         setTimeout(() => router.push('/dashboard'), 300)
       }
     } catch (error) { toast.error('Kaydedilemedi: ' + error.message) } finally { setSubmitting(false) }
@@ -107,7 +110,7 @@ export default function SalesPage() {
 
   const handleDelete = async (id) => {
     if (!confirm('Silmek istediğinize emin misiniz?')) return
-    try { await deleteDoc(doc(db, 'sales', id)); fetchSales() } catch (error) { toast.error('Silinemedi: ' + error.message) }
+    try { await deleteDoc(doc(db, 'sales', id)); fetchSales(); logActivity('sale_deleted', { saleId: id }, user.uid, user.name || user.email) } catch (error) { toast.error('Silinemedi: ' + error.message) }
   }
 
   const handleSend = (sale) => { setSendingSale(sale); setSendData({ subject: '', description: '' }); setShowSendModal(true) }
@@ -117,6 +120,7 @@ export default function SalesPage() {
     try {
       await updateDoc(doc(db, 'sales', sendingSale.id), { sentBy: user.name || user.email, sentSubject: sendData.subject, sentDescription: sendData.description, sentAt: new Date().toISOString() })
       setSendingSale(null); setSendData({ subject: '', description: '' }); fetchSales(); toast.success('Mesajınız başarıyla gönderildi!')
+      logActivity('sale_sent', { saleId: sendingSale.id, subject: sendData.subject }, user.uid, user.name || user.email)
     } catch (error) { toast.error('Gönderilemedi: ' + error.message) }
   }
 
