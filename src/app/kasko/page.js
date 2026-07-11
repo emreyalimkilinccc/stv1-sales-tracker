@@ -126,6 +126,111 @@ export default function KaskoPage() {
           </div>
         )}
       </div>
+
+      {/* Hesap Makinası */}
+      <div className="card" style={{ marginTop: '1rem' }}>
+        <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>🧮 Hesap Makinası</h3>
+        <Calculator />
+      </div>
     </div>
   )
 }
+
+function Calculator() {
+  const [display, setDisplay] = useState('0')
+  const [previous, setPrevious] = useState(null)
+  const [operation, setOperation] = useState(null)
+  const [waitingForOperand, setWaitingForOperand] = useState(false)
+
+  const inputDigit = (digit) => {
+    if (waitingForOperand) {
+      setDisplay(digit)
+      setWaitingForOperand(false)
+    } else {
+      setDisplay(display === '0' ? digit : display + digit)
+    }
+  }
+
+  const inputDot = () => {
+    if (waitingForOperand) { setDisplay('0.'); setWaitingForOperand(false); return }
+    if (display.includes('.')) return
+    setDisplay(display + '.')
+  }
+
+  const performOperation = (nextOp) => {
+    const inputValue = parseFloat(display)
+    if (previous === null) {
+      setPrevious(inputValue)
+    } else if (operation) {
+      const currentValue = previous
+      let result
+      if (operation === '+') result = currentValue + inputValue
+      else if (operation === '-') result = currentValue - inputValue
+      else if (operation === '×') result = currentValue * inputValue
+      else if (operation === '÷') result = inputValue !== 0 ? currentValue / inputValue : 'Hata'
+      setDisplay(String(result))
+      setPrevious(result)
+    }
+    setWaitingForOperand(true)
+    setOperation(nextOp)
+  }
+
+  const handleEquals = () => {
+    if (!operation || previous === null) return
+    const inputValue = parseFloat(display)
+    let result
+    if (operation === '+') result = previous + inputValue
+    else if (operation === '-') result = previous - inputValue
+    else if (operation === '×') result = previous * inputValue
+    else if (operation === '÷') result = inputValue !== 0 ? previous / inputValue : 'Hata'
+    setDisplay(String(result))
+    setPrevious(null)
+    setOperation(null)
+    setWaitingForOperand(true)
+  }
+
+  const clearAll = () => { setDisplay('0'); setPrevious(null); setOperation(null); setWaitingForOperand(false) }
+  const clearEntry = () => setDisplay('0')
+
+  const buttons = [
+    ['C', 'CE', '÷', '×'],
+    ['7', '8', '9', '-'],
+    ['4', '5', '6', '+'],
+    ['1', '2', '3', '='],
+    ['0', '.', '=']
+  ]
+
+  const getButtonStyle = (btn) => {
+    const base = { padding: '0.75rem', borderRadius: '0.5rem', fontSize: '16px', fontWeight: '600', border: 'none', cursor: 'pointer', transition: 'all 0.15s ease' }
+    if (['÷', '×', '-', '+', '='].includes(btn)) return { ...base, background: 'linear-gradient(135deg, #06b6d4, #0891b2)', color: '#fff' }
+    if (btn === 'C' || btn === 'CE') return { ...base, background: 'rgba(239,68,68,0.15)', color: '#ef4444' }
+    return { ...base, background: '#0f172a', color: '#f8fafc', border: '1px solid #334155' }
+  }
+
+  const handleButton = (btn) => {
+    if (btn === 'C') clearAll()
+    else if (btn === 'CE') clearEntry()
+    else if (btn === '.') inputDot()
+    else if (btn === '=') handleEquals()
+    else if (['÷', '×', '-', '+'].includes(btn)) performOperation(btn)
+    else inputDigit(btn)
+  }
+
+  return (
+    <div>
+      <div style={{ backgroundColor: '#0f172a', borderRadius: '0.75rem', padding: '1rem', marginBottom: '1rem', textAlign: 'right' }}>
+        <div style={{ fontSize: '28px', fontWeight: '700', color: '#f8fafc', wordBreak: 'break-all', fontFamily: 'monospace' }}>
+          {display}
+        </div>
+        {operation && <div style={{ fontSize: '12px', color: '#94a3b8' }}>İşlem: {operation}</div>}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
+        {buttons.flat().map((btn, i) => {
+          if (btn === '0') return <button key={i} onClick={() => handleButton(btn)} style={{ ...getButtonStyle(btn), gridColumn: 'span 1' }}>{btn}</button>
+          if (btn === '.') return <button key={i} onClick={() => handleButton(btn)} style={getButtonStyle(btn)}>{btn}</button>
+          if (btn === '=') return <button key={i} onClick={() => handleButton(btn)} style={getButtonStyle(btn)}>{btn}</button>
+          return <button key={i} onClick={() => handleButton(btn)} style={getButtonStyle(btn)}>{btn}</button>
+        })}
+      </div>
+    </div>
+  )
