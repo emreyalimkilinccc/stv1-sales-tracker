@@ -201,7 +201,7 @@ export default function Navbar() {
       </div>
 
       {menuOpen && (
-        <div style={{ backgroundColor: '#1e293b', borderTop: '1px solid #334155', padding: '0.75rem' }}>
+        <div style={{ backgroundColor: '#1e293b', borderTop: '1px solid #334155', padding: '0.75rem', maxHeight: '70vh', overflowY: 'auto' }}>
           {filteredItems.map(item => (
             <Link
               key={item.href}
