@@ -127,12 +127,6 @@ export default function KaskoPage() {
         )}
       </div>
 
-      {/* Hesap Makinası */}
-      <div className="card" style={{ marginTop: '1rem' }}>
-        <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>🧮 Hesap Makinası</h3>
-        <Calculator />
-      </div>
-
       {/* Taksit Hesaplama */}
       {total > 0 && (
         <div className="card" style={{ marginTop: '1rem' }}>
@@ -142,10 +136,7 @@ export default function KaskoPage() {
             {[5, 10, 12, 15, 20].map(months => {
               const monthlyPayment = total / months
               return (
-                <div key={months} style={{
-                  backgroundColor: '#0f172a', borderRadius: '0.75rem', padding: '1rem',
-                  border: '1px solid #334155', textAlign: 'center'
-                }}>
+                <div key={months} style={{ backgroundColor: '#0f172a', borderRadius: '0.75rem', padding: '1rem', border: '1px solid #334155', textAlign: 'center' }}>
                   <div style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '0.375rem' }}>{months} Ay</div>
                   <div style={{ fontSize: '20px', fontWeight: '700', color: '#06b6d4' }}>{formatCurrency(monthlyPayment)}</div>
                   <div style={{ fontSize: '11px', color: '#64748b', marginTop: '0.25rem' }}>aylık ödeme</div>
@@ -158,6 +149,12 @@ export default function KaskoPage() {
           </div>
         </div>
       )}
+
+      {/* Hesap Makinası */}
+      <div className="card" style={{ marginTop: '1rem' }}>
+        <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>🧮 Hesap Makinası</h3>
+        <Calculator />
+      </div>
     </div>
   )
 }
