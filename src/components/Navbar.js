@@ -73,6 +73,7 @@ export default function Navbar() {
 
   const navItems = [
     { href: '/dashboard', label: 'Veriler', icon: '📊' },
+    { href: '/performans', label: 'Performans', icon: '🏆' },
     { href: '/sales', label: 'Satış', icon: '💰' },
     { href: '/musteriler', label: 'Müşteriler', icon: '👥' },
     { href: '/teslim', label: 'Müşteri Teslim', icon: '📦' },
