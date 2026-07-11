@@ -33,12 +33,14 @@ export default function KaskoPage() {
   const [category, setCategory] = useState('')
   const [type, setType] = useState('kapsamli')
   const [productPrice, setProductPrice] = useState('')
+  const [includeKasko, setIncludeKasko] = useState(false)
 
   const rate = KASKO_RATES.find(k => k.category === category)?.rate || 0
   const price = parseFloat(productPrice) || 0
   const kaskoPrice = price * (rate / 100)
   const prime = price * 0.05
   const total = price + kaskoPrice + prime
+  const installmentBase = includeKasko ? total : price
 
   return (
     <div className="px-4 py-6 max-w-4xl mx-auto">
@@ -128,13 +130,29 @@ export default function KaskoPage() {
       </div>
 
       {/* Taksit Hesaplama */}
-      {total > 0 && (
+      {price > 0 && (
         <div className="card" style={{ marginTop: '1rem' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>💳 Taksit Seçenekleri</h3>
-          <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '1rem' }}>Toplam fiyat: <strong style={{ color: '#06b6d4' }}>{formatCurrency(total)}</strong></p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc' }}>💳 Taksit Seçenekleri</h3>
+            <button onClick={() => setIncludeKasko(!includeKasko)} style={{
+              padding: '0.375rem 0.75rem', borderRadius: '9999px', fontSize: '11px', fontWeight: '600',
+              border: `2px solid ${includeKasko ? '#10b981' : '#475569'}`,
+              backgroundColor: includeKasko ? 'rgba(16,185,129,0.2)' : 'transparent',
+              color: includeKasko ? '#10b981' : '#94a3b8',
+              cursor: 'pointer', transition: 'all 0.2s ease'
+            }}>
+              {includeKasko ? '✅ KASKO Dahil' : '➕ KASKO Dahil Et'}
+            </button>
+          </div>
+          <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '1rem' }}>
+            {includeKasko
+              ? <>Toplam: <strong style={{ color: '#06b6d4' }}>{formatCurrency(total)}</strong> (Ürün + KASKO + Prim)</>
+              : <>Toplam: <strong style={{ color: '#06b6d4' }}>{formatCurrency(price)}</strong> (Sadece ürün fiyatı)</>
+            }
+          </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.75rem' }}>
             {[5, 10, 12, 15, 20].map(months => {
-              const monthlyPayment = total / months
+              const monthlyPayment = installmentBase / months
               return (
                 <div key={months} style={{ backgroundColor: '#0f172a', borderRadius: '0.75rem', padding: '1rem', border: '1px solid #334155', textAlign: 'center' }}>
                   <div style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '0.375rem' }}>{months} Ay</div>
