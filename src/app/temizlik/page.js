@@ -17,6 +17,16 @@ const DEFAULT_CHECKLIST = [
 
 const DAY_ICONS = ['📌', '📍', '🔖', '🏷️', '📎', '🎯', '⭐']
 
+const DAYS = [
+  { key: 'monday', label: 'Pazartesi', icon: '📌' },
+  { key: 'tuesday', label: 'Salı', icon: '📍' },
+  { key: 'wednesday', label: 'Çarşamba', icon: '🔖' },
+  { key: 'thursday', label: 'Perşembe', icon: '🏷️' },
+  { key: 'friday', label: 'Cuma', icon: '📎' },
+  { key: 'saturday', label: 'Cumartesi', icon: '🎯' },
+  { key: 'sunday', label: 'Pazar', icon: '⭐' }
+]
+
 export default function TemizlikPage() {
   const { user } = useAuth()
   const toast = useToast()
@@ -186,9 +196,8 @@ export default function TemizlikPage() {
 
   const todayStr2 = new Date().toISOString().split('T')[0]
 
-  // Bugünkü atama kontrolü
-  const todayKey = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]?.key
-  const todaySchedule = schedules.filter(s => s.day === todayKey && s.dateRange === `${dateRange.start}_${dateRange.end}`)
+  // Bugünkü atama kontrolü — todayKey = todayStr2 (YYYY-MMDD formatı, days[].key ile eşleşir)
+  const todaySchedule = schedules.filter(s => s.day === todayStr2 && s.dateRange === `${dateRange.start}_${dateRange.end}`)
   const todayAssigned = todaySchedule.flatMap(s => s.assignedUsers || [])
   const isAssignedToday = todayAssigned.some(a => a.id === user.uid)
 

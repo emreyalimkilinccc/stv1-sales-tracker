@@ -13,6 +13,7 @@ export default function Navbar() {
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
   const [notifications, setNotifications] = useState(0)
+  const [lotteryNotif, setLotteryNotif] = useState(0)
   const [notifPrefs, setNotifPrefs] = useState({ sales: true, quota: true, cleaning: true, leave: true })
   const [theme, setTheme] = useState(() => {
     if (typeof window !== 'undefined') return localStorage.getItem('stv1-theme') || 'dark'
@@ -65,8 +66,12 @@ export default function Navbar() {
       if (!snap.empty) {
         const data = snap.docs[0].data()
         if (data.isActive && data.winner) {
-          setNotifications(prev => prev + 1)
+          setLotteryNotif(1)
+        } else {
+          setLotteryNotif(0)
         }
+      } else {
+        setLotteryNotif(0)
       }
     })
 
@@ -134,7 +139,7 @@ export default function Navbar() {
                 }}>
                   🔔
                 </Link>
-                {notifications > 0 && (
+                {notifications + lotteryNotif > 0 && (
                   <div style={{
                     position: 'absolute', top: '-4px', right: '-4px',
                     width: '20px', height: '20px',
@@ -146,7 +151,7 @@ export default function Navbar() {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     border: '2px solid #1e293b'
                   }}>
-                    {notifications}
+                    {notifications + lotteryNotif}
                   </div>
                 )}
               </div>
