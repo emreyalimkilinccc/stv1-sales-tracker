@@ -13,23 +13,7 @@ export default function Navbar() {
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
   const [notifications, setNotifications] = useState(0)
-  const [lotteryNotif, setLotteryNotif] = useState(0)
   const [notifPrefs, setNotifPrefs] = useState({ sales: true, quota: true, cleaning: true, leave: true })
-  const [theme, setTheme] = useState(() => {
-    if (typeof window !== 'undefined') return localStorage.getItem('stv1-theme') || 'dark'
-    return 'dark'
-  })
-
-  const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark'
-    setTheme(next)
-    localStorage.setItem('stv1-theme', next)
-    document.documentElement.setAttribute('data-theme', next)
-  }
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme)
-  }, [])
 
   const isActive = (path) => pathname === path
 
@@ -178,16 +162,6 @@ export default function Navbar() {
                 cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
               }} title="Bildirimleri aç">🔔</button>
             )}
-
-            {/* Tema Toggle */}
-            <button onClick={toggleTheme} style={{
-              width: '38px', height: '38px', borderRadius: '10px',
-              border: '1px solid #334155', backgroundColor: 'transparent',
-              color: '#94a3b8', fontSize: '18px', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }} title={theme === 'dark' ? 'Aydınlık moda geç' : 'Karanlık moda geç'}>
-              {theme === 'dark' ? '☀️' : '🌙'}
-            </button>
 
             {/* Menü Butonu */}
             <button onClick={() => setMenuOpen(!menuOpen)} style={{

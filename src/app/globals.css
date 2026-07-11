@@ -19,36 +19,7 @@
   --input-bg: #334155;
 }
 
-[data-theme="light"] {
-  --bg-primary: #f8fafc;
-  --bg-secondary: #f1f5f9;
-  --bg-card: #ffffff;
-  --bg-input: #f1f5f9;
-  --border-color: #e2e8f0;
-  --text-primary: #0f172a;
-  --text-secondary: #64748b;
-  --page-bg: #f1f5f9;
-  --card-bg: #ffffff;
-  --input-bg: #f1f5f9;
-}
-
-[data-theme="light"] body { background-color: #f1f5f9 !important; color: #0f172a !important; }
-[data-theme="light"] main { background-color: #f1f5f9 !important; }
-[data-theme="light"] nav { background-color: #ffffff !important; border-color: #e2e8f0 !important; }
-[data-theme="light"] .card { background-color: #ffffff !important; border-color: #e2e8f0 !important; }
-[data-theme="light"] .form-input { background-color: #f1f5f9 !important; border-color: #e2e8f0 !important; color: #0f172a !important; }
-[data-theme="light"] .form-label { color: #64748b !important; }
-[data-theme="light"] .list-item { background-color: #ffffff !important; border-color: #e2e8f0 !important; }
-[data-theme="light"] .page-header { box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15) !important; }
-[data-theme="light"] .stat-card { background-color: #ffffff !important; border-color: #e2e8f0 !important; }
-[data-theme="light"] .btn-secondary { background-color: #f1f5f9 !important; color: #64748b !important; border-color: #e2e8f0 !important; }
-[data-theme="light"] .badge-admin { background-color: rgba(239, 68, 68, 0.1) !important; color: #dc2626 !important; }
-[data-theme="light"] .badge-manager { background-color: rgba(245, 158, 11, 0.1) !important; color: #d97706 !important; }
-[data-theme="light"] .badge-staff { background-color: rgba(59, 130, 246, 0.1) !important; color: #2563eb !important; }
-[data-theme="light"] input, [data-theme="light"] select, [data-theme="light"] textarea { background-color: #f1f5f9 !important; border-color: #e2e8f0 !important; color: #0f172a !important; }
-[data-theme="light"] input:focus, [data-theme="light"] select:focus, [data-theme="light"] textarea:focus { border-color: #3b82f6 !important; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important; }
-
-* {
+* { {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
