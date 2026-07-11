@@ -35,6 +35,7 @@ export default function SalesPage() {
   const [selectedSeller, setSelectedSeller] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
   const ITEMS_PER_PAGE = 20
+  const [selectedSales, setSelectedSales] = useState(new Set())
 
   useEffect(() => { if (user) { fetchSales(); if (canEdit) fetchStaffList(); setSelectedSeller(user) } }, [user])
 
@@ -111,6 +112,37 @@ export default function SalesPage() {
   const handleDelete = async (id) => {
     if (!confirm('Silmek istediğinize emin misiniz?')) return
     try { await deleteDoc(doc(db, 'sales', id)); fetchSales(); logActivity('sale_deleted', { saleId: id }, user.uid, user.name || user.email) } catch (error) { toast.error('Silinemedi: ' + error.message) }
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedSales.size === 0) { toast.warning('Silinecek satış seçin!'); return }
+    if (!confirm(`${selectedSales.size} satış silinecek. Emin misiniz?`)) return
+    try {
+      const batch = writeBatch(db)
+      selectedSales.forEach(id => batch.delete(doc(db, 'sales', id)))
+      await batch.commit()
+      toast.success(`${selectedSales.size} satış silindi!`)
+      logActivity('sale_deleted', { count: selectedSales.size }, user.uid, user.name || user.email)
+      setSelectedSales(new Set())
+      fetchSales()
+    } catch (error) { toast.error('Hata: ' + error.message) }
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedSales.size === pagedSales.length) {
+      setSelectedSales(new Set())
+    } else {
+      setSelectedSales(new Set(pagedSales.map(s => s.id)))
+    }
+  }
+
+  const toggleSelect = (id) => {
+    setSelectedSales(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
   }
 
   const handleSend = (sale) => { setSendingSale(sale); setSendData({ subject: '', description: '' }); setShowSendModal(true) }
@@ -306,8 +338,23 @@ export default function SalesPage() {
 
       {/* Satış Geçmişi */}
       <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc' }}>📋 Satış Geçmişi</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc' }}>📋 Satış Geçmişi</h3>
+            {canEdit && pagedSales.length > 0 && (
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '12px', color: '#94a3b8', cursor: 'pointer' }}>
+                <input type="checkbox" checked={selectedSales.size === pagedSales.length && pagedSales.length > 0} onChange={toggleSelectAll}
+                  style={{ accentColor: '#3b82f6' }} />
+                Seç ({selectedSales.size})
+              </label>
+            )}
+            {canEdit && selectedSales.size > 0 && (
+              <button onClick={handleBulkDelete} style={{
+                padding: '0.25rem 0.625rem', borderRadius: '0.375rem', fontSize: '11px', fontWeight: '600',
+                backgroundColor: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none', cursor: 'pointer'
+              }}>🗑️ Sil ({selectedSales.size})</button>
+            )}
+          </div>
           {canEdit && (
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <label style={{ padding: '0.375rem 0.75rem', borderRadius: '0.5rem', fontSize: '12px', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)', cursor: 'pointer', fontWeight: '600' }}>
@@ -335,37 +382,45 @@ export default function SalesPage() {
             {pagedSales.map(sale => {
               const isNegative = parseFloat(sale.amount) < 0
               return (
-                <div key={sale.id} style={{ backgroundColor: '#0f172a', borderRadius: '0.5rem', padding: '0.875rem', borderLeft: `4px solid ${isNegative ? '#ef4444' : '#3b82f6'}`, marginBottom: '0.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                    <div>
-                      <div style={{ fontSize: '16px', fontWeight: '700', color: isNegative ? '#ef4444' : '#3b82f6' }}>
-                        {isNegative ? '❌ ' : ''}{formatCurrencyDecimal(sale.amount || 0)}
-                      </div>
-                      <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '0.25rem' }}>
-                        {sale.date ? new Date(sale.date).toLocaleDateString('tr-TR') : ''} • {sale.hour !== undefined ? `${String(sale.hour).padStart(2, '0')}:00` : ''} • {sale.userName || '-'}
-                      </div>
-                      {(sale.itemCount > 0 || sale.bonusItemCount > 0) && (
-                        <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '0.25rem' }}>
-                          📦 {sale.itemCount || 0} ürün{sale.bonusItemCount > 0 ? ` • 🎁 ${sale.bonusItemCount} bonus` : ''}
+                <div key={sale.id} style={{ backgroundColor: '#0f172a', borderRadius: '0.5rem', padding: '0.875rem', borderLeft: `4px solid ${isNegative ? '#ef4444' : selectedSales.has(sale.id) ? '#8b5cf6' : '#3b82f6'}`, marginBottom: '0.5rem' }}>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+                    {canEdit && (
+                      <input type="checkbox" checked={selectedSales.has(sale.id)} onChange={() => toggleSelect(sale.id)}
+                        style={{ marginTop: '4px', accentColor: '#8b5cf6', flexShrink: 0 }} />
+                    )}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div>
+                          <div style={{ fontSize: '16px', fontWeight: '700', color: isNegative ? '#ef4444' : '#3b82f6' }}>
+                            {isNegative ? '❌ ' : ''}{formatCurrencyDecimal(sale.amount || 0)}
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '0.25rem' }}>
+                            {sale.date ? new Date(sale.date).toLocaleDateString('tr-TR') : ''} • {sale.hour !== undefined ? `${String(sale.hour).padStart(2, '0')}:00` : ''} • {sale.userName || '-'}
+                          </div>
+                          {(sale.itemCount > 0 || sale.bonusItemCount > 0) && (
+                            <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '0.25rem' }}>
+                              📦 {sale.itemCount || 0} ürün{sale.bonusItemCount > 0 ? ` • 🎁 ${sale.bonusItemCount} bonus` : ''}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                    <div style={{ display: 'flex', gap: '0.375rem', alignItems: 'center' }}>
-                      <span style={{ padding: '0.2rem 0.5rem', borderRadius: '9999px', fontSize: '10px', backgroundColor: isNegative ? 'rgba(239, 68, 68, 0.15)' : 'rgba(59, 130, 246, 0.15)', color: isNegative ? '#fca5a5' : '#93c5fd' }}>
-                        {isNegative ? '🚫 İptal' : sale.category || '-'}
-                      </span>
-                      {canEdit ? (
-                        <>
-                          <button onClick={() => handleEdit(sale)} style={{ padding: '0.375rem 0.625rem', borderRadius: '0.375rem', fontSize: '11px', backgroundColor: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', border: 'none', cursor: 'pointer' }}>✏️</button>
-                          <button onClick={() => handleDelete(sale.id)} style={{ padding: '0.375rem 0.625rem', borderRadius: '0.375rem', fontSize: '11px', backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: 'none', cursor: 'pointer' }}>🗑️</button>
-                        </>
-                      ) : (
-                        <button onClick={() => handleSend(sale)} style={{ padding: '0.375rem 0.625rem', borderRadius: '0.375rem', fontSize: '11px', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: 'none', cursor: 'pointer' }}>📨 Gönder</button>
-                      )}
+                        <div style={{ display: 'flex', gap: '0.375rem', alignItems: 'center' }}>
+                          <span style={{ padding: '0.2rem 0.5rem', borderRadius: '9999px', fontSize: '10px', backgroundColor: isNegative ? 'rgba(239, 68, 68, 0.15)' : 'rgba(59, 130, 246, 0.15)', color: isNegative ? '#fca5a5' : '#93c5fd' }}>
+                            {isNegative ? '🚫 İptal' : sale.category || '-'}
+                          </span>
+                          {canEdit ? (
+                            <>
+                              <button onClick={() => handleEdit(sale)} style={{ padding: '0.375rem 0.625rem', borderRadius: '0.375rem', fontSize: '11px', backgroundColor: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', border: 'none', cursor: 'pointer' }}>✏️</button>
+                              <button onClick={() => handleDelete(sale.id)} style={{ padding: '0.375rem 0.625rem', borderRadius: '0.375rem', fontSize: '11px', backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: 'none', cursor: 'pointer' }}>🗑️</button>
+                            </>
+                          ) : (
+                            <button onClick={() => handleSend(sale)} style={{ padding: '0.375rem 0.625rem', borderRadius: '0.375rem', fontSize: '11px', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: 'none', cursor: 'pointer' }}>📨 Gönder</button>
+                          )}
+                        </div>
+                      </div>
+                      {sale.lastEditedBy && <div style={{ fontSize: '10px', color: '#f59e0b' }}>✏️ {sale.lastEditedBy} tarafından düzenlendi</div>}
+                      {sale.sentBy && <div style={{ fontSize: '10px', color: '#10b981' }}>📨 {sale.sentBy} gönderdi</div>}
                     </div>
                   </div>
-                  {sale.lastEditedBy && <div style={{ fontSize: '10px', color: '#f59e0b' }}>✏️ {sale.lastEditedBy} tarafından düzenlendi</div>}
-                  {sale.sentBy && <div style={{ fontSize: '10px', color: '#10b981' }}>📨 {sale.sentBy} gönderdi</div>}
                 </div>
               )
             })}

@@ -19,6 +19,27 @@
   --input-bg: #334155;
 }
 
+[data-theme="light"] {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-input: #f1f5f9;
+  --border-color: #e2e8f0;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --page-bg: #f1f5f9;
+  --card-bg: #ffffff;
+  --input-bg: #f1f5f9;
+}
+
+[data-theme="light"] body { background-color: var(--page-bg); color: var(--text-primary); }
+[data-theme="light"] .card { background-color: var(--card-bg); border-color: var(--border-color); }
+[data-theme="light"] .form-input { background-color: var(--input-bg); border-color: var(--border-color); color: var(--text-primary); }
+[data-theme="light"] .list-item { background-color: var(--card-bg); border-color: var(--border-color); }
+[data-theme="light"] .page-header { box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15); }
+[data-theme="light"] nav { background-color: #ffffff !important; border-color: #e2e8f0 !important; }
+[data-theme="light"] .stat-card { background-color: var(--card-bg); border-color: var(--border-color); }
+
 * {
   box-sizing: border-box;
   margin: 0;

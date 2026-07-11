@@ -25,10 +25,28 @@ export default function DashboardCharts({ dailyStats, staffStats, categoryStats 
 
   const handlePrint = () => window.print()
 
+  const handleExportCSV = () => {
+    const rows = [['Tarih', 'Tutar', 'İşlem Sayısı']]
+    dailyStats.forEach(d => {
+      rows.push([d.date, d.amount, d.count])
+    })
+    const csv = rows.map(r => r.join(',')).join('\n')
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = `stv1-gunluk-satislar-${new Date().toISOString().split('T')[0]}.csv`
+    a.click(); URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="space-y-4" id="dashboard-charts">
-      {/* Dışa Aktar Butonu */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+      {/* Dışa Aktar Butonları */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+        <button onClick={handleExportCSV} style={{
+          padding: '0.5rem 1rem', borderRadius: '0.5rem', fontSize: '12px', fontWeight: '600',
+          backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)',
+          cursor: 'pointer'
+        }}>📥 CSV İndir</button>
         <button onClick={handlePrint} style={{
           padding: '0.5rem 1rem', borderRadius: '0.5rem', fontSize: '12px', fontWeight: '600',
           backgroundColor: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.3)',

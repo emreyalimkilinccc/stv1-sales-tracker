@@ -7,9 +7,11 @@ import { db } from '@/lib/firebase'
 import { formatCurrency } from '@/lib/utils'
 import DashboardCharts from '@/components/DashboardCharts'
 import LeaderBoard from '@/components/LeaderBoard'
+import { useToast } from '@/components/Toast'
 
 export default function DashboardPage() {
   const { user } = useAuth()
+  const toast = useToast()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [selectedStaff, setSelectedStaff] = useState('')
