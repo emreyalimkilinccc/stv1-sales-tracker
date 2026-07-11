@@ -326,23 +326,6 @@ export default function KaskoPage() {
                   </div>
                 </div>
               )}
-              <button onClick={() => {
-                if (!kaskoForm.category || !kaskoForm.productPrice) { toast.warning('Kategori ve fiyat gerekli!'); return }
-                const kaskoPrice = parseFloat(kaskoForm.productPrice) * (kaskoForm.rate / 100)
-                const prime = parseFloat(kaskoForm.productPrice) * 0.05
-                handleKaskoSubmit({
-                  category: kaskoForm.category,
-                  rate: kaskoForm.rate,
-                  type: kaskoForm.type,
-                  productPrice: parseFloat(kaskoForm.productPrice),
-                  kaskoPrice: parseFloat(kaskoPrice.toFixed(2)),
-                  prime: parseFloat(prime.toFixed(2)),
-                  totalPrice: parseFloat((kaskoPrice + prime).toFixed(2))
-                })
-              }} style={{
-                width: '100%', padding: '0.875rem', borderRadius: '0.75rem', fontSize: '14px', fontWeight: '600',
-                background: 'linear-gradient(135deg, #06b6d4, #0891b2)', color: '#fff', border: 'none', cursor: 'pointer'
-              }}>🧮 KASKO Hesapla ve Kaydet</button>
             </div>
           )}
         </div>
