@@ -102,13 +102,16 @@ export default function KaskoPage() {
   const overallPercentage = totalSales > 0 ? (totalKasko / totalSales * 100) : 0
   const totalKaskoRevenue = kaskoRecords.reduce((sum, k) => sum + (k.kaskoPrice || 0), 0)
 
-  const handleKaskoSubmit = async (e) => {
-    e.preventDefault()
+  const handleKaskoSubmit = async (data) => {
     try {
       await addDoc(collection(db, 'kasko'), {
-        ...kaskoForm,
-        productPrice: parseFloat(kaskoForm.productPrice) || 0,
-        kaskoPrice: parseFloat(kaskoForm.kaskoPrice) || 0,
+        category: data.category,
+        rate: data.rate,
+        type: data.type,
+        productPrice: data.productPrice,
+        kaskoPrice: data.kaskoPrice,
+        prime: data.prime || 0,
+        totalPrice: data.totalPrice || 0,
         addedBy: user.name || user.email,
         addedById: user.uid,
         createdAt: new Date().toISOString()
@@ -295,31 +298,46 @@ export default function KaskoPage() {
                   background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(59, 130, 246, 0.1))',
                   border: '1px solid rgba(6, 182, 212, 0.3)'
                 }}>
-                  <div style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '0.5rem' }}>🧮 KASKO Fiyat Hesaplaması</div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                    <span style={{ fontSize: '14px', color: '#f8fafc' }}>Ürün Fiyatı:</span>
-                    <span style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc' }}>{formatCurrency(parseFloat(kaskoForm.productPrice) || 0)}</span>
+                  <div style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '0.75rem' }}>🧮 KASKO Fiyat Hesaplaması</div>
+                  
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid #334155' }}>
+                    <span style={{ fontSize: '14px', color: '#94a3b8' }}>Ürün Fiyatı</span>
+                    <span style={{ fontSize: '15px', fontWeight: '600', color: '#f8fafc' }}>{formatCurrency(parseFloat(kaskoForm.productPrice) || 0)}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                    <span style={{ fontSize: '14px', color: '#94a3b8' }}>KASKO Oranı:</span>
-                    <span style={{ fontSize: '16px', fontWeight: '600', color: '#06b6d4' }}>%{kaskoForm.rate}</span>
+                  
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid #334155' }}>
+                    <span style={{ fontSize: '14px', color: '#94a3b8' }}>KASKO Oranı</span>
+                    <span style={{ fontSize: '15px', fontWeight: '600', color: '#06b6d4' }}>%{kaskoForm.rate}</span>
                   </div>
-                  <div style={{ height: '2px', backgroundColor: '#334155', margin: '0.5rem 0' }} />
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '16px', fontWeight: '700', color: '#f8fafc' }}>🛡️ KASKO Fiyatı:</span>
-                    <span style={{ fontSize: '20px', fontWeight: '800', color: '#06b6d4' }}>{formatCurrency(parseFloat(kaskoForm.kaskoPrice) || 0)}</span>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid #334155' }}>
+                    <span style={{ fontSize: '14px', color: '#94a3b8' }}>Prim (%5)</span>
+                    <span style={{ fontSize: '15px', fontWeight: '600', color: '#f59e0b' }}>{formatCurrency((parseFloat(kaskoForm.productPrice) || 0) * 0.05)}</span>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid #334155' }}>
+                    <span style={{ fontSize: '14px', color: '#94a3b8' }}>KASKO Fiyatı</span>
+                    <span style={{ fontSize: '15px', fontWeight: '600', color: '#06b6d4' }}>{formatCurrency(parseFloat(kaskoForm.kaskoPrice) || 0)}</span>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 0', marginTop: '0.25rem', borderTop: '2px solid #06b6d4' }}>
+                    <span style={{ fontSize: '16px', fontWeight: '700', color: '#f8fafc' }}>💰 Toplam Fiyat</span>
+                    <span style={{ fontSize: '20px', fontWeight: '800', color: '#10b981' }}>{formatCurrency((parseFloat(kaskoForm.productPrice) || 0) + (parseFloat(kaskoForm.kaskoPrice) || 0))}</span>
                   </div>
                 </div>
               )}
               <button onClick={() => {
                 if (!kaskoForm.category || !kaskoForm.productPrice) { toast.warning('Kategori ve fiyat gerekli!'); return }
                 const kaskoPrice = parseFloat(kaskoForm.productPrice) * (kaskoForm.rate / 100)
+                const prime = parseFloat(kaskoForm.productPrice) * 0.05
                 handleKaskoSubmit({
                   category: kaskoForm.category,
                   rate: kaskoForm.rate,
                   type: kaskoForm.type,
                   productPrice: parseFloat(kaskoForm.productPrice),
-                  kaskoPrice: parseFloat(kaskoPrice.toFixed(2))
+                  kaskoPrice: parseFloat(kaskoPrice.toFixed(2)),
+                  prime: parseFloat(prime.toFixed(2)),
+                  totalPrice: parseFloat((kaskoPrice + prime).toFixed(2))
                 })
               }} style={{
                 width: '100%', padding: '0.875rem', borderRadius: '0.75rem', fontSize: '14px', fontWeight: '600',
