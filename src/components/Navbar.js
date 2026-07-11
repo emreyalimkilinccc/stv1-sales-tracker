@@ -123,7 +123,7 @@ export default function Navbar() {
                 }}>
                   🔔
                 </Link>
-                {notifications + lotteryNotif > 0 && (
+                {notifications > 0 && (
                   <div style={{
                     position: 'absolute', top: '-4px', right: '-4px',
                     width: '20px', height: '20px',
@@ -135,7 +135,7 @@ export default function Navbar() {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     border: '2px solid #1e293b'
                   }}>
-                    {notifications + lotteryNotif}
+                    {notifications}
                   </div>
                 )}
               </div>
