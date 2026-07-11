@@ -249,7 +249,7 @@ export default function KaskoPage() {
         </div>
       </div>
 
-      {/* KASKO Ekle */}
+      {/* KASKO Hesapla */}
       {canManage && (
         <div className="card">
           <button onClick={() => setShowKaskoForm(!showKaskoForm)} style={{
@@ -257,39 +257,74 @@ export default function KaskoPage() {
             background: showKaskoForm ? '#334155' : 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
             color: showKaskoForm ? '#94a3b8' : '#fff', border: 'none', cursor: 'pointer'
           }}>
-            {showKaskoForm ? '✕ Kapat' : '➕ KASKO Satışı Ekle'}
+            {showKaskoForm ? '✕ Kapat' : '🧮 KASKO Hesapla'}
           </button>
 
           {showKaskoForm && (
             <div style={{ marginTop: '1rem' }}>
-              <form onSubmit={handleKaskoSubmit}>
-                <div className="form-group">
-                  <label className="form-label">📊 Kategori</label>
-                  <select value={kaskoForm.category} onChange={(e) => {
-                    const cat = KASKO_RATES.find(k => k.category === e.target.value)
-                    setKaskoForm(p => ({ ...p, category: e.target.value, rate: cat ? cat.rate : 0 }))
-                  }} required className="form-input">
-                    <option value="">Kategori Seçin</option>
-                    {KASKO_RATES.map(k => <option key={k.category} value={k.category}>{k.icon} {k.category} (%{k.rate})</option>)}
-                  </select>
+              <div className="form-group">
+                <label className="form-label">📊 Kategori</label>
+                <select value={kaskoForm.category} onChange={(e) => {
+                  const cat = KASKO_RATES.find(k => k.category === e.target.value)
+                  const productPrice = parseFloat(kaskoForm.productPrice) || 0
+                  const kaskoPrice = cat ? productPrice * (cat.rate / 100) : 0
+                  setKaskoForm(p => ({ ...p, category: e.target.value, rate: cat ? cat.rate : 0, kaskoPrice: kaskoPrice > 0 ? kaskoPrice.toFixed(2) : '' }))
+                }} required className="form-input">
+                  <option value="">Kategori Seçin</option>
+                  {KASKO_RATES.map(k => <option key={k.category} value={k.category}>{k.icon} {k.category} (%{k.rate})</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">🛡️ KASKO Türü</label>
+                <select value={kaskoForm.type} onChange={(e) => setKaskoForm(p => ({ ...p, type: e.target.value }))} className="form-input">
+                  <option value="kapsamli">Kapsamlı Onarım Paketi</option>
+                  <option value="uzatilmis">Ek Garanti Paketi (Uzatılmış)</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">💰 Ürün Satış Fiyatı (TL)</label>
+                <input type="number" value={kaskoForm.productPrice} onChange={(e) => {
+                  const productPrice = parseFloat(e.target.value) || 0
+                  const kaskoPrice = productPrice * (kaskoForm.rate / 100)
+                  setKaskoForm(p => ({ ...p, productPrice: e.target.value, kaskoPrice: kaskoPrice > 0 ? kaskoPrice.toFixed(2) : '' }))
+                }} placeholder="0" required className="form-input" />
+              </div>
+              {kaskoForm.rate > 0 && (
+                <div style={{
+                  padding: '1rem', borderRadius: '0.75rem', marginBottom: '1rem',
+                  background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(59, 130, 246, 0.1))',
+                  border: '1px solid rgba(6, 182, 212, 0.3)'
+                }}>
+                  <div style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '0.5rem' }}>🧮 KASKO Fiyat Hesaplaması</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                    <span style={{ fontSize: '14px', color: '#f8fafc' }}>Ürün Fiyatı:</span>
+                    <span style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc' }}>{formatCurrency(parseFloat(kaskoForm.productPrice) || 0)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                    <span style={{ fontSize: '14px', color: '#94a3b8' }}>KASKO Oranı:</span>
+                    <span style={{ fontSize: '16px', fontWeight: '600', color: '#06b6d4' }}>%{kaskoForm.rate}</span>
+                  </div>
+                  <div style={{ height: '2px', backgroundColor: '#334155', margin: '0.5rem 0' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '16px', fontWeight: '700', color: '#f8fafc' }}>🛡️ KASKO Fiyatı:</span>
+                    <span style={{ fontSize: '20px', fontWeight: '800', color: '#06b6d4' }}>{formatCurrency(parseFloat(kaskoForm.kaskoPrice) || 0)}</span>
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label className="form-label">🛡️ KASKO Türü</label>
-                  <select value={kaskoForm.type} onChange={(e) => setKaskoForm(p => ({ ...p, type: e.target.value }))} className="form-input">
-                    <option value="kapsamli">Kapsamlı Onarım Paketi</option>
-                    <option value="uzatilmis">Ek Garanti Paketi (Uzatılmış)</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">💰 Ürün Satış Fiyatı (TL)</label>
-                  <input type="number" value={kaskoForm.productPrice} onChange={(e) => setKaskoForm(p => ({ ...p, productPrice: e.target.value }))} placeholder="0" required className="form-input" />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">🛡️ KASKO Fiyatı (TL) — %{kaskoForm.rate}</label>
-                  <input type="number" value={kaskoForm.kaskoPrice} onChange={(e) => setKaskoForm(p => ({ ...p, kaskoPrice: e.target.value }))} placeholder="0" required className="form-input" />
-                </div>
-                <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>🛡️ Kaydet</button>
-              </form>
+              )}
+              <button onClick={() => {
+                if (!kaskoForm.category || !kaskoForm.productPrice) { toast.warning('Kategori ve fiyat gerekli!'); return }
+                const kaskoPrice = parseFloat(kaskoForm.productPrice) * (kaskoForm.rate / 100)
+                handleKaskoSubmit({
+                  category: kaskoForm.category,
+                  rate: kaskoForm.rate,
+                  type: kaskoForm.type,
+                  productPrice: parseFloat(kaskoForm.productPrice),
+                  kaskoPrice: parseFloat(kaskoPrice.toFixed(2))
+                })
+              }} style={{
+                width: '100%', padding: '0.875rem', borderRadius: '0.75rem', fontSize: '14px', fontWeight: '600',
+                background: 'linear-gradient(135deg, #06b6d4, #0891b2)', color: '#fff', border: 'none', cursor: 'pointer'
+              }}>🧮 KASKO Hesapla ve Kaydet</button>
             </div>
           )}
         </div>
