@@ -134,8 +134,12 @@ export default function DashboardPage() {
             return s.userId === user.uid || (s.userName || '').trim() === name || (s.userName || '').toLowerCase() === name.toLowerCase() || s.userEmail === email
           })
         } else if (user.role === 'MANAGER') {
-          const snap = await getDocs(query(collection(db, 'sales'), where('storeId', '==', user.storeId)))
-          allSales = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+          // Tüm satışları çek, client-side filtrele (userId, userName, storeId ile)
+          const snap = await getDocs(collection(db, 'sales'))
+          const name = (user.name || '').trim()
+          allSales = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => {
+            return s.userId === user.uid || (s.userName || '').trim() === name || (s.userName || '').toLowerCase() === name.toLowerCase() || (user.storeId && s.storeId === user.storeId)
+          })
         } else {
           const snap = await getDocs(collection(db, 'sales'))
           allSales = snap.docs.map(d => ({ id: d.id, ...d.data() }))
