@@ -41,22 +41,14 @@ export default function Navbar() {
       let count = 0
       snapshot.forEach(doc => {
         const data = doc.data()
-        // Düzenlenmemiş satışları say (lastEditedBy yoksa)
         if (!data.lastEditedBy) {
-          // Mağaza müdürü ise sadece kendi mağazasını saysın
           if (user.role === 'MANAGER') {
-            if (data.storeId === user.storeId || !data.storeId) {
-              count++
-            }
-          } else {
-            // Yönetici tümünü görsün
-            count++
-          }
+            if (data.storeId === user.storeId || !data.storeId) count++
+          } else { count++ }
         }
       })
       setNotifications(count)
       
-      // Sesli bildirim - yeni bildirim geldiğinde
       if (count > 0) {
         try {
           const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2JkI+LfXR0e4aXnJqUin11dXyGmZ2blYl8dXV9h5qem5SJfXR1fIeanpuUin11dXyHmp6blIp9dXV8')
@@ -66,7 +58,19 @@ export default function Navbar() {
       }
     })
 
-    return () => unsubscribe()
+    // Çekiliş bildirimi
+    const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' })
+    const lotteryQ = query(collection(db, 'lottery'), where('date', '==', todayStr))
+    const unsubLottery = onSnapshot(lotteryQ, (snap) => {
+      if (!snap.empty) {
+        const data = snap.docs[0].data()
+        if (data.isActive && data.winner) {
+          setNotifications(prev => prev + 1)
+        }
+      }
+    })
+
+    return () => { unsubscribe(); unsubLottery() }
   }, [user])
 
   if (!user) return null

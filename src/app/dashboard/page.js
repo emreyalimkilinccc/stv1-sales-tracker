@@ -337,16 +337,26 @@ export default function DashboardPage() {
       {/* Bildirimler - Kota Uyarısı + Hedef Tebriği */}
       {(() => {
         const notifications = []
+        // 1) Kota hatırlatması + uyarılar
         if (user.role === 'STAFF' && userQuota > 0) {
           const pct = (data?.summary?.totalAmount || 0) / userQuota * 100
           if (pct >= 100) notifications.push({ icon: '🎉', text: 'Tebrikler! Aylık kota hedefinizi aştınız!', color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' })
           else if (pct >= 80) notifications.push({ icon: '⚠️', text: `Kota hedefinizin %${pct.toFixed(0)}'ine ulaştınız!`, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' })
           else if (pct >= 50) notifications.push({ icon: '📊', text: `Kota hedefinizin yarısına ulaştınız (%${pct.toFixed(0)})`, color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.1)' })
+          else if (pct < 20) notifications.push({ icon: '📢', text: 'Ay ortasına yaklaştık! Henüz kota hedefinizin çok gerisindesiniz.', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.08)' })
         }
         if (storeQuota > 0 && user.role !== 'STAFF') {
           const pct = (data?.summary?.totalAmount || 0) / storeQuota * 100
           if (pct >= 100) notifications.push({ icon: '🏪', text: 'Mağaza kota hedefi tamamlandı!', color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' })
           else if (pct >= 80) notifications.push({ icon: '🏪⚠️', text: `Mağaza kotasının %${pct.toFixed(0)}'ine ulaşıldı!`, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' })
+        }
+        // 2) Performans bildirimi
+        if (data?.summary?.salesCount > 0) {
+          const todayAmount = data?.summary?.totalAmount || 0
+          if (user.role === 'STAFF' && userQuota > 0) {
+            const pct = todayAmount / userQuota * 100
+            if (pct >= 30) notifications.push({ icon: '🔥', text: `Bugün harika performans! Hedefinize %${pct.toFixed(0)} ulaştınız!`, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.08)' })
+          }
         }
         if (notifications.length === 0) return null
         return (

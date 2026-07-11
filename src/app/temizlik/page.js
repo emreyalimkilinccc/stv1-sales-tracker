@@ -186,6 +186,12 @@ export default function TemizlikPage() {
 
   const todayStr2 = new Date().toISOString().split('T')[0]
 
+  // Bugünkü atama kontrolü
+  const todayKey = DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]?.key
+  const todaySchedule = schedules.filter(s => s.day === todayKey && s.dateRange === `${dateRange.start}_${dateRange.end}`)
+  const todayAssigned = todaySchedule.flatMap(s => s.assignedUsers || [])
+  const isAssignedToday = todayAssigned.some(a => a.id === user.uid)
+
   if (!user) return <div className="min-h-screen flex items-center justify-center"><div>🔑 Giriş yapın</div></div>
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div style={{ fontSize: '48px' }}>⏳</div></div>
 
@@ -195,6 +201,21 @@ export default function TemizlikPage() {
         <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#ffffff', marginBottom: '0.375rem' }}>🧹 Temizlik Programı</h1>
         <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px' }}>Tarih aralığı belirleyin ve kişi atayın</p>
       </div>
+
+      {/* Bugünkü Hatırlatma */}
+      {isAssignedToday && (
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.1))',
+          border: '2px solid rgba(245, 158, 11, 0.3)', borderRadius: '1rem', padding: '1rem', marginBottom: '1rem',
+          display: 'flex', alignItems: 'center', gap: '0.75rem'
+        }}>
+          <span style={{ fontSize: '32px' }}>🔔</span>
+          <div>
+            <div style={{ fontSize: '15px', fontWeight: '700', color: '#f59e0b' }}>Bugün temizlik gününüz!</div>
+            <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '0.25rem' }}>Aşağıdan görevlerinizi tamamlayıp fotoğraf kanıtı ekleyin.</div>
+          </div>
+        </div>
+      )}
 
       {/* Tarih Aralığı Seçici */}
       <div className="card" style={{ marginBottom: '1rem' }}>
