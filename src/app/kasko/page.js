@@ -132,6 +132,32 @@ export default function KaskoPage() {
         <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>🧮 Hesap Makinası</h3>
         <Calculator />
       </div>
+
+      {/* Taksit Hesaplama */}
+      {total > 0 && (
+        <div className="card" style={{ marginTop: '1rem' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>💳 Taksit Seçenekleri</h3>
+          <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '1rem' }}>Toplam fiyat: <strong style={{ color: '#06b6d4' }}>{formatCurrency(total)}</strong></p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.75rem' }}>
+            {[5, 10, 12, 15, 20].map(months => {
+              const monthlyPayment = total / months
+              return (
+                <div key={months} style={{
+                  backgroundColor: '#0f172a', borderRadius: '0.75rem', padding: '1rem',
+                  border: '1px solid #334155', textAlign: 'center'
+                }}>
+                  <div style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '0.375rem' }}>{months} Ay</div>
+                  <div style={{ fontSize: '20px', fontWeight: '700', color: '#06b6d4' }}>{formatCurrency(monthlyPayment)}</div>
+                  <div style={{ fontSize: '11px', color: '#64748b', marginTop: '0.25rem' }}>aylık ödeme</div>
+                  <div style={{ height: '4px', backgroundColor: '#1e293b', borderRadius: '2px', marginTop: '0.5rem', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: '100%', backgroundColor: '#06b6d4', borderRadius: '2px', opacity: 0.3 }} />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

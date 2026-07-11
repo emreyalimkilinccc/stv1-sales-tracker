@@ -42,7 +42,8 @@ const SECTIONS = [
       'KASKO türünü seçin (Kapsamlı Onarım veya Uzatılmış Garanti)',
       'Ürün satış fiyatını girin',
       'Otomatik olarak KASKO fiyatı, prim ve toplam fiyat hesaplanır',
-      'Altta hesap makinası ile ek hesaplama yapabilirsiniz'
+      'Altta hesap makinası ile ek hesaplama yapabilirsiniz',
+      'Taksit seçenekleri: 5, 10, 12, 15 ve 20 aylık ödeme miktarları otomatik hesaplanır'
     ]
   },
   {
