@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
 import { requestNotificationPermission } from '@/lib/notifications'
@@ -13,7 +13,27 @@ export default function Navbar() {
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
   const [notifications, setNotifications] = useState(0)
-  const [notifPrefs, setNotifPrefs] = useState({ sales: true, quota: true, cleaning: true, leave: true })
+  const [notifPrefs, setNotifPrefs] = useState({ sales: true, quota: true, cleaning: true, leave: true, sound: true })
+  const prevCountRef = useRef(0)
+
+  const playSaleSound = () => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)()
+      const notes = [523.25, 659.25, 783.99]
+      notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        osc.type = 'sine'
+        osc.frequency.value = freq
+        gain.gain.setValueAtTime(0.15, ctx.currentTime + i * 0.12)
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.12 + 0.3)
+        osc.start(ctx.currentTime + i * 0.12)
+        osc.stop(ctx.currentTime + i * 0.12 + 0.3)
+      })
+    } catch (e) {}
+  }
 
   const isActive = (path) => pathname === path
 
@@ -34,32 +54,13 @@ export default function Navbar() {
       })
       setNotifications(count)
       
-      if (count > 0) {
-        try {
-          const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2JkI+LfXR0e4aXnJqUin11dXyGmZ2blYl8dXV9h5qem5SJfXR1fIeanpuUin11dXyHmp6blIp9dXV8')
-          audio.volume = 0.3
-          audio.play().catch(() => {})
-        } catch (e) {}
+      if (count > 0 && count > prevCountRef.current && notifPrefs.sound) {
+        playSaleSound()
       }
+      prevCountRef.current = count
     })
 
-    // Çekiliş bildirimi
-    const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' })
-    const lotteryQ = query(collection(db, 'lottery'), where('date', '==', todayStr))
-    const unsubLottery = onSnapshot(lotteryQ, (snap) => {
-      if (!snap.empty) {
-        const data = snap.docs[0].data()
-        if (data.isActive && data.winner) {
-          setLotteryNotif(1)
-        } else {
-          setLotteryNotif(0)
-        }
-      } else {
-        setLotteryNotif(0)
-      }
-    })
-
-    return () => { unsubscribe(); unsubLottery() }
+    return () => { unsubscribe() }
   }, [user])
 
   if (!user) return null
@@ -77,6 +78,7 @@ export default function Navbar() {
     { href: '/temizlik', label: 'Temizlik', icon: '🧹' },
     { href: '/izin-talep', label: 'İzin Talep', icon: '📅' },
     { href: '/oylama', label: 'Oylama', icon: '🗳️' },
+    { href: '/mola', label: 'Mola', icon: '☕' },
     { href: '/kullanim-talimati', label: 'Kullanım Talimatı', icon: '📖' },
     { href: '/lottery', label: 'Çekiliş', icon: '🎰', adminOnly: true },
     { href: '/admin', label: 'Yönetim', icon: '⚙️' },
@@ -230,7 +232,8 @@ export default function Navbar() {
                 { key: 'sales', label: 'Satış bildirimleri' },
                 { key: 'quota', label: 'Kota uyarıları' },
                 { key: 'cleaning', label: 'Temizlik hatırlatması' },
-                { key: 'leave', label: 'İzin talep bildirimi' }
+                { key: 'leave', label: 'İzin talep bildirimi' },
+                { key: 'sound', label: '🔊 Satış sesli bildirim' }
               ].map(pref => (
                 <label key={pref.key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.25rem 0', fontSize: '12px', color: '#94a3b8', cursor: 'pointer' }}>
                   <input type="checkbox" checked={notifPrefs[pref.key]} onChange={() => setNotifPrefs(p => ({ ...p, [pref.key]: !p[pref.key] }))}

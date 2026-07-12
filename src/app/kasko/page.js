@@ -38,7 +38,7 @@ export default function KaskoPage() {
   const rate = KASKO_RATES.find(k => k.category === category)?.rate || 0
   const price = parseFloat(productPrice) || 0
   const kaskoPrice = price * (rate / 100)
-  const prime = price * 0.05
+  const prime = kaskoPrice * 0.05
   const total = price + kaskoPrice + prime
   const installmentBase = includeKasko ? total : price
 
