@@ -27,7 +27,8 @@ export default function MolaPage() {
     if (!user) return
     const qMy = query(collection(db, 'breaks'), where('userId', '==', user.uid), where('date', '==', today))
     const unsubMy = onSnapshot(qMy, (snap) => {
-      const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
+      const validStatuses = ['active', 'sent', 'completed']
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(b => validStatuses.includes(b.status)).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
       setMyBreaks(list)
       const active = list.find(b => b.status === 'active' || b.status === 'sent')
       setActiveBreak(active || null)
@@ -82,7 +83,7 @@ export default function MolaPage() {
 
   if (!user) return null
 
-  const getUsedCount = (typeId) => myBreaks.filter(b => b.breakType === typeId && (b.status === 'active' || b.status === 'sent' || b.status === 'completed')).length
+  const getUsedCount = (typeId) => myBreaks.filter(b => b.breakType === typeId).length
   const completedBreaks = myBreaks.filter(b => b.status === 'completed' || b.status === 'sent')
   const totalMinutes = Math.floor(completedBreaks.reduce((sum, b) => sum + (b.duration || 0), 0) / 60)
 
