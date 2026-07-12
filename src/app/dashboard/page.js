@@ -15,6 +15,9 @@ export default function DashboardPage() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [selectedStaff, setSelectedStaff] = useState('')
+  const [allStaff, setAllStaff] = useState([])
+  const [storeQuota, setStoreQuota] = useState(0)
+  const [userQuota, setUserQuota] = useState(0)
   const getTurkeyDate = () => {
     try {
       const now = new Date()
