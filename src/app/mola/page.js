@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/lib/auth-context'
-import { collection, addDoc, query, where, onSnapshot, updateDoc, doc, deleteDoc } from 'firebase/firestore'
+import { collection, addDoc, query, where, onSnapshot, updateDoc, doc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useToast } from '@/components/Toast'
 
@@ -18,23 +18,17 @@ export default function MolaPage() {
   const [activeBreak, setActiveBreak] = useState(null)
   const [elapsed, setElapsed] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [pendingCount, setPendingCount] = useState(0)
-  const prevPendingRef = useRef(0)
 
   const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' })
 
   useEffect(() => {
     if (!user) return
-    const isAdmin = ['ADMIN', 'MANAGER'].includes(user.role)
-    const q = isAdmin
-      ? query(collection(db, 'breaks'), where('date', '==', today))
-      : query(collection(db, 'breaks'), where('userId', '==', user.uid), where('date', '==', today))
+    const q = query(collection(db, 'breaks'), where('userId', '==', user.uid), where('date', '==', today))
     const unsub = onSnapshot(q, (snap) => {
       const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
       setBreaks(list)
-      const active = list.find(b => b.status === 'approved' && !b.endTime)
+      const active = list.find(b => b.status === 'active')
       setActiveBreak(active || null)
-      setPendingCount(list.filter(b => b.status === 'pending').length)
       setLoading(false)
     })
     return () => unsub()
@@ -50,28 +44,6 @@ export default function MolaPage() {
   }, [activeBreak])
 
   useEffect(() => {
-    if (!user || !['ADMIN', 'MANAGER'].includes(user.role)) return
-    if (pendingCount > prevPendingRef.current && pendingCount > 0) {
-      try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)()
-        for (let i = 0; i < 3; i++) {
-          const osc = ctx.createOscillator()
-          const gain = ctx.createGain()
-          osc.connect(gain)
-          gain.connect(ctx.destination)
-          osc.type = 'square'
-          osc.frequency.value = 800
-          gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.25)
-          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.25 + 0.2)
-          osc.start(ctx.currentTime + i * 0.25)
-          osc.stop(ctx.currentTime + i * 0.25 + 0.2)
-        }
-      } catch (e) {}
-    }
-    prevPendingRef.current = pendingCount
-  }, [pendingCount, user])
-
-  useEffect(() => {
     if (!activeBreak) return
     const bt = BREAK_TYPES.find(b => b.id === activeBreak.breakType)
     if (!bt) return
@@ -81,20 +53,35 @@ export default function MolaPage() {
         status: 'completed'
       })
       toast('⏰ Mola süreniz doldu, işbaşına dönünüz!', 'warning')
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)()
+        for (let i = 0; i < 4; i++) {
+          const osc = ctx.createOscillator()
+          const gain = ctx.createGain()
+          osc.connect(gain)
+          gain.connect(ctx.destination)
+          osc.type = 'sine'
+          osc.frequency.value = 600 + i * 100
+          gain.gain.setValueAtTime(0.25, ctx.currentTime + i * 0.15)
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.15 + 0.25)
+          osc.start(ctx.currentTime + i * 0.15)
+          osc.stop(ctx.currentTime + i * 0.15 + 0.25)
+        }
+      } catch (e) {}
     }
   }, [elapsed, activeBreak, toast])
 
-  const usedBreaks = breaks.filter(b => b.status === 'approved' || b.status === 'completed' || b.status === 'pending')
-  const getUsedCount = (typeId) => usedBreaks.filter(b => b.breakType === typeId).length
+  if (!user) return null
 
-  const requestBreak = async (typeId) => {
+  const getUsedCount = (typeId) => breaks.filter(b => b.breakType === typeId && (b.status === 'active' || b.status === 'completed')).length
+  const completedBreaks = breaks.filter(b => b.status === 'completed')
+  const totalMinutes = Math.floor(completedBreaks.reduce((sum, b) => sum + (b.duration || 0), 0) / 60)
+
+  const startBreak = async (typeId) => {
     if (activeBreak) { toast('Zaten aktif bir molanız var!', 'error'); return }
     const bt = BREAK_TYPES.find(b => b.id === typeId)
     const used = getUsedCount(typeId)
     if (used >= bt.maxDaily) { toast(`Bugün ${bt.maxDaily} ${bt.label} hakkınız dolmuş!`, 'error'); return }
-
-    const pending = breaks.find(b => b.breakType === typeId && b.status === 'pending')
-    if (pending) { toast('Bu türde bekleyen bir talebiniz var!', 'error'); return }
 
     await addDoc(collection(db, 'breaks'), {
       userId: user.uid,
@@ -102,24 +89,13 @@ export default function MolaPage() {
       breakType: typeId,
       duration: bt.duration,
       date: today,
-      status: 'pending',
-      startTime: null,
+      status: 'active',
+      startTime: new Date().toISOString(),
       endTime: null,
-      createdAt: new Date().toISOString(),
-      approvedBy: null,
-      approvedAt: null
+      createdAt: new Date().toISOString()
     })
-    toast(`${bt.icon} ${bt.label} talebiniz gönderildi!`, 'success')
+    toast(`${bt.icon} ${bt.label} başladı! İyi molalar!`, 'success')
   }
-
-  const cancelBreak = async (breakId) => {
-    await deleteDoc(doc(db, 'breaks', breakId))
-    toast('Mola talebi iptal edildi', 'info')
-  }
-
-  if (!user) return null
-
-  const isAdmin = ['ADMIN', 'MANAGER'].includes(user.role)
 
   const formatDuration = (seconds) => {
     const m = Math.floor(seconds / 60)
@@ -127,69 +103,49 @@ export default function MolaPage() {
     return `${m}d ${s < 10 ? '0' : ''}${s}s`
   }
 
-  const formatRemaining = (elapsed, total) => {
-    const remaining = Math.max(0, total - elapsed)
-    const m = Math.floor(remaining / 60)
-    const s = remaining % 60
-    return `${m}d ${s < 10 ? '0' : ''}${s}s`
-  }
-
-  const totalApprovedBreaks = breaks.filter(b => b.status === 'approved' || b.status === 'completed')
-  const totalMinutes = Math.floor(totalApprovedBreaks.reduce((sum, b) => sum + (b.duration || 0), 0) / 60)
-
   return (
     <div className="px-4 py-6 max-w-4xl mx-auto">
       <div className="page-header" style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>
         <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#ffffff', marginBottom: '0.375rem' }}>☕ Ekip Molası</h1>
-        <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px' }}>
-          {isAdmin ? 'Gelen talepleri yönetin' : 'Mola taleplerinizi yönetin'}
-          {pendingCount > 0 && isAdmin && <span style={{ marginLeft: '0.5rem', backgroundColor: '#ef4444', padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '12px' }}>{pendingCount} bekliyor</span>}
-        </p>
+        <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px' }}>Mola türünü seç, sayaç başlasın</p>
       </div>
 
       {/* Aktif Mola Sayaçı */}
-      {activeBreak && (
-        <div className="card" style={{ marginTop: '1rem', border: '2px solid rgba(245,158,11,0.3)', background: 'linear-gradient(135deg, rgba(245,158,11,0.1), rgba(217,119,6,0.05))' }}>
-          <div style={{ textAlign: 'center', padding: '1.5rem 0' }}>
-            {(() => { const bt = BREAK_TYPES.find(b => b.id === activeBreak.breakType); return bt ? bt.icon : '☕' })()}
-            <div style={{ fontSize: '14px', color: '#94a3b8', marginTop: '0.5rem' }}>
-              {(() => { const bt = BREAK_TYPES.find(b => b.id === activeBreak.breakType); return bt ? bt.label : 'Mola' })()} — Onaylandı
+      {activeBreak && (() => {
+        const bt = BREAK_TYPES.find(b => b.id === activeBreak.breakType)
+        if (!bt) return null
+        const remaining = Math.max(0, bt.duration - elapsed)
+        const pct = Math.min(100, (elapsed / bt.duration) * 100)
+        return (
+          <div className="card" style={{ marginTop: '1rem', border: `2px solid ${bt.color}`, background: `linear-gradient(135deg, ${bt.color}15, ${bt.color}05)` }}>
+            <div style={{ textAlign: 'center', padding: '1.5rem 0' }}>
+              <div style={{ fontSize: '48px' }}>{bt.icon}</div>
+              <div style={{ fontSize: '16px', color: bt.color, fontWeight: '700', marginTop: '0.5rem' }}>{bt.label} — Devam Ediyor</div>
+              <div style={{ fontSize: '42px', fontWeight: '800', color: '#f8fafc', fontFamily: 'monospace', margin: '0.75rem 0' }}>
+                {formatDuration(elapsed)}
+              </div>
+              <div style={{ fontSize: '14px', color: remaining < 60 ? '#ef4444' : '#94a3b8', marginBottom: '0.5rem' }}>
+                Kalan: <strong style={{ color: remaining < 60 ? '#ef4444' : '#10b981' }}>{formatDuration(remaining)}</strong>
+              </div>
+              <div style={{ width: '100%', height: '8px', backgroundColor: '#1e293b', borderRadius: '4px', overflow: 'hidden', marginTop: '0.5rem' }}>
+                <div style={{ height: '100%', width: `${pct}%`, backgroundColor: pct > 80 ? '#ef4444' : bt.color, borderRadius: '4px', transition: 'width 1s' }} />
+              </div>
             </div>
-            <div style={{ fontSize: '42px', fontWeight: '800', color: '#f59e0b', fontFamily: 'monospace', margin: '0.75rem 0' }}>
-              {formatDuration(elapsed)}
-            </div>
-            {(() => {
-              const bt = BREAK_TYPES.find(b => b.id === activeBreak.breakType)
-              if (!bt) return null
-              const remaining = Math.max(0, bt.duration - elapsed)
-              const pct = Math.min(100, (elapsed / bt.duration) * 100)
-              return (
-                <div>
-                  <div style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '0.5rem' }}>
-                    Kalan süre: <strong style={{ color: remaining < 60 ? '#ef4444' : '#10b981' }}>{formatRemaining(elapsed, bt.duration)}</strong>
-                  </div>
-                  <div style={{ width: '100%', height: '8px', backgroundColor: '#1e293b', borderRadius: '4px', overflow: 'hidden', marginTop: '0.5rem' }}>
-                    <div style={{ height: '100%', width: `${pct}%`, backgroundColor: pct > 80 ? '#ef4444' : '#f59e0b', borderRadius: '4px', transition: 'width 1s' }} />
-                  </div>
-                </div>
-              )
-            })()}
           </div>
-        </div>
-      )}
+        )
+      })()}
 
-      {/* Mola Talep Et */}
+      {/* Mola Başlat */}
       {!activeBreak && (
         <div className="card" style={{ marginTop: '1rem' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>🕐 Mola Talep Et</h3>
+          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>🕐 Mola Başlat</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem' }}>
             {BREAK_TYPES.map(bt => {
               const used = getUsedCount(bt.id)
               const remaining = bt.maxDaily - used
-              const hasPending = breaks.some(b => b.breakType === bt.id && b.status === 'pending')
-              const disabled = remaining <= 0 || hasPending
+              const disabled = remaining <= 0
               return (
-                <button key={bt.id} onClick={() => requestBreak(bt.id)} disabled={disabled} style={{
+                <button key={bt.id} onClick={() => startBreak(bt.id)} disabled={disabled} style={{
                   padding: '1.25rem', borderRadius: '0.75rem', textAlign: 'center',
                   border: `2px solid ${disabled ? '#334155' : bt.color}`,
                   backgroundColor: disabled ? '#0f172a' : `${bt.color}15`,
@@ -201,8 +157,8 @@ export default function MolaPage() {
                   <div style={{ fontSize: '32px', marginBottom: '0.5rem' }}>{bt.icon}</div>
                   <div style={{ fontSize: '14px', fontWeight: '700' }}>{bt.label}</div>
                   <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '0.25rem' }}>{bt.duration >= 3600 ? '1 saat' : '15 dakika'}</div>
-                  <div style={{ fontSize: '12px', color: remaining > 0 ? bt.color : '#ef4444', marginTop: '0.5rem', fontWeight: '600' }}>
-                    {hasPending ? '⏳ Bekliyor' : remaining > 0 ? `Kalan: ${remaining}/${bt.maxDaily}` : 'Hak dolmuş'}
+                  <div style={{ fontSize: '12px', color: disabled ? '#ef4444' : bt.color, marginTop: '0.5rem', fontWeight: '600' }}>
+                    {disabled ? 'Hak dolmuş' : `Kalan: ${remaining}/${bt.maxDaily}`}
                   </div>
                 </button>
               )
@@ -211,147 +167,64 @@ export default function MolaPage() {
         </div>
       )}
 
-      {/* Bugünkü Özet */}
+      {/* Özet */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.75rem', marginTop: '1rem' }}>
         <div className="card" style={{ textAlign: 'center', padding: '1rem' }}>
-          <div style={{ fontSize: '24px', fontWeight: '800', color: '#10b981' }}>{totalApprovedBreaks.length}</div>
-          <div style={{ fontSize: '12px', color: '#94a3b8' }}>Toplam Mola</div>
+          <div style={{ fontSize: '24px', fontWeight: '800', color: '#10b981' }}>{completedBreaks.length}</div>
+          <div style={{ fontSize: '12px', color: '#94a3b8' }}>Tamamlanan Mola</div>
         </div>
         <div className="card" style={{ textAlign: 'center', padding: '1rem' }}>
           <div style={{ fontSize: '24px', fontWeight: '800', color: '#f59e0b' }}>{totalMinutes} dk</div>
           <div style={{ fontSize: '12px', color: '#94a3b8' }}>Toplam Süre</div>
         </div>
         <div className="card" style={{ textAlign: 'center', padding: '1rem' }}>
-          <div style={{ fontSize: '24px', fontWeight: '800', color: '#06b6d4' }}>{pendingCount}</div>
-          <div style={{ fontSize: '12px', color: '#94a3b8' }}>Bekleyen Talep</div>
+          <div style={{ fontSize: '24px', fontWeight: '800', color: '#06b6d4' }}>{activeBreak ? '1' : '0'}</div>
+          <div style={{ fontSize: '12px', color: '#94a3b8' }}>Aktif Mola</div>
         </div>
       </div>
 
-      {/* Yönetici: Bekleyen Talepler */}
-      {isAdmin && (
-        <div className="card" style={{ marginTop: '1rem' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>🔔 Bekleyen Talepler</h3>
-          {breaks.filter(b => b.status === 'pending').length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>Bekleyen talep yok</div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {breaks.filter(b => b.status === 'pending').map(b => {
-                const bt = BREAK_TYPES.find(t => t.id === b.breakType)
-                return (
-                  <MolaRequest key={b.id} breakData={b} breakType={bt} user={user} toast={toast} />
-                )
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Mola Listesi */}
+      {/* Tamamlanan Molalar */}
       <div className="card" style={{ marginTop: '1rem' }}>
-        <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>
-          {isAdmin ? '📋 Bugünkü Tüm Molalar' : '📋 Bugünkü Molalarım'}
-        </h3>
+        <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1rem' }}>📋 Bugünkü Molalarım</h3>
         {loading ? (
           <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>Yükleniyor...</div>
-        ) : breaks.filter(b => b.status !== 'pending').length === 0 ? (
+        ) : breaks.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>Bugün mola kaydı yok</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {breaks.filter(b => b.status !== 'pending').map(b => {
+            {breaks.map(b => {
               const bt = BREAK_TYPES.find(t => t.id === b.breakType)
-              const statusColors = { approved: '#10b981', completed: '#3b82f6', rejected: '#ef4444', cancelled: '#64748b' }
-              const statusLabels = { approved: 'Onaylandı', completed: 'Tamamlandı', rejected: 'Reddedildi', cancelled: 'İptal' }
+              const isActive = b.status === 'active'
+              const start = new Date(b.startTime)
+              const startStr = start.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' })
               return (
                 <div key={b.id} style={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   padding: '0.75rem 1rem', borderRadius: '0.75rem',
-                  backgroundColor: '#0f172a', border: '1px solid #334155'
+                  backgroundColor: isActive ? `${bt?.color || '#f59e0b'}15` : '#0f172a',
+                  border: `1px solid ${isActive ? `${bt?.color || '#f59e0b'}40` : '#334155'}`
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <span style={{ fontSize: '20px' }}>{bt ? bt.icon : '☕'}</span>
                     <div>
-                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#f8fafc' }}>
-                        {b.userName} — {bt ? bt.label : 'Mola'}
-                      </div>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#f8fafc' }}>{bt ? bt.label : 'Mola'}</div>
                       <div style={{ fontSize: '12px', color: '#94a3b8' }}>
-                        {b.startTime ? new Date(b.startTime).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' }) : ''}
-                        {b.endTime ? ` → ${new Date(b.endTime).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' })}` : ''}
+                        {startStr}
+                        {b.endTime && ` → ${new Date(b.endTime).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' })}`}
                         {b.duration ? ` (${Math.floor(b.duration / 60)} dk)` : ''}
                       </div>
                     </div>
                   </div>
-                  <span style={{
-                    fontSize: '12px', fontWeight: '600',
-                    color: statusColors[b.status] || '#94a3b8',
-                    padding: '0.25rem 0.75rem', borderRadius: '9999px',
-                    backgroundColor: `${statusColors[b.status] || '#94a3b8'}20`
-                  }}>
-                    {statusLabels[b.status] || b.status}
-                  </span>
+                  {isActive ? (
+                    <span style={{ fontSize: '12px', fontWeight: '600', color: bt?.color || '#f59e0b', padding: '0.25rem 0.75rem', borderRadius: '9999px', backgroundColor: `${bt?.color || '#f59e0b'}20` }}>AKTİF</span>
+                  ) : (
+                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#3b82f6', padding: '0.25rem 0.75rem', borderRadius: '9999px', backgroundColor: 'rgba(59,130,246,0.15)' }}>TAMAMLANDI</span>
+                  )}
                 </div>
               )
             })}
           </div>
         )}
-      </div>
-    </div>
-  )
-}
-
-function MolaRequest({ breakData, breakType, user, toast }) {
-  const [processing, setProcessing] = useState(false)
-
-  const handleApprove = async () => {
-    setProcessing(true)
-    await updateDoc(doc(db, 'breaks', breakData.id), {
-      status: 'approved',
-      startTime: new Date().toISOString(),
-      approvedBy: user.name || user.email,
-      approvedAt: new Date().toISOString()
-    })
-    toast(`${breakType.icon} ${breakData.userName} molası onaylandı!`, 'success')
-    setProcessing(false)
-  }
-
-  const handleReject = async () => {
-    setProcessing(true)
-    await updateDoc(doc(db, 'breaks', breakData.id), {
-      status: 'rejected',
-      approvedBy: user.name || user.email,
-      approvedAt: new Date().toISOString()
-    })
-    toast(`${breakData.userName} molası reddedildi`, 'info')
-    setProcessing(false)
-  }
-
-  return (
-    <div style={{
-      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      padding: '0.75rem 1rem', borderRadius: '0.75rem',
-      backgroundColor: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)'
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-        <span style={{ fontSize: '20px' }}>{breakType ? breakType.icon : '☕'}</span>
-        <div>
-          <div style={{ fontSize: '14px', fontWeight: '600', color: '#f8fafc' }}>{breakData.userName}</div>
-          <div style={{ fontSize: '12px', color: '#94a3b8' }}>{breakType ? `${breakType.label} — ${breakType.duration >= 3600 ? '1 saat' : '15 dk'}` : 'Mola'}</div>
-        </div>
-      </div>
-      <div style={{ display: 'flex', gap: '0.5rem' }}>
-        <button onClick={handleReject} disabled={processing} style={{
-          padding: '0.5rem 1rem', borderRadius: '0.5rem', fontSize: '13px', fontWeight: '600',
-          border: 'none', cursor: processing ? 'not-allowed' : 'pointer',
-          backgroundColor: 'rgba(239,68,68,0.2)', color: '#ef4444'
-        }}>
-          ❌ Reddet
-        </button>
-        <button onClick={handleApprove} disabled={processing} style={{
-          padding: '0.5rem 1rem', borderRadius: '0.5rem', fontSize: '13px', fontWeight: '600',
-          border: 'none', cursor: processing ? 'not-allowed' : 'pointer',
-          backgroundColor: 'rgba(16,185,129,0.2)', color: '#10b981'
-        }}>
-          ✅ Onayla
-        </button>
       </div>
     </div>
   )
