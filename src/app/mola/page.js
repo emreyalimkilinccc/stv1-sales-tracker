@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/lib/auth-context'
-import { collection, addDoc, query, where, onSnapshot, orderBy, updateDoc, doc, deleteDoc } from 'firebase/firestore'
+import { collection, addDoc, query, where, onSnapshot, updateDoc, doc, deleteDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useToast } from '@/components/Toast'
 
@@ -19,6 +19,7 @@ export default function MolaPage() {
   const [elapsed, setElapsed] = useState(0)
   const [loading, setLoading] = useState(true)
   const [pendingCount, setPendingCount] = useState(0)
+  const prevPendingRef = useRef(0)
 
   const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' })
 
@@ -26,10 +27,10 @@ export default function MolaPage() {
     if (!user) return
     const isAdmin = ['ADMIN', 'MANAGER'].includes(user.role)
     const q = isAdmin
-      ? query(collection(db, 'breaks'), where('date', '==', today), orderBy('createdAt', 'desc'))
-      : query(collection(db, 'breaks'), where('userId', '==', user.uid), where('date', '==', today), orderBy('createdAt', 'desc'))
+      ? query(collection(db, 'breaks'), where('date', '==', today))
+      : query(collection(db, 'breaks'), where('userId', '==', user.uid), where('date', '==', today))
     const unsub = onSnapshot(q, (snap) => {
-      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
       setBreaks(list)
       const active = list.find(b => b.status === 'approved' && !b.endTime)
       setActiveBreak(active || null)
@@ -47,6 +48,28 @@ export default function MolaPage() {
     const interval = setInterval(tick, 1000)
     return () => clearInterval(interval)
   }, [activeBreak])
+
+  useEffect(() => {
+    if (!user || !['ADMIN', 'MANAGER'].includes(user.role)) return
+    if (pendingCount > prevPendingRef.current && pendingCount > 0) {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)()
+        for (let i = 0; i < 3; i++) {
+          const osc = ctx.createOscillator()
+          const gain = ctx.createGain()
+          osc.connect(gain)
+          gain.connect(ctx.destination)
+          osc.type = 'square'
+          osc.frequency.value = 800
+          gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.25)
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.25 + 0.2)
+          osc.start(ctx.currentTime + i * 0.25)
+          osc.stop(ctx.currentTime + i * 0.25 + 0.2)
+        }
+      } catch (e) {}
+    }
+    prevPendingRef.current = pendingCount
+  }, [pendingCount, user])
 
   useEffect(() => {
     if (!activeBreak) return
