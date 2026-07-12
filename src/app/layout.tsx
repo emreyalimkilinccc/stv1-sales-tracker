@@ -25,6 +25,13 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "STV1"
+  },
+  other: {
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "black-translucent",
+    "apple-mobile-web-app-title": "STV1",
+    "mobile-web-app-capable": "yes",
+    "application-name": "STV1"
   }
 };
 
@@ -42,6 +49,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="tr" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+      <head>
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="STV1" />
+      </head>
       <body className="min-h-full flex flex-col" style={{ backgroundColor: '#0f172a', color: '#f8fafc' }}>
         <Providers>
           <ErrorBoundary>

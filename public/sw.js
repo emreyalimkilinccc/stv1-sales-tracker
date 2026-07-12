@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stv1-v2'
+const CACHE_NAME = 'stv1-v3'
 const STATIC_ASSETS = [
   '/',
   '/dashboard',
@@ -42,8 +42,8 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'STV1 Bildirim'
   const options = {
     body: data.body || 'Yeni bir bildiriminiz var',
-    icon: '/icon-192.svg',
-    badge: '/icon-192.svg',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
     vibrate: [200, 100, 200],
     data: { url: data.url || '/dashboard' },
     actions: [
