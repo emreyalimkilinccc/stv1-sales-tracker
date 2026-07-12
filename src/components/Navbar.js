@@ -16,6 +16,14 @@ export default function Navbar() {
   const [notifPrefs, setNotifPrefs] = useState({ sales: true, quota: true, cleaning: true, leave: true, sound: true })
   const prevCountRef = useRef(0)
 
+  useEffect(() => {
+    if (!user) return
+    try {
+      const saved = JSON.parse(localStorage.getItem('stv1-notif-prefs-' + user.uid) || '{}')
+      if (Object.keys(saved).length > 0) setNotifPrefs(p => ({ ...p, ...saved }))
+    } catch (e) {}
+  }, [user])
+
   const playSaleSound = () => {
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)()
@@ -81,7 +89,8 @@ export default function Navbar() {
     { href: '/oylama', label: 'Oylama', icon: '🗳️' },
     { href: '/kullanim-talimati', label: 'Kullanım Talimatı', icon: '📖' },
     { href: '/lottery', label: 'Çekiliş', icon: '🎰', adminOnly: true },
-    { href: '/admin', label: 'Yönetim', icon: '⚙️' },
+    { href: '/admin', label: 'Yönetim', icon: '⚙️', adminOnly: true },
+    { href: '/ayarlar', label: 'Ayarlar', icon: '🔧' },
   ]
 
   const filteredItems = navItems.filter(item => {
@@ -209,12 +218,12 @@ export default function Navbar() {
               <p style={{ fontSize: '13px', color: '#94a3b8' }}>Satış Kodu: <span style={{ color: '#3b82f6', fontWeight: '600' }}>{user.salesCode}</span></p>
             </div>
             <Link
-              href="/change-password"
+              href="/ayarlar"
               onClick={() => setMenuOpen(false)}
               className="flex items-center"
               style={{
-                color: '#f59e0b',
-                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                color: '#06b6d4',
+                backgroundColor: 'rgba(6, 182, 212, 0.1)',
                 borderRadius: '0.75rem',
                 fontSize: '15px', fontWeight: '500', textDecoration: 'none',
                 padding: '0.875rem 1rem',
@@ -222,26 +231,9 @@ export default function Navbar() {
                 gap: '0.75rem'
               }}
             >
-              <span>🔐</span>
-              <span>Şifre Değiştir</span>
+              <span>🔧</span>
+              <span>Ayarlar</span>
             </Link>
-            {/* Bildirim Tercihleri */}
-            <div style={{ padding: '0.75rem 1rem', marginBottom: '0.375rem' }}>
-              <div style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', marginBottom: '0.5rem' }}>🔔 Bildirim Tercihleri</div>
-              {[
-                { key: 'sales', label: 'Satış bildirimleri' },
-                { key: 'quota', label: 'Kota uyarıları' },
-                { key: 'cleaning', label: 'Temizlik hatırlatması' },
-                { key: 'leave', label: 'İzin talep bildirimi' },
-                { key: 'sound', label: '🔊 Satış sesli bildirim' }
-              ].map(pref => (
-                <label key={pref.key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.25rem 0', fontSize: '12px', color: '#94a3b8', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={notifPrefs[pref.key]} onChange={() => setNotifPrefs(p => ({ ...p, [pref.key]: !p[pref.key] }))}
-                    style={{ accentColor: '#3b82f6' }} />
-                  {pref.label}
-                </label>
-              ))}
-            </div>
 
             <button onClick={() => { signOut(); setMenuOpen(false) }} className="flex items-center" style={{
               width: '100%', color: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)',

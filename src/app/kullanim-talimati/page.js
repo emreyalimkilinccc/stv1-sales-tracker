@@ -121,6 +121,27 @@ const SECTIONS = [
     ]
   },
   {
+    icon: '☕', title: 'Ekip Molası', color: '#f59e0b',
+    content: [
+      'Mola türü seçin: 🍽️ Yemek (1 saat) veya ☕ Çay (15 dk)',
+      'Seçtikten sonra onay ekranında "Gönder" butonuna basın',
+      'Gönder dediğinizde sayaç başlar ve yöneticiye canlı olarak düşer',
+      'Süre dolduğunda sesli uyarı ile tamamlanır',
+      'Günde 1 yemek + 2 çay molası hakkınız vardır',
+      'Göndermeyen personele yönetici göremez — sadece gönderilenler görünür',
+      'Gece 00:00\'da tüm molalar sıfırlanır'
+    ]
+  },
+  {
+    icon: '🔧', title: 'Ayarlar', color: '#6366f1',
+    content: [
+      'Bildirim tercihlerinizi yönetin (satış, kota, temizlik, izin)',
+      'Satış sesli bildirimini açıp kapatabilirsiniz',
+      'Şifre değiştirme ve kullanım talimatı burada',
+      'Tercihleriniz kaydedilir — cihazda kalıcı olarak saklanır'
+    ]
+  },
+  {
     icon: '⚙️', title: 'Yönetim Paneli', color: '#ef4444',
     content: [
       'Mağaza ekleme, düzenleme ve silme',
@@ -156,6 +177,8 @@ const TIPS = [
   { icon: '🔍', text: 'Satış sayfasında gelişmiş filtreleme ve arama yapabilirsiniz' },
   { icon: '📊', text: 'Dashboard\'dan CSV ile verilerinizi dışa aktarabilirsiniz' },
   { icon: '🧮', text: 'KASKO sayfasında hesap makinası ile ek hesaplama yapabilirsiniz' },
+  { icon: '☕', text: 'Mola sistemi ile molalarınızı takip edebilirsiniz — yöneticiler canlı görebilir' },
+  { icon: '🔧', text: 'Ayarlar menüsünden bildirim ve ses tercihlerinizi düzenleyebilirsiniz' },
   { icon: '💬', text: 'Her gün Dashboard\'da motivasyon yazısı sizi bekler' }
 ]
 
@@ -229,7 +252,7 @@ export default function KullanimTalimatiPage() {
       {/* Alt Bilgi */}
       <div className="card" style={{ marginTop: '1.5rem', textAlign: 'center' }}>
         <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '0.5rem' }}>Sorularınız için yönetiminize başvurunuz</div>
-        <div style={{ fontSize: '12px', color: '#475569' }}>STV1 v1.0 — Geliştirici: Emre YALIMKILINÇ</div>
+        <div style={{ fontSize: '12px', color: '#475569' }}>STV1 v2.0 — Geliştirici: Emre YALIMKILINÇ</div>
       </div>
     </div>
   )
