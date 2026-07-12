@@ -94,6 +94,8 @@ export default function MolaPage() {
     toast('Mola talebi iptal edildi', 'info')
   }
 
+  if (!user) return null
+
   const isAdmin = ['ADMIN', 'MANAGER'].includes(user.role)
 
   const formatDuration = (seconds) => {
@@ -111,8 +113,6 @@ export default function MolaPage() {
 
   const totalApprovedBreaks = breaks.filter(b => b.status === 'approved' || b.status === 'completed')
   const totalMinutes = Math.floor(totalApprovedBreaks.reduce((sum, b) => sum + (b.duration || 0), 0) / 60)
-
-  if (!user) return null
 
   return (
     <div className="px-4 py-6 max-w-4xl mx-auto">
