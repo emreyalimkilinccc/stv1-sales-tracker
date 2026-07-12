@@ -33,17 +33,18 @@ export default function MolaPage() {
       setMyBreaks(list)
       const active = list.find(b => b.status === 'active' || b.status === 'sent')
       setActiveBreak(active || null)
-    })
+      setLoading(false)
+    }, () => setLoading(false))
 
     let unsubAll = null
     if (isAdmin) {
-      const qAll = query(collection(db, 'breaks'), where('date', '==', today), where('status', 'in', ['sent', 'active', 'completed']))
+      const qAll = query(collection(db, 'breaks'), where('date', '==', today))
       unsubAll = onSnapshot(qAll, (snap) => {
-        setAllBreaks(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')))
-      })
+        const valid = ['active', 'sent', 'completed']
+        setAllBreaks(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(b => valid.includes(b.status)).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')))
+      }, () => {})
     }
 
-    setLoading(false)
     return () => { unsubMy(); if (unsubAll) unsubAll() }
   }, [user, today, isAdmin])
 
