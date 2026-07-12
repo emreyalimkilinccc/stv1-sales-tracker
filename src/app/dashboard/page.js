@@ -6,7 +6,6 @@ import { collection, getDocs, getDoc, doc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { formatCurrency } from '@/lib/utils'
 import DashboardCharts from '@/components/DashboardCharts'
-import LeaderBoard from '@/components/LeaderBoard'
 import { useToast } from '@/components/Toast'
 import DailyMotivation from '@/components/DailyMotivation'
 
@@ -16,10 +15,6 @@ export default function DashboardPage() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [selectedStaff, setSelectedStaff] = useState('')
-  const [allStaff, setAllStaff] = useState([])
-  const [storeQuota, setStoreQuota] = useState(0)
-  const [userQuota, setUserQuota] = useState(0)
-  const [userGoal, setUserGoal] = useState(0)
   const getTurkeyDate = () => {
     try {
       const now = new Date()
@@ -73,17 +68,6 @@ export default function DashboardPage() {
       }
     } catch (error) { console.error(error) }
   }
-
-  const handleSetGoal = (goal) => {
-    setUserGoal(goal)
-    try { localStorage.setItem('stv1-goal-' + user.uid, goal) } catch (e) {}
-  }
-
-  useEffect(() => {
-    if (user) {
-      try { setUserGoal(parseInt(localStorage.getItem('stv1-goal-' + user.uid)) || 0) } catch (e) {}
-    }
-  }, [user])
 
   const handlePeriodChange = (period) => {
     const td = getTurkeyDate()
@@ -377,13 +361,6 @@ export default function DashboardPage() {
       })()}
 
       <DashboardCharts dailyStats={data?.dailyStats} staffStats={data?.staffStats} categoryStats={data?.categoryStats} />
-
-      {/* Liderlik Tablosu + Hedef + Rozetler (sadece yönetici/müdür) */}
-      {user.role !== 'STAFF' && data?.staffStats?.length > 0 && (
-        <div style={{ marginTop: '1.5rem' }}>
-          <LeaderBoard staffStats={data.staffStats} userGoal={userGoal} onSetGoal={handleSetGoal} />
-        </div>
-      )}
     </div>
   )
 }
