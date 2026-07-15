@@ -142,6 +142,43 @@ const SECTIONS = [
     ]
   },
   {
+    icon: '📅', title: 'Ekip Takvimi', color: '#8b5cf6',
+    content: [
+      'Ay takvimi üzerinden doğum günlerini ve izin günlerini görün',
+      'Takvim günlerine tıklayarak o günün detaylarını öğrenin',
+      'Yaklaşan doğum günleri liste halinde gösterilir',
+      'Onaylı izin talepleri takvimde işaretlenir'
+    ]
+  },
+  {
+    icon: '🪪', title: 'Personel Kartları', color: '#06b6d4',
+    content: [
+      'Ekip üyelerinin kartvizitlerini görüntüleyin',
+      'İsim, e-posta, satış kodu, kategori ve kota bilgileri',
+      'Arama ile personel bulma (isim, e-posta, kategori, kod)',
+      'Rol bazlı renk kodlaması (Yönetici: kırmızı, Müdür: sarı, Personel: mavi)'
+    ]
+  },
+  {
+    icon: '💱', title: 'Döviz Çevirici', color: '#10b981',
+    content: [
+      'ABD Doları, Euro, İngiliz Sterlini ve TL çevirme',
+      'Hızlı miktar butonları (100, 500, 1.000, 5.000, 10.000, 50.000)',
+      'Özel kur girerek kendi kurunuzla hesaplama yapabilirsiniz',
+      'Referans kurları altta gösterilir'
+    ]
+  },
+  {
+    icon: '🔥', title: 'Satış Isı Haritası', color: '#ef4444',
+    content: [
+      'Son 7 gün veya son 30 gün satış dağılımı',
+      'Haftanın günü ve saate göre renkli harita',
+      'En yoğun gün ve saat bilgisi',
+      'Toplam satış ve günlük ortalama',
+      'İpucu: Hücrelere tıklayarak detaylı bilgi alın'
+    ]
+  },
+  {
     icon: '⚙️', title: 'Yönetim Paneli', color: '#ef4444',
     content: [
       'Mağaza ekleme, düzenleme ve silme',
