@@ -6,23 +6,24 @@ import { collection, getDocs } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 
 const DAYS_TR = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar']
-const HOURS = Array.from({ length: 14 }, (_, i) => i + 8)
+const DAYS_SHORT = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
+const MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
 
 export default function IsiHaritasiPage() {
   const { user } = useAuth()
-  const [heatmap, setHeatmap] = useState({})
-  const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState('week')
-  const [stats, setStats] = useState({ total: 0, bestDay: '', bestHour: '', avgPerDay: 0, peakHour: 0, peakDay: 0, totalSales: 0 })
-  const [tooltip, setTooltip] = useState(null)
+  const [dailyData, setDailyData] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState({})
 
   useEffect(() => {
     if (!user) return
     const fetchData = async () => {
       try {
         const snap = await getDocs(collection(db, 'sales'))
-        const data = snap.docs.map(d => d.data()).filter(s => s.sentBy || s.amount)
+        const data = snap.docs.map(d => d.data()).filter(s => s.amount)
         const now = new Date()
+
         const filtered = data.filter(s => {
           if (!s.date) return false
           const d = new Date(s.date)
@@ -35,39 +36,54 @@ export default function IsiHaritasiPage() {
           }
         })
 
-        const grid = {}
+        const dayTotals = Array(7).fill(0)
+        const dayCounts = Array(7).fill(0)
+        const dateTotals = {}
         let total = 0
-        let totalSales = 0
-        const dayTotals = {}
-        const hourTotals = {}
 
         filtered.forEach(s => {
-          let dayIdx = 0, hour = 12
+          let dayIdx = 0
           try {
             if (s.date) { const d = new Date(s.date); dayIdx = (d.getDay() + 6) % 7 }
-            if (s.time) hour = parseInt(s.time.split(':')[0])
           } catch (e) {}
           const amount = parseFloat(s.amount) || 0
           total += amount
-          totalSales++
-          const key = `${dayIdx}-${hour}`
-          grid[key] = (grid[key] || 0) + amount
-          dayTotals[dayIdx] = (dayTotals[dayIdx] || 0) + amount
-          hourTotals[hour] = (hourTotals[hour] || 0) + amount
+          dayTotals[dayIdx] += amount
+          dayCounts[dayIdx]++
+
+          const dateKey = s.date ? s.date.split('T')[0] : ''
+          if (dateKey) {
+            if (!dateTotals[dateKey]) dateTotals[dateKey] = 0
+            dateTotals[dateKey] += amount
+          }
         })
 
-        const bestDayEntry = Object.entries(dayTotals).sort((a, b) => b[1] - a[1])[0]
-        const bestHourEntry = Object.entries(hourTotals).sort((a, b) => b[1] - a[1])[0]
-        const days = period === 'week' ? 7 : 30
+        const totalDays = period === 'week' ? 7 : 30
+        const maxDay = Math.max(...dayTotals)
+        const bestDayIdx = dayTotals.indexOf(maxDay)
+        const worstDayIdx = dayTotals.indexOf(Math.min(...dayTotals.filter(v => v > 0) || [0]))
 
-        setHeatmap(grid)
+        const sortedDates = Object.entries(dateTotals).sort((a, b) => b[1] - a[1])
+        const bestDate = sortedDates[0]
+        const worstDate = sortedDates[sortedDates.length - 1]
+
+        setDailyData(DAYS_TR.map((day, i) => ({
+          day, short: DAYS_SHORT[i],
+          total: dayTotals[i],
+          count: dayCounts[i],
+          avg: dayCounts[i] > 0 ? dayTotals[i] / dayCounts[i] : 0
+        })))
+
         setStats({
-          total, totalSales,
-          bestDay: bestDayEntry ? DAYS_TR[bestDayEntry[0]] : '-',
-          bestHour: bestHourEntry ? `${bestHourEntry[0]}:00` : '-',
-          avgPerDay: Math.round(total / days),
-          peakHour: bestHourEntry ? parseInt(bestHourEntry[0]) : 0,
-          peakDay: bestDayEntry ? parseInt(bestDayEntry[0]) : 0
+          total,
+          totalSales: filtered.length,
+          avgPerDay: Math.round(total / totalDays),
+          bestDay: DAYS_TR[bestDayIdx],
+          bestDayTotal: maxDay,
+          worstDay: worstDayIdx >= 0 ? DAYS_TR[worstDayIdx] : '-',
+          bestDate: bestDate ? { date: bestDate[0], total: bestDate[1] } : null,
+          worstDate: worstDate ? { date: worstDate[0], total: worstDate[1] } : null,
+          maxDay
         })
       } catch (e) {}
       setLoading(false)
@@ -77,46 +93,27 @@ export default function IsiHaritasiPage() {
 
   if (!user) return null
 
-  const values = Object.values(heatmap)
-  const maxVal = Math.max(...values, 1)
-
-  const getHeatColor = (val) => {
-    if (val === 0) return { bg: '#0f172a', text: '#334155' }
-    const intensity = val / maxVal
-    if (intensity < 0.15) return { bg: '#064e3b', text: '#6ee7b7' }
-    if (intensity < 0.3) return { bg: '#065f46', text: '#6ee7b7' }
-    if (intensity < 0.5) return { bg: '#047857', text: '#a7f3d0' }
-    if (intensity < 0.7) return { bg: '#059669', text: '#d1fae5' }
-    return { bg: '#10b981', text: '#ffffff' }
-  }
-
   const formatCurrency = (val) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(val)
-  const formatShort = (val) => {
-    if (val >= 1000000) return (val / 1000000).toFixed(1) + 'M'
-    if (val >= 1000) return (val / 1000).toFixed(0) + 'K'
-    return val.toFixed(0)
-  }
 
   return (
     <div className="px-4 py-6 max-w-4xl mx-auto">
-      {/* Header */}
       <div className="page-header" style={{ background: 'linear-gradient(135deg, #ef4444 0%, #f97316 50%, #f59e0b 100%)', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: '-20px', right: '-20px', fontSize: '80px', opacity: 0.1, transform: 'rotate(15deg)' }}>🔥</div>
         <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#ffffff', marginBottom: '0.375rem', position: 'relative' }}>🔥 Satış Isı Haritası</h1>
-        <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px', position: 'relative' }}>Hangi saatte ne kadar satış yapıldığını görün</p>
+        <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px', position: 'relative' }}>Günlük satış yoğunluğu ve trend analizi</p>
       </div>
 
-      {/* Dönem Seçimi */}
+      {/* Dönem */}
       <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
         {[{ key: 'week', label: 'Son 7 Gün', icon: '📅' }, { key: 'month', label: 'Son 30 Gün', icon: '📆' }].map(p => (
-          <button key={p.key} onClick={() => setPeriod(p.key)} style={{
+          <button key={p.key} onClick={() => { setPeriod(p.key); setLoading(true) }} style={{
             flex: 1, padding: '0.875rem', borderRadius: '0.75rem', fontSize: '14px', fontWeight: '600',
             border: `2px solid ${period === p.key ? '#ef4444' : '#334155'}`,
             backgroundColor: period === p.key ? 'rgba(239,68,68,0.15)' : '#0f172a',
             color: period === p.key ? '#ef4444' : '#94a3b8', cursor: 'pointer',
-            transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
           }}>
-            <span>{p.icon}</span> {p.label}
+            {p.icon} {p.label}
           </button>
         ))}
       </div>
@@ -124,32 +121,32 @@ export default function IsiHaritasiPage() {
       {/* İstatistikler */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem', marginTop: '1rem' }}>
         <div className="card" style={{ padding: '1rem', borderLeft: '4px solid #10b981' }}>
-          <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Toplam Satış</div>
-          <div style={{ fontSize: '24px', fontWeight: '800', color: '#10b981' }}>{formatCurrency(stats.total)}</div>
-          <div style={{ fontSize: '12px', color: '#64748b', marginTop: '0.25rem' }}>{stats.totalSales} işlem</div>
+          <div style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Toplam Satış</div>
+          <div style={{ fontSize: '24px', fontWeight: '800', color: '#10b981', marginTop: '0.25rem' }}>{formatCurrency(stats.total || 0)}</div>
+          <div style={{ fontSize: '12px', color: '#64748b', marginTop: '0.25rem' }}>{stats.totalSales || 0} işlem</div>
         </div>
         <div className="card" style={{ padding: '1rem', borderLeft: '4px solid #06b6d4' }}>
-          <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Günlük Ortalama</div>
-          <div style={{ fontSize: '24px', fontWeight: '800', color: '#06b6d4' }}>{formatCurrency(stats.avgPerDay)}</div>
-          <div style={{ fontSize: '12px', color: '#64748b', marginTop: '0.25rem' }}>{period === 'week' ? '7' : '30'} gün ortalaması</div>
+          <div style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Günlük Ortalama</div>
+          <div style={{ fontSize: '24px', fontWeight: '800', color: '#06b6d4', marginTop: '0.25rem' }}>{formatCurrency(stats.avgPerDay || 0)}</div>
+          <div style={{ fontSize: '12px', color: '#64748b', marginTop: '0.25rem' }}>işlem ortalaması</div>
         </div>
         <div className="card" style={{ padding: '1rem', borderLeft: '4px solid #f59e0b' }}>
-          <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>En Yoğun Gün</div>
-          <div style={{ fontSize: '24px', fontWeight: '800', color: '#f59e0b' }}>{stats.bestDay}</div>
-          <div style={{ fontSize: '12px', color: '#64748b', marginTop: '0.25rem' }}>En çok satış yapılan gün</div>
+          <div style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>En Yoğun Gün</div>
+          <div style={{ fontSize: '22px', fontWeight: '800', color: '#f59e0b', marginTop: '0.25rem' }}>{stats.bestDay || '-'}</div>
+          <div style={{ fontSize: '12px', color: '#64748b', marginTop: '0.25rem' }}>{formatCurrency(stats.bestDayTotal || 0)}</div>
         </div>
-        <div className="card" style={{ padding: '1rem', borderLeft: '4px solid #ef4444' }}>
-          <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>En Yoğun Saat</div>
-          <div style={{ fontSize: '24px', fontWeight: '800', color: '#ef4444' }}>{stats.bestHour}</div>
-          <div style={{ fontSize: '12px', color: '#64748b', marginTop: '0.25rem' }}>En çok satış yapılan saat</div>
+        <div className="card" style={{ padding: '1rem', borderLeft: '4px solid #8b5cf6' }}>
+          <div style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>En Sakin Gün</div>
+          <div style={{ fontSize: '22px', fontWeight: '800', color: '#8b5cf6', marginTop: '0.25rem' }}>{stats.worstDay || '-'}</div>
+          <div style={{ fontSize: '12px', color: '#64748b', marginTop: '0.25rem' }}>En az satış yapılan gün</div>
         </div>
       </div>
 
-      {/* Isı Haritası */}
+      {/* Dikey Bar Chart */}
       <div className="card" style={{ marginTop: '1rem', overflow: 'hidden' }}>
         <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ fontSize: '16px' }}>🗓️</span>
-          <span style={{ fontSize: '15px', fontWeight: '600', color: '#f8fafc' }}>Saatlik Dağılım</span>
+          <span>📊</span>
+          <span style={{ fontSize: '15px', fontWeight: '600', color: '#f8fafc' }}>Günlük Satış Dağılımı</span>
         </div>
 
         {loading ? (
@@ -158,94 +155,105 @@ export default function IsiHaritasiPage() {
             Veriler yükleniyor...
           </div>
         ) : (
-          <div style={{ padding: '1rem', overflowX: 'auto' }}>
-            <div style={{ minWidth: '600px' }}>
-              {/* Saat Başlıkları */}
-              <div style={{ display: 'grid', gridTemplateColumns: `70px repeat(${HOURS.length}, 1fr)`, gap: '3px', marginBottom: '6px' }}>
-                <div />
-                {HOURS.map(h => (
-                  <div key={h} style={{
-                    fontSize: '10px', color: h === stats.peakHour ? '#ef4444' : '#64748b',
-                    textAlign: 'center', padding: '4px 0',
-                    fontWeight: h === stats.peakHour ? '700' : '400'
-                  }}>
-                    {h}:00
-                  </div>
-                ))}
-              </div>
+          <div style={{ padding: '1.5rem 1.25rem' }}>
+            {/* Grafik */}
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.5rem', height: '200px', marginBottom: '0.5rem' }}>
+              {dailyData.map((d, i) => {
+                const height = stats.maxDay > 0 ? (d.total / stats.maxDay) * 100 : 0
+                const isBest = d.total === stats.maxDay && d.total > 0
+                const intensity = stats.maxDay > 0 ? d.total / stats.maxDay : 0
+                const barColor = isBest ? '#ef4444' : intensity > 0.7 ? '#f97316' : intensity > 0.4 ? '#f59e0b' : intensity > 0 ? '#10b981' : '#1e293b'
 
-              {/* Satırlar */}
-              {DAYS_TR.map((day, dayIdx) => (
-                <div key={dayIdx} style={{ display: 'grid', gridTemplateColumns: `70px repeat(${HOURS.length}, 1fr)`, gap: '3px', marginBottom: '3px' }}>
-                  <div style={{
-                    fontSize: '11px', color: dayIdx === stats.peakDay ? '#f59e0b' : '#94a3b8',
-                    display: 'flex', alignItems: 'center', paddingRight: '6px', whiteSpace: 'nowrap',
-                    fontWeight: dayIdx === stats.peakDay ? '700' : '400'
-                  }}>
-                    {day.substring(0, 3)}
-                  </div>
-                  {HOURS.map(h => {
-                    const val = heatmap[`${dayIdx}-${h}`] || 0
-                    const isPeak = dayIdx === stats.peakDay && h === stats.peakHour
-                    const colors = getHeatColor(val)
-                    return (
-                      <div
-                        key={h}
-                        onMouseEnter={() => setTooltip({ day, hour: h, value: val, x: 0, y: 0 })}
-                        onMouseLeave={() => setTooltip(null)}
-                        style={{
-                          backgroundColor: colors.bg,
-                          borderRadius: '4px', height: '36px',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: '9px', color: colors.text, fontWeight: '600',
-                          border: isPeak ? '2px solid #ef4444' : '1px solid transparent',
-                          cursor: 'pointer', transition: 'all 0.15s ease',
-                          position: 'relative'
-                        }}
-                      >
-                        {val > 0 ? formatShort(val) : ''}
+                return (
+                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%' }}>
+                    {/* Değer */}
+                    <div style={{ fontSize: '10px', fontWeight: '600', color: d.total > 0 ? barColor : '#334155', marginBottom: '4px', whiteSpace: 'nowrap' }}>
+                      {d.total > 0 ? formatCurrency(d.total).replace('₺', '').trim() : ''}
+                    </div>
+                    {/* Bar */}
+                    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', height: '100%', paddingBottom: '4px' }}>
+                      <div style={{
+                        width: '100%', height: `${Math.max(height, d.total > 0 ? 8 : 2)}%`,
+                        backgroundColor: barColor, borderRadius: '6px 6px 4px 4px',
+                        transition: 'height 0.5s ease',
+                        boxShadow: isBest ? `0 0 12px ${barColor}66` : 'none',
+                        position: 'relative'
+                      }}>
+                        {isBest && (
+                          <div style={{
+                            position: 'absolute', top: '-8px', left: '50%', transform: 'translateX(-50%)',
+                            fontSize: '12px', backgroundColor: '#ef4444', color: '#fff', padding: '2px 6px',
+                            borderRadius: '9999px', fontSize: '9px', fontWeight: '700', whiteSpace: 'nowrap'
+                          }}>
+                            EN YOĞUN
+                          </div>
+                        )}
                       </div>
-                    )
-                  })}
-                </div>
-              ))}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Gün İsimleri */}
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              {dailyData.map((d, i) => {
+                const isBest = d.total === stats.maxDay && d.total > 0
+                return (
+                  <div key={i} style={{
+                    flex: 1, textAlign: 'center', fontSize: '12px', fontWeight: isBest ? '700' : '500',
+                    color: isBest ? '#ef4444' : '#94a3b8'
+                  }}>
+                    {d.short}
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Isı Grid */}
+            <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #334155' }}>
+              <div style={{ fontSize: '13px', fontWeight: '600', color: '#f8fafc', marginBottom: '0.75rem' }}>🗓️ Yoğunluk Tablosu</div>
+              <div style={{ display: 'grid', gridTemplateColumns: `repeat(7, 1fr)`, gap: '4px' }}>
+                {dailyData.map((d, i) => {
+                  const intensity = stats.maxDay > 0 ? d.total / stats.maxDay : 0
+                  const bgColor = intensity === 0 ? '#0f172a' : intensity < 0.25 ? '#064e3b' : intensity < 0.5 ? '#065f46' : intensity < 0.75 ? '#047857' : '#10b981'
+                  return (
+                    <div key={i} style={{
+                      backgroundColor: bgColor, borderRadius: '8px', padding: '0.75rem 0.5rem',
+                      textAlign: 'center', border: intensity > 0.75 ? '1px solid #10b981' : '1px solid #1e293b'
+                    }}>
+                      <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '4px' }}>{d.short}</div>
+                      <div style={{ fontSize: '13px', fontWeight: '700', color: intensity > 0 ? '#f8fafc' : '#334155' }}>
+                        {d.total > 0 ? formatCurrency(d.total).replace('₺', '').trim() : '-'}
+                      </div>
+                      <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>{d.count} satış</div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
 
             {/* Legend */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center', marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #334155' }}>
-              <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Az</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center', marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid #334155' }}>
+              <span style={{ fontSize: '11px', color: '#64748b' }}>Az</span>
               {['#0f172a', '#064e3b', '#065f46', '#047857', '#059669', '#10b981'].map((c, i) => (
                 <div key={i} style={{ width: '20px', height: '14px', borderRadius: '3px', backgroundColor: c, border: '1px solid #334155' }} />
               ))}
-              <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>Çok</span>
+              <span style={{ fontSize: '11px', color: '#64748b' }}>Çok</span>
             </div>
 
-            {/* Peak İpucu */}
-            {stats.bestDay !== '-' && (
+            {/* İpucu */}
+            {stats.bestDay && (
               <div style={{ marginTop: '0.75rem', padding: '0.75rem 1rem', borderRadius: '0.75rem', backgroundColor: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span style={{ fontSize: '18px' }}>💡</span>
                 <span style={{ fontSize: '13px', color: '#94a3b8' }}>
-                  <strong style={{ color: '#f59e0b' }}>{stats.bestDay}</strong> günleri{' '}
-                  <strong style={{ color: '#ef4444' }}>{stats.bestHour}</strong> civarında en yoğun satış yapılıyor.
+                  <strong style={{ color: '#f59e0b' }}>{stats.bestDay}</strong> günleri en yoğun satış yapılan gün. Ortalama <strong style={{ color: '#10b981' }}>{formatCurrency(stats.avgPerDay || 0)}</strong> satış yapılıyor.
                 </span>
               </div>
             )}
           </div>
         )}
       </div>
-
-      {/* Tooltip */}
-      {tooltip && (
-        <div style={{
-          position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-          backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '0.75rem',
-          padding: '1rem 1.25rem', zIndex: 100, boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-          textAlign: 'center', minWidth: '180px'
-        }}>
-          <div style={{ fontSize: '13px', color: '#f8fafc', fontWeight: '600', marginBottom: '0.25rem' }}>{tooltip.day} {tooltip.hour}:00</div>
-          <div style={{ fontSize: '20px', fontWeight: '800', color: '#10b981' }}>{formatCurrency(tooltip.value)}</div>
-        </div>
-      )}
     </div>
   )
 }
