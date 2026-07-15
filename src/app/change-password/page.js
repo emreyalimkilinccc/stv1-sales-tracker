@@ -1,10 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { useToast } from '@/components/Toast'
-import { doc, updateDoc } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
 
 export default function ChangePasswordPage() {
   const { user, changePassword } = useAuth()
@@ -12,14 +10,6 @@ export default function ChangePasswordPage() {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [birthday, setBirthday] = useState('')
-  const [savingBirthday, setSavingBirthday] = useState(false)
-
-  useEffect(() => {
-    if (user?.birthday) {
-      setBirthday(user.birthday)
-    }
-  }, [user])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -36,57 +26,26 @@ export default function ChangePasswordPage() {
     } finally { setLoading(false) }
   }
 
-  const saveBirthday = async () => {
-    if (!birthday) { toast('Doğum tarihi seçin', 'error'); return }
-    setSavingBirthday(true)
-    try {
-      await updateDoc(doc(db, 'user', user.uid), { birthday })
-      toast('Doğum tarihiniz kaydedildi!', 'success')
-    } catch (e) {
-      toast('Kaydedilemedi', 'error')
-    }
-    setSavingBirthday(false)
-  }
-
   if (!user) return <div className="min-h-screen flex items-center justify-center"><div>🔑 Giriş yapın</div></div>
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: '#0f172a' }}>
       <div className="w-full max-w-sm">
         <div className="text-center" style={{ marginBottom: '2rem' }}>
-          <div style={{ fontSize: '48px', marginBottom: '1rem' }}>⚙️</div>
-          <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#f8fafc', marginBottom: '0.5rem' }}>Hesap Ayarları</h1>
+          <div style={{ fontSize: '48px', marginBottom: '1rem' }}>🔑</div>
+          <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#f8fafc', marginBottom: '0.5rem' }}>Şifre Değiştir</h1>
           <p style={{ color: '#94a3b8', fontSize: '14px' }}>Hoş geldiniz, {user.name || user.email}</p>
         </div>
 
-        {/* Doğum Tarihi */}
-        <div className="card" style={{ marginBottom: '1rem' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: '600', color: '#f8fafc', marginBottom: '0.75rem' }}>🎂 Doğum Tarihi</h3>
-          <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '0.75rem' }}>Doğum tarihinizi girin, takvimde ve ekip doğum günleri listesinde görünsün.</p>
-          <div className="form-group">
-            <input type="date" value={birthday} onChange={(e) => setBirthday(e.target.value)} className="form-input" style={{ colorScheme: 'dark' }} />
-          </div>
-          <button onClick={saveBirthday} disabled={savingBirthday || !birthday} style={{
-            width: '100%', padding: '0.75rem', borderRadius: '0.75rem', fontSize: '14px', fontWeight: '600',
-            border: 'none', cursor: savingBirthday ? 'not-allowed' : 'pointer',
-            background: birthday ? 'linear-gradient(135deg, #ec4899, #db2777)' : '#334155',
-            color: '#fff', opacity: birthday ? 1 : 0.5
-          }}>
-            {savingBirthday ? '⏳ Kaydediliyor...' : '🎂 Doğum Tarihini Kaydet'}
-          </button>
-        </div>
-
-        {/* Şifre Değiştir */}
         <div className="card">
-          <h3 style={{ fontSize: '15px', fontWeight: '600', color: '#f8fafc', marginBottom: '0.75rem' }}>🔒 Şifre Değiştir</h3>
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label className="form-label">Yeni Şifre</label>
+              <label className="form-label">🔒 Yeni Şifre</label>
               <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="En az 6 karakter" required className="form-input" />
             </div>
             <div className="form-group">
-              <label className="form-label">Şifre Tekrar</label>
+              <label className="form-label">🔒 Şifre Tekrar</label>
               <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Şifrenizi tekrar girin" required className="form-input" />
             </div>

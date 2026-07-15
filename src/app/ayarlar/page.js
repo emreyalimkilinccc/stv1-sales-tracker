@@ -4,11 +4,15 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import Link from 'next/link'
 import { useToast } from '@/components/Toast'
+import { doc, updateDoc } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
 
 export default function AyarlarPage() {
   const { user } = useAuth()
   const toast = useToast()
   const [prefs, setPrefs] = useState({ sales: true, quota: true, cleaning: true, leave: true, sound: true })
+  const [birthday, setBirthday] = useState('')
+  const [savingBirthday, setSavingBirthday] = useState(false)
 
   useEffect(() => {
     if (!user) return
@@ -16,6 +20,7 @@ export default function AyarlarPage() {
       const saved = JSON.parse(localStorage.getItem('stv1-notif-prefs-' + user.uid) || '{}')
       if (Object.keys(saved).length > 0) setPrefs(p => ({ ...p, ...saved }))
     } catch (e) {}
+    if (user.birthday) setBirthday(user.birthday)
   }, [user])
 
   const togglePref = (key) => {
@@ -23,6 +28,18 @@ export default function AyarlarPage() {
     setPrefs(newPrefs)
     try { localStorage.setItem('stv1-notif-prefs-' + user.uid, JSON.stringify(newPrefs)) } catch (e) {}
     toast(`${key === 'sound' ? '🔊 Ses ayarı' : '🔔 Bildirim'} güncellendi`, 'success')
+  }
+
+  const saveBirthday = async () => {
+    if (!birthday) { toast('Doğum tarihi seçin', 'error'); return }
+    setSavingBirthday(true)
+    try {
+      await updateDoc(doc(db, 'user', user.uid), { birthday })
+      toast('🎂 Doğum tarihiniz kaydedildi!', 'success')
+    } catch (e) {
+      toast('Kaydedilemedi', 'error')
+    }
+    setSavingBirthday(false)
   }
 
   if (!user) return null
@@ -49,7 +66,7 @@ export default function AyarlarPage() {
     <div className="px-4 py-6 max-w-4xl mx-auto">
       <div className="page-header" style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }}>
         <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#ffffff', marginBottom: '0.375rem' }}>🔧 Ayarlar</h1>
-        <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px' }}>Bildirim ve ses tercihlerini yönet</p>
+        <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px' }}>Bildirim, ses ve hesap tercihlerini yönet</p>
       </div>
 
       {settingGroups.map((group, gi) => (
@@ -88,6 +105,26 @@ export default function AyarlarPage() {
           </div>
         </div>
       ))}
+
+      {/* Doğum Tarihi */}
+      <div className="card" style={{ marginTop: '1rem' }}>
+        <h3 style={{ fontSize: '15px', fontWeight: '600', color: '#f8fafc', marginBottom: '0.5rem' }}>🎂 Doğum Tarihi</h3>
+        <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '0.75rem' }}>
+          Doğum tarihinizi girin, takvimde ve ekip doğum günleri listesinde görünsün.
+        </p>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <input type="date" value={birthday} onChange={(e) => setBirthday(e.target.value)}
+            className="form-input" style={{ flex: 1, colorScheme: 'dark' }} />
+          <button onClick={saveBirthday} disabled={savingBirthday || !birthday} style={{
+            padding: '0.75rem 1.25rem', borderRadius: '0.75rem', fontSize: '13px', fontWeight: '600',
+            border: 'none', cursor: savingBirthday ? 'not-allowed' : 'pointer',
+            background: birthday ? 'linear-gradient(135deg, #ec4899, #db2777)' : '#334155',
+            color: '#fff', opacity: birthday ? 1 : 0.5, whiteSpace: 'nowrap'
+          }}>
+            {savingBirthday ? '⏳' : '🎂 Kaydet'}
+          </button>
+        </div>
+      </div>
 
       {/* Hızlı Erişim */}
       <div className="card" style={{ marginTop: '1rem' }}>
