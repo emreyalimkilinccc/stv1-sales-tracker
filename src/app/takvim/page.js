@@ -392,11 +392,7 @@ export default function TakvimPage() {
                         </div>
 
                         {/* İmza Alanı */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2rem', paddingTop: '1rem' }}>
-                          <div style={{ textAlign: 'center' }}>
-                            <div style={{ width: '150px', borderBottom: '1px solid #1a1a1a', marginBottom: '0.375rem', height: '30px' }} />
-                            <div style={{ fontSize: '12px', fontWeight: '600', color: '#374151' }}>Personel İmzası</div>
-                          </div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2rem', paddingTop: '1rem' }}>
                           <div style={{ textAlign: 'center' }}>
                             <div style={{ width: '150px', borderBottom: '1px solid #1a1a1a', marginBottom: '0.375rem', height: '30px' }} />
                             <div style={{ fontSize: '12px', fontWeight: '600', color: '#374151' }}>Mağaza Müdürü</div>
