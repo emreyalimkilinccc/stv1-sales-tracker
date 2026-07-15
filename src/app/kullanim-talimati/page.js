@@ -168,10 +168,21 @@ const SECTIONS = [
     icon: '🔥', title: 'Satış Isı Haritası', color: '#ef4444',
     content: [
       'Son 7 gün veya son 30 gün satış dağılımı',
-      'Haftanın günü ve saate göre renkli harita',
-      'En yoğun gün ve saat bilgisi',
-      'Toplam satış ve günlük ortalama',
+      'Günlük bazda renkli bar chart ve yoğunluk grid',
+      'En yoğun gün ve ortalama satış bilgisi',
       'İpucu: Hücrelere tıklayarak detaylı bilgi alın'
+    ]
+  },
+  {
+    icon: '💰', title: 'Muhasebe', color: '#10b981',
+    content: [
+      '🏦 Banka Tahsilatı: Her Salı kasadan bankaya yatırılan tutarlar',
+      '🏷️ Marka Primi: Her ayın 10\'unda alınan prim tutarları',
+      '💵 Normal Prim: Her ayın 25\'inde alınan prim tutarları',
+      'Kişiyi seçip tutar girilir, aylık özet otomatik hesaplanır',
+      'Kişi bazlı toplam kazanç takibi',
+      'Aylık/balık dönem filtresi ile eski kayıtlara erişim',
+      'Sadece Admin, Müdür ve Kasa yetkilisi kayıt ekleyebilir/silebilir'
     ]
   },
   {
