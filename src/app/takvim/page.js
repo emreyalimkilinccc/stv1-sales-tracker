@@ -217,115 +217,271 @@ export default function TakvimPage() {
 
       {/* Seçilen Gün Detay */}
       {selectedDay && !showScheduler && (
-        <div className="card" style={{ marginTop: '0.75rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <h4 style={{ fontSize: '15px', fontWeight: '600', color: '#f8fafc' }}>
-              {selectedDay} {MONTHS[currentMonth]} {currentYear}
-            </h4>
+        <div className="card" style={{ marginTop: '0.75rem', overflow: 'hidden' }}>
+          {/* Gün Başlık Çubuğu */}
+          <div style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            padding: '1rem 1.25rem',
+            background: 'linear-gradient(135deg, #334155, #1e293b)',
+            borderBottom: '1px solid #475569'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{
+                width: '40px', height: '40px', borderRadius: '0.75rem',
+                backgroundColor: 'rgba(139,92,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '18px', fontWeight: '800', color: '#a78bfa'
+              }}>
+                {selectedDay}
+              </div>
+              <div>
+                <div style={{ fontSize: '16px', fontWeight: '700', color: '#f8fafc' }}>
+                  {MONTHS[currentMonth]} {currentYear}
+                </div>
+                <div style={{ fontSize: '12px', color: '#94a3b8' }}>
+                  {DAYS[(new Date(currentYear, currentMonth, selectedDay).getDay() + 6) % 7]}
+                </div>
+              </div>
+            </div>
             {isAdmin && (
               <button onClick={() => openScheduler(selectedDay)} style={{
-                padding: '0.375rem 0.75rem', borderRadius: '0.5rem', fontSize: '12px', fontWeight: '600',
-                border: 'none', cursor: 'pointer', backgroundColor: 'rgba(139,92,246,0.2)', color: '#a78bfa'
+                padding: '0.5rem 1rem', borderRadius: '0.5rem', fontSize: '13px', fontWeight: '600',
+                border: 'none', cursor: 'pointer',
+                background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: '#fff',
+                display: 'flex', alignItems: 'center', gap: '0.375rem',
+                boxShadow: '0 2px 8px rgba(139,92,246,0.3)'
               }}>
                 👥 Vardiya Seç
               </button>
             )}
           </div>
 
-          {(() => {
-            const ds = formatDateStr(selectedDay)
-            const holidays = getHolidaysForDay(selectedDay)
-            const birthdays = getBirthdaysForDay(selectedDay)
-            const leaves = getLeavesForDay(selectedDay)
-            const scheduled = getScheduledForDay(selectedDay)
-            if (holidays.length === 0 && birthdays.length === 0 && leaves.length === 0 && scheduled.length === 0) {
-              return <div style={{ padding: '1rem', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>Bu gün için özel bir etkinlik yok</div>
-            }
-            return (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                {holidays.map((h, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', borderRadius: '0.5rem', backgroundColor: 'rgba(239,68,68,0.1)', fontSize: '13px', color: '#fca5a5' }}>
-                    🔴 <strong>{h.name}</strong> <span style={{ fontSize: '11px', color: '#ef4444' }}>(Resmi Tatil)</span>
-                  </div>
-                ))}
-                {birthdays.map((b, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', borderRadius: '0.5rem', backgroundColor: 'rgba(236,72,153,0.1)', fontSize: '13px', color: '#f9a8d4' }}>
-                    🎂 {b.name || b.email} — Doğum Günü
-                  </div>
-                ))}
-                {leaves.map((l, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', borderRadius: '0.5rem', backgroundColor: 'rgba(245,158,11,0.1)', fontSize: '13px', color: '#fcd34d' }}>
-                    🏖️ {l.userName || l.userId} — İzin ({l.leaveType})
-                  </div>
-                ))}
-                {scheduled.length > 0 && (
-                  <div style={{ padding: '0.5rem 0.75rem', borderRadius: '0.5rem', backgroundColor: 'rgba(139,92,246,0.1)', fontSize: '13px', color: '#c4b5fd' }}>
-                    👥 <strong>Vardiyada ({scheduled.length} kişi):</strong>
-                    <div style={{ marginTop: '0.25rem', display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
-                      {scheduled.map(s => (
-                        <span key={s.id} style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', backgroundColor: 'rgba(139,92,246,0.2)', fontSize: '12px' }}>
-                          {s.name || s.email}
-                        </span>
-                      ))}
+          {/* Etkinlikler */}
+          <div style={{ padding: '1rem 1.25rem' }}>
+            {(() => {
+              const holidays = getHolidaysForDay(selectedDay)
+              const birthdays = getBirthdaysForDay(selectedDay)
+              const leaves = getLeavesForDay(selectedDay)
+              const scheduled = getScheduledForDay(selectedDay)
+              const hasAny = holidays.length > 0 || birthdays.length > 0 || leaves.length > 0 || scheduled.length > 0
+              if (!hasAny) return <div style={{ padding: '1.5rem', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>Bu gün için özel bir etkinlik yok</div>
+
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {/* Resmi Tatiller */}
+                  {holidays.map((h, i) => (
+                    <div key={`h-${i}`} style={{
+                      display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem',
+                      borderRadius: '0.75rem', backgroundColor: 'rgba(239,68,68,0.08)',
+                      border: '1px solid rgba(239,68,68,0.2)'
+                    }}>
+                      <div style={{ width: '36px', height: '36px', borderRadius: '0.5rem', backgroundColor: 'rgba(239,68,68,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>🔴</div>
+                      <div>
+                        <div style={{ fontSize: '14px', fontWeight: '600', color: '#fca5a5' }}>{h.name}</div>
+                        <div style={{ fontSize: '11px', color: '#ef4444' }}>Resmi Tatil</div>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            )
-          })()}
+                  ))}
+
+                  {/* Doğum Günleri */}
+                  {birthdays.map((b, i) => (
+                    <div key={`b-${i}`} style={{
+                      display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem',
+                      borderRadius: '0.75rem', backgroundColor: 'rgba(236,72,153,0.08)',
+                      border: '1px solid rgba(236,72,153,0.2)'
+                    }}>
+                      <div style={{ width: '36px', height: '36px', borderRadius: '0.5rem', backgroundColor: 'rgba(236,72,153,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>🎂</div>
+                      <div>
+                        <div style={{ fontSize: '14px', fontWeight: '600', color: '#f9a8d4' }}>{b.name || b.email}</div>
+                        <div style={{ fontSize: '11px', color: '#ec4899' }}>Doğum Günü</div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* İzinler */}
+                  {leaves.map((l, i) => (
+                    <div key={`l-${i}`} style={{
+                      display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem',
+                      borderRadius: '0.75rem', backgroundColor: 'rgba(245,158,11,0.08)',
+                      border: '1px solid rgba(245,158,11,0.2)'
+                    }}>
+                      <div style={{ width: '36px', height: '36px', borderRadius: '0.5rem', backgroundColor: 'rgba(245,158,11,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>🏖️</div>
+                      <div>
+                        <div style={{ fontSize: '14px', fontWeight: '600', color: '#fcd34d' }}>{l.userName || l.userId}</div>
+                        <div style={{ fontSize: '11px', color: '#f59e0b' }}>İzin — {l.leaveType || 'Belirtilmemiş'}</div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Vardiya */}
+                  {scheduled.length > 0 && (
+                    <div style={{
+                      padding: '0.75rem 1rem', borderRadius: '0.75rem',
+                      backgroundColor: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '0.5rem', backgroundColor: 'rgba(139,92,246,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>👥</div>
+                        <div>
+                          <div style={{ fontSize: '14px', fontWeight: '600', color: '#c4b5fd' }}>Vardiyada — {scheduled.length} kişi</div>
+                          <div style={{ fontSize: '11px', color: '#8b5cf6' }}>Bu gün çalışan personel</div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem', marginLeft: '2.75rem' }}>
+                        {scheduled.map(s => (
+                          <span key={s.id} style={{
+                            padding: '0.25rem 0.625rem', borderRadius: '9999px',
+                            backgroundColor: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)',
+                            fontSize: '12px', fontWeight: '500', color: '#c4b5fd'
+                          }}>
+                            {s.name || s.email}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
+          </div>
         </div>
       )}
 
-      {/* Vardiya Seçim Paneli */}
+      {/* Vardiya Seçim Paneli — Modal Overlay */}
       {showScheduler && isAdmin && selectedDay && (
-        <div className="card" style={{ marginTop: '0.75rem', border: '2px solid #8b5cf6' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-            <h4 style={{ fontSize: '15px', fontWeight: '600', color: '#f8fafc' }}>
-              👥 Vardiya Seç — {selectedDay} {MONTHS[currentMonth]}
-            </h4>
-            <button onClick={() => setShowScheduler(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '18px' }}>✕</button>
-          </div>
-          <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '0.75rem' }}>Bu gün çalışacak personelleri seçin</p>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', maxHeight: '300px', overflowY: 'auto' }}>
-            {allStaff.map(s => (
-              <label key={s.id} onClick={() => toggleStaff(s.id)} style={{
-                display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.625rem 0.75rem',
-                borderRadius: '0.5rem', cursor: 'pointer',
-                backgroundColor: selectedStaff.includes(s.id) ? 'rgba(139,92,246,0.15)' : '#0f172a',
-                border: `1px solid ${selectedStaff.includes(s.id) ? 'rgba(139,92,246,0.4)' : '#334155'}`,
-                transition: 'all 0.15s ease'
-              }}>
-                <div style={{
-                  width: '20px', height: '20px', borderRadius: '4px',
-                  border: `2px solid ${selectedStaff.includes(s.id) ? '#8b5cf6' : '#475569'}`,
-                  backgroundColor: selectedStaff.includes(s.id) ? '#8b5cf6' : 'transparent',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '12px', color: '#fff', fontWeight: '700', flexShrink: 0
-                }}>
-                  {selectedStaff.includes(s.id) ? '✓' : ''}
-                </div>
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+          zIndex: 100, display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+          animation: 'fadeIn 0.2s ease'
+        }} onClick={() => setShowScheduler(false)}>
+          <div onClick={(e) => e.stopPropagation()} style={{
+            width: '100%', maxWidth: '480px', maxHeight: '85vh',
+            backgroundColor: '#1e293b', borderRadius: '1.25rem 1.25rem 0 0',
+            overflow: 'hidden', display: 'flex', flexDirection: 'column',
+            boxShadow: '0 -8px 32px rgba(0,0,0,0.5)',
+            animation: 'slideUp 0.3s ease'
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              padding: '1.25rem 1.5rem',
+              background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+              position: 'relative'
+            }}>
+              <div style={{ position: 'absolute', top: '12px', left: '50%', transform: 'translateX(-50%)', width: '36px', height: '4px', borderRadius: '2px', backgroundColor: 'rgba(255,255,255,0.3)' }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
                 <div>
-                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#f8fafc' }}>{s.name || s.email}</div>
-                  <div style={{ fontSize: '11px', color: '#94a3b8' }}>{s.category || 'Genel'}</div>
+                  <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#fff', marginBottom: '0.25rem' }}>
+                    👥 Vardiya Yönetimi
+                  </h3>
+                  <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)' }}>
+                    {selectedDay} {MONTHS[currentMonth]} {currentYear} — Çalışacak personelleri seçin
+                  </p>
                 </div>
-              </label>
-            ))}
-          </div>
+                <button onClick={() => setShowScheduler(false)} style={{
+                  width: '32px', height: '32px', borderRadius: '50%',
+                  backgroundColor: 'rgba(255,255,255,0.15)', border: 'none',
+                  color: '#fff', fontSize: '16px', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>✕</button>
+              </div>
+              {/* Seçim sayacı */}
+              <div style={{
+                marginTop: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.375rem',
+                padding: '0.25rem 0.75rem', borderRadius: '9999px',
+                backgroundColor: 'rgba(255,255,255,0.15)', fontSize: '12px', fontWeight: '600', color: '#fff'
+              }}>
+                ✅ {selectedStaff.length} / {allStaff.length} kişi seçildi
+              </div>
+            </div>
 
-          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-            <button onClick={() => setShowScheduler(false)} style={{
-              flex: 1, padding: '0.75rem', borderRadius: '0.75rem', fontSize: '14px', fontWeight: '600',
-              border: '1px solid #334155', backgroundColor: 'transparent', color: '#94a3b8', cursor: 'pointer'
+            {/* Hızlı Seçim Butonları */}
+            <div style={{ padding: '0.75rem 1.5rem', display: 'flex', gap: '0.5rem', borderBottom: '1px solid #334155' }}>
+              <button onClick={() => setSelectedStaff(allStaff.map(s => s.id))} style={{
+                flex: 1, padding: '0.5rem', borderRadius: '0.5rem', fontSize: '12px', fontWeight: '600',
+                border: '1px solid #475569', backgroundColor: 'transparent', color: '#94a3b8', cursor: 'pointer'
+              }}>
+                ✅ Tümünü Seç
+              </button>
+              <button onClick={() => setSelectedStaff([])} style={{
+                flex: 1, padding: '0.5rem', borderRadius: '0.5rem', fontSize: '12px', fontWeight: '600',
+                border: '1px solid #475569', backgroundColor: 'transparent', color: '#94a3b8', cursor: 'pointer'
+              }}>
+                ❌ Tümünü Kaldır
+              </button>
+            </div>
+
+            {/* Personel Listesi */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '0.75rem 1.5rem' }}>
+              {allStaff.map(s => {
+                const isSelected = selectedStaff.includes(s.id)
+                return (
+                  <div key={s.id} onClick={() => toggleStaff(s.id)} style={{
+                    display: 'flex', alignItems: 'center', gap: '0.75rem',
+                    padding: '0.75rem 1rem', marginBottom: '0.375rem', borderRadius: '0.75rem',
+                    backgroundColor: isSelected ? 'rgba(139,92,246,0.12)' : '#0f172a',
+                    border: `1px solid ${isSelected ? 'rgba(139,92,246,0.4)' : '#1e293b'}`,
+                    cursor: 'pointer', transition: 'all 0.15s ease'
+                  }}>
+                    {/* Avatar */}
+                    <div style={{
+                      width: '40px', height: '40px', borderRadius: '50%',
+                      backgroundColor: isSelected ? 'rgba(139,92,246,0.2)' : '#1e293b',
+                      border: `2px solid ${isSelected ? '#8b5cf6' : '#334155'}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '14px', fontWeight: '700', color: isSelected ? '#a78bfa' : '#64748b',
+                      flexShrink: 0, transition: 'all 0.15s ease'
+                    }}>
+                      {(s.name || '?').substring(0, 1).toUpperCase()}
+                    </div>
+                    {/* Bilgi */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#f8fafc' }}>{s.name || s.email}</div>
+                      <div style={{ fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                        <span style={{
+                          display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%',
+                          backgroundColor: s.role === 'ADMIN' ? '#ef4444' : s.role === 'MANAGER' ? '#f59e0b' : '#3b82f6'
+                        }} />
+                        {s.category || 'Genel'}
+                        <span style={{ color: '#475569' }}>•</span>
+                        {s.role === 'ADMIN' ? 'Yönetici' : s.role === 'MANAGER' ? 'Müdür' : 'Personel'}
+                      </div>
+                    </div>
+                    {/* Checkbox */}
+                    <div style={{
+                      width: '24px', height: '24px', borderRadius: '6px',
+                      border: `2px solid ${isSelected ? '#8b5cf6' : '#475569'}`,
+                      backgroundColor: isSelected ? '#8b5cf6' : 'transparent',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '14px', color: '#fff', fontWeight: '700', flexShrink: 0,
+                      transition: 'all 0.15s ease'
+                    }}>
+                      {isSelected ? '✓' : ''}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Footer */}
+            <div style={{
+              padding: '1rem 1.5rem', borderTop: '1px solid #334155',
+              display: 'flex', gap: '0.75rem', backgroundColor: '#1e293b'
             }}>
-              İptal
-            </button>
-            <button onClick={saveSchedule} style={{
-              flex: 2, padding: '0.75rem', borderRadius: '0.75rem', fontSize: '14px', fontWeight: '600',
-              border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: '#fff'
-            }}>
-              ✅ Kaydet ({selectedStaff.length} kişi)
-            </button>
+              <button onClick={() => setShowScheduler(false)} style={{
+                flex: 1, padding: '0.875rem', borderRadius: '0.75rem', fontSize: '14px', fontWeight: '600',
+                border: '1px solid #475569', backgroundColor: 'transparent', color: '#94a3b8', cursor: 'pointer'
+              }}>
+                İptal
+              </button>
+              <button onClick={saveSchedule} style={{
+                flex: 2, padding: '0.875rem', borderRadius: '0.75rem', fontSize: '14px', fontWeight: '700',
+                border: 'none', cursor: 'pointer',
+                background: selectedStaff.length > 0 ? 'linear-gradient(135deg, #8b5cf6, #6d28d9)' : '#334155',
+                color: '#fff',
+                boxShadow: selectedStaff.length > 0 ? '0 4px 12px rgba(139,92,246,0.4)' : 'none'
+              }}>
+                {selectedStaff.length > 0 ? `✅ Vardiyayı Kaydet (${selectedStaff.length} kişi)` : 'Personel seçin'}
+              </button>
+            </div>
           </div>
         </div>
       )}
