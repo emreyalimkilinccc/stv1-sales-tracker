@@ -150,16 +150,9 @@ const SECTIONS = [
       '👥 Vardiya seçimi: Yönetici/Müdür takvimdeki tarihe tıklayarak "Vardiya Seç" ile o gün çalışacak personelleri belirler',
       'Seçilen personeller o günün altında listelenir ve gün takvimde mor renkte görünür',
       '🏖️ Onaylı izin talepleri takvimde sarı renkte işaretlenir',
-      'Doğum tarihi girmek için: 🔧 Ayarlar → Hesap Ayarları → Doğum Tarihi'
-    ]
-  },
-  {
-    icon: '🪪', title: 'Personel Kartları', color: '#06b6d4',
-    content: [
-      'Ekip üyelerinin kartvizitlerini görüntüleyin',
-      'İsim, e-posta, satış kodu, kategori ve kota bilgileri',
-      'Arama ile personel bulma (isim, e-posta, kategori, kod)',
-      'Rol bazlı renk kodlaması (Yönetici: kırmızı, Müdür: sarı, Personel: mavi)'
+      'Doğum tarihi girmek için: 🔧 Ayarlar → Hesap Ayarları → Doğum Tarihi',
+      'Vardiyalı günler için resmi talimat evrakı oluşturulur (yazdır/indir)',
+      'Takvimde yıl değiştirildiğinde bayramlar otomatik hesaplanır (Hicri takvim)'
     ]
   },
   {
@@ -197,21 +190,21 @@ const SECTIONS = [
 const RULES = [
   {
     title: 'Personel', icon: '👤', color: '#3b82f6',
-    abilities: ['Satış ekleme', 'Müşteri ekleme', 'Envanter ekleme', 'Gelen ürün ekleme', 'Teslim kaydı oluşturma', 'Temizlik görevi', 'İzin talebi', 'KASKO hesaplama']
+    abilities: ['Satış ekleme', 'Müşteri ekleme', 'Envanter ekleme', 'Gelen ürün ekleme', 'Teslim kaydı oluşturma', 'Temizlik görevi', 'İzin talebi', 'KASKO hesaplama', 'Mola talebi']
   },
   {
     title: 'Mağaza Müdürü', icon: '👔', color: '#f59e0b',
-    abilities: ['Tüm personel işlemleri', 'Satış düzenleme/silme', 'Müşteri düzenleme/silme', 'Envanter düzenleme/silme', 'Durum değiştirme', 'Çekiliş başlatma', 'Anket oluşturma', 'Kota yönetimi']
+    abilities: ['Tüm personel işlemleri', 'Satış düzenleme/silme', 'Müşteri düzenleme/silme', 'Envanter düzenleme/silme', 'Durum değiştirme', 'Çekiliş başlatma', 'Anket oluşturma', 'Kota yönetimi', 'Vardiya yönetimi']
   },
   {
     title: 'Yönetici', icon: '👑', color: '#ef4444',
-    abilities: ['Tüm müdür işlemleri', 'Kullanıcı ekleme/silme', 'Mağaza yönetimi', 'Veri yedekleme', 'Aktivite logu']
+    abilities: ['Tüm müdür işlemleri', 'Kullanıcı ekleme/silme', 'Mağaza yönetimi', 'Veri yedekleme', 'Aktivite logu', 'Vardiya talimatı yazdırma']
   }
 ]
 
 const TIPS = [
   { icon: '💡', text: 'Sayfayı yenilediğinizde verileriniz korunur — tüm bilgiler bulutta saklanır' },
-  { icon: '📱', text: 'Uygulama telefona eklenebilir — ana ekrana ekleyerek tam ekran kullanabilirsiniz' },
+  { icon: '📱', text: 'Uygulama telefona eklenebilir — ana ekrana ekleyerek tam ekran kullanabilirsiniz (iOS: Safari\'den Ana Ekrana Ekle)' },
   { icon: '🔔', text: 'Bildirimleri açarak yeniliklerden haberdar olabilirsiniz' },
   { icon: '⚡', text: 'İnternet yokken bile temel verileri görebilirsiniz (çevrimdışı mod)' },
   { icon: '🔍', text: 'Satış sayfasında gelişmiş filtreleme ve arama yapabilirsiniz' },
@@ -219,6 +212,8 @@ const TIPS = [
   { icon: '🧮', text: 'KASKO sayfasında hesap makinası ile ek hesaplama yapabilirsiniz' },
   { icon: '☕', text: 'Mola sistemi ile molalarınızı takip edebilirsiniz — yöneticiler canlı görebilir' },
   { icon: '🔧', text: 'Ayarlar menüsünden bildirim ve ses tercihlerinizi düzenleyebilirsiniz' },
+  { icon: '📅', text: 'Takvimde her yıl bayramlar otomatik hesaplanır — yıl değiştirerek kontrol edebilirsiniz' },
+  { icon: '📄', text: 'Vardiyalı günler için resmi talimat evrakı oluşturup yazdırabilir veya indirebilirsiniz' },
   { icon: '📅', text: 'Hesap ayarlarından doğum tarihinizi girin, takvimde ve ekip doğum günleri listesinde görünsün' },
   { icon: '💬', text: 'Her gün Dashboard\'da motivasyon yazısı sizi bekler' }
 ]

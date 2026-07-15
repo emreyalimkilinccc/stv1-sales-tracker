@@ -89,7 +89,6 @@ export default function Navbar() {
     { href: '/envanter', label: 'Envanter', icon: '📦' },
     { href: '/reports', label: 'Raporlar', icon: '📈' },
     { href: '/temizlik', label: 'Temizlik', icon: '🧹' },
-    { href: '/personel-karti', label: 'Personel', icon: '🪪' },
     { href: '/doviz', label: 'Döviz', icon: '💱' },
     { href: '/kullanim-talimati', label: 'Kullanım Talimatı', icon: '📖' },
     { href: '/lottery', label: 'Çekiliş', icon: '🎰', adminOnly: true },
