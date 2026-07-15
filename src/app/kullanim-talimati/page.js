@@ -144,10 +144,13 @@ const SECTIONS = [
   {
     icon: '📅', title: 'Ekip Takvimi', color: '#8b5cf6',
     content: [
-      'Ay takvimi üzerinden doğum günlerini ve izin günlerini görün',
-      'Takvim günlerine tıklayarak o günün detaylarını öğrenin',
-      'Yaklaşan doğum günleri liste halinde gösterilir',
-      'Onaylı izin talepleri takvimde işaretlenir'
+      'Ay takvimi üzerinden doğum günlerini, tatilleri ve vardiya bilgilerini görün',
+      '🔴 Kırmızı günler resmi tatillerdir (15 Temmuz, 29 Ekim, Bayramlar vb.)',
+      '🎂 Doğum günü bilgisi girilmiş personeller takvimde işaretlenir',
+      '👥 Vardiya seçimi: Yönetici/Müdür takvimdeki tarihe tıklayarak "Vardiya Seç" ile o gün çalışacak personelleri belirler',
+      'Seçilen personeller o günün altında listelenir ve gün takvimde mor renkte görünür',
+      '🏖️ Onaylı izin talepleri takvimde sarı renkte işaretlenir',
+      'Doğum tarihi girmek için: 🔧 Ayarlar → Hesap Ayarları → Doğum Tarihi'
     ]
   },
   {
@@ -216,6 +219,7 @@ const TIPS = [
   { icon: '🧮', text: 'KASKO sayfasında hesap makinası ile ek hesaplama yapabilirsiniz' },
   { icon: '☕', text: 'Mola sistemi ile molalarınızı takip edebilirsiniz — yöneticiler canlı görebilir' },
   { icon: '🔧', text: 'Ayarlar menüsünden bildirim ve ses tercihlerinizi düzenleyebilirsiniz' },
+  { icon: '📅', text: 'Hesap ayarlarından doğum tarihinizi girin, takvimde ve ekip doğum günleri listesinde görünsün' },
   { icon: '💬', text: 'Her gün Dashboard\'da motivasyon yazısı sizi bekler' }
 ]
 
