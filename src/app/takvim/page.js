@@ -347,9 +347,11 @@ export default function TakvimPage() {
                         {/* Tarih ve Konu */}
                         <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
                           <div style={{ fontSize: '16px', fontWeight: '700', color: '#1a1a1a', marginBottom: '0.25rem' }}>
-                            {DAYS[(new Date(currentYear, currentMonth, selectedDay).getDay() + 6) % 7]}, {selectedDay} {MONTHS[currentMonth]} {currentYear}
+                            {selectedDay} {MONTHS[currentMonth]} {currentYear}
                           </div>
-                          <div style={{ fontSize: '12px', color: '#666' }}>Talimat No: VD-{formatDateStr(selectedDay).replace(/-/g, '')}</div>
+                          <div style={{ fontSize: '12px', color: '#666' }}>
+                            {DAYS[(new Date(currentYear, currentMonth, selectedDay).getDay() + 6) % 7]} | Talimat No: VD-{formatDateStr(selectedDay).replace(/-/g, '')}
+                          </div>
                         </div>
 
                         {/* Resmi Tatil Uyarısı */}
