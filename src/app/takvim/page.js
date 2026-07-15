@@ -297,27 +297,117 @@ export default function TakvimPage() {
 
                   {/* Vardiya */}
                   {scheduled.length > 0 && (
-                    <div style={{
-                      padding: '0.75rem 1rem', borderRadius: '0.75rem',
-                      backgroundColor: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                        <div style={{ width: '36px', height: '36px', borderRadius: '0.5rem', backgroundColor: 'rgba(139,92,246,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>👥</div>
-                        <div>
-                          <div style={{ fontSize: '14px', fontWeight: '600', color: '#c4b5fd' }}>Vardiyada — {scheduled.length} kişi</div>
-                          <div style={{ fontSize: '11px', color: '#8b5cf6' }}>Bu gün çalışan personel</div>
-                        </div>
+                    <div style={{ marginTop: '0.5rem' }}>
+                      {/* Butonlar */}
+                      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                        <button onClick={() => {
+                          const el = document.getElementById('vardiya-evrak')
+                          if (!el) return
+                          const win = window.open('', '_blank')
+                          win.document.write(`<!DOCTYPE html><html><head><title>Vardiya Talimatı</title><style>@page{margin:2cm}body{font-family:Arial,sans-serif;color:#1a1a1a;padding:2rem}h1{text-align:center;font-size:18px;border-bottom:2px solid #333;padding-bottom:10px}h2{text-align:center;font-size:14px;font-weight:normal;color:#555}.info{text-align:center;margin:20px 0;font-size:13px}.table{width:100%;border-collapse:collapse;margin:20px 0}.table th,.table td{border:1px solid #333;padding:8px 12px;text-align:left;font-size:13px}.table th{background:#f0f0f0}.footer{margin-top:40px;display:flex;justify-content:space-between;font-size:12px}.footer div{text-align:center}.line{width:200px;border-top:1px solid #333;margin-top:50px}</style></head><body>`)
+                          win.document.write(el.innerHTML)
+                          win.document.write('</body></html>')
+                          win.document.close()
+                          setTimeout(() => { win.print(); win.close() }, 500)
+                        }} style={{
+                          flex: 1, padding: '0.5rem', borderRadius: '0.5rem', fontSize: '12px', fontWeight: '600',
+                          border: '1px solid #334155', backgroundColor: '#0f172a', color: '#94a3b8', cursor: 'pointer'
+                        }}>
+                          🖨️ Yazdır
+                        </button>
+                        <button onClick={() => {
+                          const el = document.getElementById('vardiya-evrak')
+                          if (!el) return
+                          const text = el.innerText
+                          const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+                          const url = URL.createObjectURL(blob)
+                          const a = document.createElement('a')
+                          a.href = url; a.download = `vardiya-${formatDateStr(selectedDay)}.txt`; a.click()
+                          URL.revokeObjectURL(url)
+                        }} style={{
+                          flex: 1, padding: '0.5rem', borderRadius: '0.5rem', fontSize: '12px', fontWeight: '600',
+                          border: '1px solid #334155', backgroundColor: '#0f172a', color: '#94a3b8', cursor: 'pointer'
+                        }}>
+                          📥 İndir
+                        </button>
                       </div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem', marginLeft: '2.75rem' }}>
-                        {scheduled.map(s => (
-                          <span key={s.id} style={{
-                            padding: '0.25rem 0.625rem', borderRadius: '9999px',
-                            backgroundColor: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)',
-                            fontSize: '12px', fontWeight: '500', color: '#c4b5fd'
-                          }}>
-                            {s.name || s.email}
-                          </span>
-                        ))}
+
+                      {/* Evrak */}
+                      <div id="vardiya-evrak" style={{
+                        backgroundColor: '#fff', color: '#1a1a1a', borderRadius: '0.5rem',
+                        padding: '1.5rem', border: '2px solid #d1d5db',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      }}>
+                        {/* Logo + Başlık */}
+                        <div style={{ textAlign: 'center', borderBottom: '2px solid #1a1a1a', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
+                          <div style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a1a', letterSpacing: '0.05em' }}>STV1 SATIŞ TAKİP SİSTEMİ</div>
+                          <div style={{ fontSize: '13px', color: '#666', marginTop: '0.25rem' }}>Mağaza Vardiya Talimatı</div>
+                        </div>
+
+                        {/* Tarih ve Konu */}
+                        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                          <div style={{ fontSize: '16px', fontWeight: '700', color: '#1a1a1a', marginBottom: '0.25rem' }}>
+                            {DAYS[(new Date(currentYear, currentMonth, selectedDay).getDay() + 6) % 7]}, {selectedDay} {MONTHS[currentMonth]} {currentYear}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#666' }}>Talimat No: VD-{formatDateStr(selectedDay).replace(/-/g, '')}</div>
+                        </div>
+
+                        {/* Resmi Tatil Uyarısı */}
+                        {holidays.filter(h => h.date === formatDateStr(selectedDay)).length > 0 && (
+                          <div style={{ textAlign: 'center', padding: '0.5rem', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '0.375rem', marginBottom: '1rem', fontSize: '13px', color: '#dc2626', fontWeight: '600' }}>
+                            ⚠️ BU GÜN RESMİ TATİLDİR — {holidays.filter(h => h.date === formatDateStr(selectedDay)).map(h => h.name).join(', ')}
+                          </div>
+                        )}
+
+                        {/* Giriş Yazısı */}
+                        <div style={{ fontSize: '13px', lineHeight: '1.8', color: '#374151', marginBottom: '1rem', textAlign: 'justify' }}>
+                          Aşağıda belirtilen personel, <strong>{selectedDay} {MONTHS[currentMonth]} {currentYear}</strong> tarihinde görev yapmak üzere görevlendirilmiştir.
+                        </div>
+
+                        {/* Tablo */}
+                        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1rem', fontSize: '13px' }}>
+                          <thead>
+                            <tr style={{ backgroundColor: '#f3f4f6' }}>
+                              <th style={{ border: '1px solid #d1d5db', padding: '8px 12px', textAlign: 'left', fontWeight: '700', width: '40px' }}>Sıra</th>
+                              <th style={{ border: '1px solid #d1d5db', padding: '8px 12px', textAlign: 'left', fontWeight: '700' }}>Adı Soyadı</th>
+                              <th style={{ border: '1px solid #d1d5db', padding: '8px 12px', textAlign: 'left', fontWeight: '700' }}>Görevi</th>
+                              <th style={{ border: '1px solid #d1d5db', padding: '8px 12px', textAlign: 'left', fontWeight: '700' }}>Kategori</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {scheduled.map((s, i) => (
+                              <tr key={s.id} style={{ backgroundColor: i % 2 === 0 ? '#fff' : '#f9fafb' }}>
+                                <td style={{ border: '1px solid #d1d5db', padding: '8px 12px' }}>{i + 1}</td>
+                                <td style={{ border: '1px solid #d1d5db', padding: '8px 12px', fontWeight: '600' }}>{s.name || s.email}</td>
+                                <td style={{ border: '1px solid #d1d5db', padding: '8px 12px' }}>{s.role === 'ADMIN' ? 'Yönetici' : s.role === 'MANAGER' ? 'Müdür' : 'Personel'}</td>
+                                <td style={{ border: '1px solid #d1d5db', padding: '8px 12px' }}>{s.category || 'Genel'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+
+                        {/* Toplam */}
+                        <div style={{ fontSize: '13px', color: '#374151', marginBottom: '1.5rem' }}>
+                          Toplam <strong>{scheduled.length}</strong> personel görev yapacaktır.
+                        </div>
+
+                        {/* İmza Alanı */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2rem', paddingTop: '1rem' }}>
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ width: '150px', borderBottom: '1px solid #1a1a1a', marginBottom: '0.375rem', height: '30px' }} />
+                            <div style={{ fontSize: '12px', fontWeight: '600', color: '#374151' }}>Personel İmzası</div>
+                          </div>
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ width: '150px', borderBottom: '1px solid #1a1a1a', marginBottom: '0.375rem', height: '30px' }} />
+                            <div style={{ fontSize: '12px', fontWeight: '600', color: '#374151' }}>Mağaza Müdürü</div>
+                            <div style={{ fontSize: '11px', color: '#666' }}>{user?.name || '________________'}</div>
+                          </div>
+                        </div>
+
+                        {/* Alt Bilgi */}
+                        <div style={{ textAlign: 'center', marginTop: '1.5rem', paddingTop: '0.75rem', borderTop: '1px solid #d1d5db', fontSize: '10px', color: '#9ca3af' }}>
+                          Bu belge STV1 Satış Takip Sistemi tarafından otomatik olarak oluşturulmuştur.
+                        </div>
                       </div>
                     </div>
                   )}
