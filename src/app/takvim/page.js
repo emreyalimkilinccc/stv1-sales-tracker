@@ -11,18 +11,20 @@ const DAYS = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
 
 const HOLIDAYS_2026 = [
   { date: '2026-01-01', name: 'Yılbaşı', type: 'resmi' },
+  { date: '2026-03-19', name: 'Ramazan Bayramı (1. Gün)', type: 'resmi' },
+  { date: '2026-03-20', name: 'Ramazan Bayramı (2. Gün)', type: 'resmi' },
+  { date: '2026-03-21', name: 'Ramazan Bayramı (3. Gün)', type: 'resmi' },
+  { date: '2026-03-22', name: 'Ramazan Bayramı (4. Gün)', type: 'resmi' },
   { date: '2026-04-23', name: 'Ulusal Egemenlik ve Çocuk Bayramı', type: 'resmi' },
   { date: '2026-05-01', name: 'Emek ve Dayanışma Günü', type: 'resmi' },
   { date: '2026-05-19', name: 'Atatürk\'ü Anma, Gençlik ve Spor Bayramı', type: 'resmi' },
-  { date: '2026-06-15', name: 'Ramazan Bayramı (1. Gün)', type: 'resmi' },
-  { date: '2026-06-16', name: 'Ramazan Bayramı (2. Gün)', type: 'resmi' },
-  { date: '2026-06-17', name: 'Ramazan Bayramı (3. Gün)', type: 'resmi' },
+  { date: '2026-05-25', name: 'Kurban Bayramı (1. Gün)', type: 'resmi' },
+  { date: '2026-05-26', name: 'Kurban Bayramı (2. Gün)', type: 'resmi' },
+  { date: '2026-05-27', name: 'Kurban Bayramı (3. Gün)', type: 'resmi' },
+  { date: '2026-05-28', name: 'Kurban Bayramı (4. Gün)', type: 'resmi' },
   { date: '2026-07-15', name: 'Demokrasi ve Milli Birlik Günü', type: 'resmi' },
-  { date: '2026-08-22', name: 'Kurban Bayramı (1. Gün)', type: 'resmi' },
-  { date: '2026-08-23', name: 'Kurban Bayramı (2. Gün)', type: 'resmi' },
-  { date: '2026-08-24', name: 'Kurban Bayramı (3. Gün)', type: 'resmi' },
-  { date: '2026-08-25', name: 'Kurban Bayramı (4. Gün)', type: 'resmi' },
   { date: '2026-08-30', name: 'Zafer Bayramı', type: 'resmi' },
+  { date: '2026-10-28', name: 'Cumhuriyet Bayramı Arifesi (Yarım Gün)', type: 'resmi' },
   { date: '2026-10-29', name: 'Cumhuriyet Bayramı', type: 'resmi' },
 ]
 
