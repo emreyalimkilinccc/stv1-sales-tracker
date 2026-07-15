@@ -1,32 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { collection, getDocs, query, where, doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useToast } from '@/components/Toast'
+import { getHolidays } from '@/lib/holidays'
 
 const MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
 const DAYS = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
-
-const HOLIDAYS_2026 = [
-  { date: '2026-01-01', name: 'Yılbaşı', type: 'resmi' },
-  { date: '2026-03-19', name: 'Ramazan Bayramı (1. Gün)', type: 'resmi' },
-  { date: '2026-03-20', name: 'Ramazan Bayramı (2. Gün)', type: 'resmi' },
-  { date: '2026-03-21', name: 'Ramazan Bayramı (3. Gün)', type: 'resmi' },
-  { date: '2026-03-22', name: 'Ramazan Bayramı (4. Gün)', type: 'resmi' },
-  { date: '2026-04-23', name: 'Ulusal Egemenlik ve Çocuk Bayramı', type: 'resmi' },
-  { date: '2026-05-01', name: 'Emek ve Dayanışma Günü', type: 'resmi' },
-  { date: '2026-05-19', name: 'Atatürk\'ü Anma, Gençlik ve Spor Bayramı', type: 'resmi' },
-  { date: '2026-05-25', name: 'Kurban Bayramı (1. Gün)', type: 'resmi' },
-  { date: '2026-05-26', name: 'Kurban Bayramı (2. Gün)', type: 'resmi' },
-  { date: '2026-05-27', name: 'Kurban Bayramı (3. Gün)', type: 'resmi' },
-  { date: '2026-05-28', name: 'Kurban Bayramı (4. Gün)', type: 'resmi' },
-  { date: '2026-07-15', name: 'Demokrasi ve Milli Birlik Günü', type: 'resmi' },
-  { date: '2026-08-30', name: 'Zafer Bayramı', type: 'resmi' },
-  { date: '2026-10-28', name: 'Cumhuriyet Bayramı Arifesi (Yarım Gün)', type: 'resmi' },
-  { date: '2026-10-29', name: 'Cumhuriyet Bayramı', type: 'resmi' },
-]
 
 export default function TakvimPage() {
   const { user } = useAuth()
@@ -44,6 +26,7 @@ export default function TakvimPage() {
   const today = new Date()
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
   const isAdmin = ['ADMIN', 'MANAGER'].includes(user?.role)
+  const holidays = useMemo(() => getHolidays(currentYear), [currentYear])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -86,7 +69,7 @@ export default function TakvimPage() {
 
   const getHolidaysForDay = (day) => {
     const ds = formatDateStr(day)
-    return HOLIDAYS_2026.filter(h => h.date === ds)
+    return holidays.filter(h => h.date === ds)
   }
 
   const getLeavesForDay = (day) => {
