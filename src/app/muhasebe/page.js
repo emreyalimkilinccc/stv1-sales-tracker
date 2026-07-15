@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-context'
 import { collection, addDoc, getDocs, query, where, orderBy, deleteDoc, doc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useToast } from '@/components/Toast'
+import { logActivity } from '@/lib/activityLog'
 
 const TABS = [
   { id: 'banka', label: '🏦 Banka Tahsilatı', desc: 'Her Salı kasadan bankaya yatırılan tutarlar', color: '#3b82f6', schedule: 'Her Salı' },
@@ -99,6 +100,7 @@ export default function MuhasebePage() {
       setNote('')
       setShowForm(false)
       toast('Kayıt eklendi!', 'success')
+      logActivity('finance_added', { type: activeTab, userName: staffMember?.name, amount: parseFloat(amount) }, user.uid, user.name || user.email)
     } catch (e) {
       toast('Kayıt eklenemedi', 'error')
     }
@@ -110,6 +112,7 @@ export default function MuhasebePage() {
       await deleteDoc(doc(db, 'finance', id))
       setRecords(prev => prev.filter(r => r.id !== id))
       toast('Kayıt silindi', 'info')
+      logActivity('finance_deleted', { type: activeTab }, user.uid, user.name || user.email)
     } catch (e) {
       toast('Silinemedi', 'error')
     }

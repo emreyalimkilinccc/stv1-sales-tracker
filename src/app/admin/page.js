@@ -52,6 +52,7 @@ export default function AdminPage() {
       }
       fetchData()
       toast.success(`${updated} kullanıcının kategorisi güncellendi!`)
+      logActivity('category_update', { updatedCount: updated }, user.uid, user.name || user.email)
     } catch (error) { toast.error('Hata: ' + error.message) }
   }
 
@@ -130,6 +131,7 @@ export default function AdminPage() {
       setShowReauthModal(true)
       setShowAddUser(false)
       setNewUser({ salesCode: '', email: '', password: '', name: '', role: 'STAFF', storeId: '', monthlyQuota: '', category: '' })
+      logActivity('user_created', { name: newUser.name, email: newUser.email }, user.uid, user.name || user.email)
       fetchData()
     } catch (error) { toast.error('Hata: ' + error.message) }
   }
@@ -554,6 +556,7 @@ export default function AdminPage() {
               a.href = url; a.download = `stv1-yedek-${new Date().toISOString().split('T')[0]}.json`
               a.click(); URL.revokeObjectURL(url)
               toast.success('Veri yedeklendi!')
+              logActivity('backup_downloaded', {}, user.uid, user.name || user.email)
             } catch (error) { toast.error('Yedekleme hatası: ' + error.message) }
           }} style={{
             padding: '0.875rem 1.5rem', borderRadius: '0.75rem', fontSize: '14px', fontWeight: '600',

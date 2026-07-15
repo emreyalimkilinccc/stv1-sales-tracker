@@ -10,6 +10,7 @@ import {
 } from 'firebase/auth'
 import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore'
 import { auth, db } from '@/lib/firebase'
+import { logActivity } from '@/lib/activityLog'
 
 const AuthContext = createContext({
   user: null,
@@ -61,13 +62,15 @@ export function AuthProvider({ children }) {
   const signIn = async (email, password) => {
     const result = await signInWithEmailAndPassword(auth, email, password)
     const userDoc = await getDoc(doc(db, 'user', result.user.uid))
+    const userData = userDoc.exists() ? userDoc.data() : {}
     if (userDoc.exists()) {
       setUser({
         uid: result.user.uid,
         email: result.user.email,
-        ...userDoc.data()
+        ...userData
       })
     }
+    logActivity('login', { method: 'email' }, result.user.uid, userData.name || email)
     return result
   }
 
@@ -113,6 +116,7 @@ export function AuthProvider({ children }) {
       storeId: userData.storeId || null, category: userData.category || '',
       monthlyQuota: userData.monthlyQuota || 0, loading: false
     })
+    logActivity('login', { method: 'salesCode', salesCode }, uid, userData.name || '')
     
     return result
   }
@@ -138,6 +142,10 @@ export function AuthProvider({ children }) {
   }
 
   const signOut = async () => {
+    const currentUser = auth.currentUser
+    if (currentUser) {
+      logActivity('logout', {}, currentUser.uid, currentUser.displayName || currentUser.email)
+    }
     await firebaseSignOut(auth)
     setUser(null)
     window.location.href = '/login'

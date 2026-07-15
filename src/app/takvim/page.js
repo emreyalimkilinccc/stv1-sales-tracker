@@ -6,6 +6,7 @@ import { collection, getDocs, query, where, doc, setDoc, deleteDoc, getDoc } fro
 import { db } from '@/lib/firebase'
 import { useToast } from '@/components/Toast'
 import { getHolidays } from '@/lib/holidays'
+import { logActivity } from '@/lib/activityLog'
 
 const MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
 const DAYS = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
@@ -110,6 +111,7 @@ export default function TakvimPage() {
       setSchedule(prev => ({ ...prev, [ds]: selectedStaff }))
       setShowScheduler(false)
       toast('Vardiya kaydedildi!', 'success')
+      logActivity('schedule_saved', { date: ds, staffCount: selectedStaff.length }, user.uid, user.name || user.email)
     } catch (e) {
       toast('Kaydedilemedi', 'error')
     }

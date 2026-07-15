@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { useToast } from '@/components/Toast'
+import { logActivity } from '@/lib/activityLog'
 
 export default function ChangePasswordPage() {
   const { user, changePassword } = useAuth()
@@ -19,6 +20,7 @@ export default function ChangePasswordPage() {
     try {
       await changePassword(newPassword)
       toast('Şifreniz güncellendi!', 'success')
+      logActivity('password_changed', {}, user.uid, user.name || user.email)
       setNewPassword('')
       setConfirmPassword('')
     } catch (err) {

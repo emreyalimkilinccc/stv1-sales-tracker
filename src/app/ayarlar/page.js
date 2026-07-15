@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import Link from 'next/link'
 import { useToast } from '@/components/Toast'
+import { logActivity } from '@/lib/activityLog'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 
@@ -36,6 +37,7 @@ export default function AyarlarPage() {
     try {
       await updateDoc(doc(db, 'user', user.uid), { birthday })
       toast('🎂 Doğum tarihiniz kaydedildi!', 'success')
+      logActivity('birthday_updated', { birthday }, user.uid, user.name || user.email)
     } catch (e) {
       toast('Kaydedilemedi', 'error')
     }

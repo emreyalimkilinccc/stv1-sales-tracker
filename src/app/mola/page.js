@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-context'
 import { collection, addDoc, query, where, onSnapshot, updateDoc, doc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useToast } from '@/components/Toast'
+import { logActivity } from '@/lib/activityLog'
 
 const BREAK_TYPES = [
   { id: 'yemek', label: 'Yemek Molası', icon: '🍽️', duration: 3600, color: '#10b981', maxDaily: 1 },
@@ -112,6 +113,8 @@ export default function MolaPage() {
     })
     setSelectedType(null)
     toast(`${bt.icon} ${bt.label} gönderildi, sayaç başladı!`, 'success')
+    logActivity('mola_started', { type: bt.label }, user.uid, user.name || user.email)
+    logActivity('mola_sent', { type: bt?.label }, user.uid, user.name || user.email)
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)()
       const osc = ctx.createOscillator()
