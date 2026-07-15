@@ -100,7 +100,7 @@ export default function Navbar() {
   const filteredItems = navItems.filter(item => {
     if (item.href === '/reports' && !['MANAGER', 'ADMIN'].includes(user.role)) return false
     if (item.href === '/admin' && !['MANAGER', 'ADMIN'].includes(user.role)) return false
-    if (item.adminOnly && !['MANAGER', 'ADMIN'].includes(user.role)) return false
+    if (item.adminOnly && !['MANAGER', 'ADMIN'].includes(user.role) && user.category !== 'Kasa') return false
     return true
   })
 

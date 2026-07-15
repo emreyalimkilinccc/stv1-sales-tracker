@@ -53,6 +53,15 @@ export default function MuhasebePage() {
   }, [])
 
   if (!user) return null
+  if (!['ADMIN', 'MANAGER'].includes(user.role) && user.category !== 'Kasa') {
+    return (
+      <div className="px-4 py-6 max-w-4xl mx-auto" style={{ textAlign: 'center', paddingTop: '4rem' }}>
+        <div style={{ fontSize: '48px', marginBottom: '1rem' }}>🔒</div>
+        <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#f8fafc', marginBottom: '0.5rem' }}>Erişim Engellendi</h2>
+        <p style={{ fontSize: '14px', color: '#94a3b8' }}>Bu sayfaya sadece yönetici, müdür ve kasa yetkilileri erişebilir.</p>
+      </div>
+    )
+  }
 
   const filteredRecords = records.filter(r => {
     if (r.type !== activeTab) return false

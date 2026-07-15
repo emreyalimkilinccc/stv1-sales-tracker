@@ -66,7 +66,7 @@ export default function FinanceSummary() {
       {/* Başlık */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', padding: '0 0.25rem' }}>
         <span style={{ fontSize: '13px', fontWeight: '600', color: '#94a3b8' }}>💰 Bu Ayın Özeti</span>
-        {['ADMIN', 'MANAGER'].includes(user.role) && (
+        {(['ADMIN', 'MANAGER'].includes(user.role) || user.category === 'Kasa') && (
           <Link href="/muhasebe" style={{ fontSize: '11px', color: '#10b981', textDecoration: 'none', fontWeight: '600' }}>Tümünü Gör →</Link>
         )}
       </div>
