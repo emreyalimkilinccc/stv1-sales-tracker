@@ -88,7 +88,7 @@ export default function Navbar() {
     { href: '/musteriler', label: 'Müşteriler', icon: '👥' },
     { href: '/envanter', label: 'Envanter', icon: '📦' },
     { href: '/reports', label: 'Raporlar', icon: '📈' },
-    { href: '/muhasebe', label: 'Muhasebe', icon: '💰' },
+    { href: '/muhasebe', label: 'Muhasebe', icon: '💰', adminOnly: true },
     { href: '/temizlik', label: 'Temizlik', icon: '🧹' },
     { href: '/doviz', label: 'Döviz', icon: '💱' },
     { href: '/kullanim-talimati', label: 'Kullanım Talimatı', icon: '📖' },

@@ -8,6 +8,7 @@ import { formatCurrency } from '@/lib/utils'
 import DashboardCharts from '@/components/DashboardCharts'
 import { useToast } from '@/components/Toast'
 import DailyMotivation from '@/components/DailyMotivation'
+import FinanceSummary from '@/components/FinanceSummary'
 
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -204,6 +205,7 @@ export default function DashboardPage() {
 
       {/* Tarih Filtresi */}
       <DailyMotivation />
+      <FinanceSummary />
       <div className="card" style={{ marginBottom: '1rem' }}>
         <div className="flex flex-wrap items-center gap-2" style={{ marginBottom: '0.75rem' }}>
           {[
