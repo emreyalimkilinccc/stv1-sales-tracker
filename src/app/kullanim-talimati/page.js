@@ -135,10 +135,12 @@ const SECTIONS = [
   {
     icon: '🔧', title: 'Ayarlar', color: '#6366f1',
     content: [
-      'Bildirim tercihlerinizi yönetin (satış, kota, temizlik, izin)',
-      'Satış sesli bildirimini açıp kapatabilirsiniz',
-      'Şifre değiştirme ve kullanım talimatı burada',
-      'Tercihleriniz kaydedilir — cihazda kalıcı olarak saklanır'
+      '🔔 Bildirim tercihlerinizi yönetin (satış, kota, temizlik, izin)',
+      '🔊 Satış sesli bildirimini açıp kapatabilirsiniz',
+      '🎂 Doğum tarihinizi girin — takvimde ve ekip doğum günleri listesinde görünür',
+      '🔐 Şifre değiştirme ve kullanım talimatı burada',
+      'Tercihleriniz kaydedilir — cihazda kalıcı olarak saklanır',
+      'Doğum tarihi girmek için: 🔧 Ayarlar → 🎂 Doğum Tarihi → tarih seç → Kaydet'
     ]
   },
   {
@@ -150,7 +152,7 @@ const SECTIONS = [
       '👥 Vardiya seçimi: Yönetici/Müdür takvimdeki tarihe tıklayarak "Vardiya Seç" ile o gün çalışacak personelleri belirler',
       'Seçilen personeller o günün altında listelenir ve gün takvimde mor renkte görünür',
       '🏖️ Onaylı izin talepleri takvimde sarı renkte işaretlenir',
-      'Doğum tarihi girmek için: 🔧 Ayarlar → Hesap Ayarları → Doğum Tarihi',
+      'Doğum tarihi girmek için: 🔧 Ayarlar → 🎂 Doğum Tarihi',
       'Vardiyalı günler için resmi talimat evrakı oluşturulur (yazdır/indir)',
       'Takvimde yıl değiştirildiğinde bayramlar otomatik hesaplanır (Hicri takvim)'
     ]
