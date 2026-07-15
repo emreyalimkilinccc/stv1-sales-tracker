@@ -177,24 +177,37 @@ export default function TakvimPage() {
             const scheduled = getScheduledForDay(day)
             const hasHoliday = holidays.length > 0
             const hasSchedule = scheduled.length > 0
+            const hasBirthday = birthdays.length > 0
+            const hasLeave = leaves.length > 0
             const isCurrentDay = isToday(day)
+
+            const eventCount = (hasHoliday ? 1 : 0) + (hasBirthday ? 1 : 0) + (hasLeave ? 1 : 0) + (hasSchedule ? 1 : 0)
+            const hasAnyEvent = eventCount > 0
+
+            let borderColor = '#1e293b'
+            let bgColor = 'transparent'
+            if (hasHoliday) { borderColor = '#ef4444'; bgColor = 'rgba(239,68,68,0.12)' }
+            else if (hasBirthday) { borderColor = '#ec4899'; bgColor = 'rgba(236,72,153,0.12)' }
+            else if (hasSchedule) { borderColor = '#8b5cf6'; bgColor = 'rgba(139,92,246,0.12)' }
+            else if (hasLeave) { borderColor = '#f59e0b'; bgColor = 'rgba(245,158,11,0.08)' }
+            else if (isCurrentDay) { borderColor = '#3b82f6'; bgColor = 'rgba(59,130,246,0.1)' }
 
             return (
               <div key={day} onClick={() => { setSelectedDay(day); setShowScheduler(false) }} style={{
-                padding: '4px 2px', borderRadius: '0.5rem', cursor: 'pointer', minHeight: '52px',
-                backgroundColor: hasHoliday ? 'rgba(239,68,68,0.15)' : isCurrentDay ? 'rgba(59,130,246,0.15)' : 'transparent',
-                border: hasHoliday ? '2px solid #ef4444' : isCurrentDay ? '2px solid #3b82f6' : '1px solid transparent',
+                padding: '4px 2px', borderRadius: '0.5rem', cursor: 'pointer', minHeight: '56px',
+                backgroundColor: bgColor,
+                border: `${hasAnyEvent || isCurrentDay ? '2px' : '1px'} solid ${borderColor}`,
                 transition: 'all 0.15s ease'
               }}>
                 <div style={{
                   fontSize: '12px', fontWeight: isCurrentDay || hasHoliday ? '700' : '400',
                   color: hasHoliday ? '#ef4444' : isCurrentDay ? '#3b82f6' : '#f8fafc'
                 }}>{day}</div>
-                <div style={{ display: 'flex', gap: '2px', justifyContent: 'center', marginTop: '2px', flexWrap: 'wrap' }}>
-                  {birthdays.length > 0 && <span style={{ fontSize: '9px' }}>🎂</span>}
-                  {hasHoliday && <span style={{ fontSize: '9px' }}>🔴</span>}
-                  {leaves.length > 0 && <span style={{ fontSize: '9px' }}>🏖️</span>}
-                  {hasSchedule && <span style={{ fontSize: '9px' }}>👥</span>}
+                <div style={{ display: 'flex', gap: '1px', justifyContent: 'center', marginTop: '2px', flexWrap: 'wrap' }}>
+                  {hasHoliday && <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#ef4444' }} />}
+                  {hasBirthday && <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#ec4899' }} />}
+                  {hasSchedule && <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#8b5cf6' }} />}
+                  {hasLeave && <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#f59e0b' }} />}
                 </div>
               </div>
             )
@@ -344,15 +357,17 @@ export default function TakvimPage() {
 
       {/* Legend */}
       <div className="card" style={{ marginTop: '1rem' }}>
-        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', padding: '0.5rem 0' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem', padding: '0.5rem' }}>
           {[
-            { icon: '🎂', label: 'Doğum Günü', color: '#ec4899' },
-            { icon: '🔴', label: 'Resmi Tatil', color: '#ef4444' },
-            { icon: '🏖️', label: 'İzin Günü', color: '#f59e0b' },
-            { icon: '👥', label: 'Vardiya', color: '#8b5cf6' }
+            { color: '#ef4444', label: 'Resmi Tatil / Bayram', icon: '🔴' },
+            { color: '#ec4899', label: 'Doğum Günü', icon: '🎂' },
+            { color: '#8b5cf6', label: 'Vardiya (Çalışan)', icon: '👥' },
+            { color: '#f59e0b', label: 'İzin Günü', icon: '🏖️' },
+            { color: '#3b82f6', label: 'Bugün', icon: '📍' }
           ].map((l, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '11px', color: l.color }}>
-              {l.icon} {l.label}
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.375rem 0.5rem', borderRadius: '0.5rem', backgroundColor: `${l.color}10`, border: `1px solid ${l.color}30` }}>
+              <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: l.color, flexShrink: 0 }} />
+              <span style={{ fontSize: '11px', color: l.color, fontWeight: '500' }}>{l.label}</span>
             </div>
           ))}
         </div>
