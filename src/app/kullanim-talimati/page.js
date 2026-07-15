@@ -182,7 +182,9 @@ const SECTIONS = [
       'Kişiyi seçip tutar girilir, aylık özet otomatik hesaplanır',
       'Kişi bazlı toplam kazanç takibi',
       'Aylık/balık dönem filtresi ile eski kayıtlara erişim',
-      'Sadece Admin, Müdür ve Kasa yetkilisi kayıt ekleyebilir/silebilir'
+      'Dashboard\'da motivasyon yazısının altında bu ayın özeti görünür',
+      'Herkes kendi kazancını görebilir, yönetici/müdür/kasa tümünü görebilir',
+      'Erişim: Sadece Admin, Müdür ve Kasa yetkilisi sees — diğer personel erişemez'
     ]
   },
   {
