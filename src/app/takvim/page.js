@@ -394,13 +394,18 @@ export default function TakvimPage() {
                         </div>
 
                         {/* İmza Alanı */}
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2rem', paddingTop: '1rem' }}>
-                          <div style={{ textAlign: 'center' }}>
-                            <div style={{ width: '150px', borderBottom: '1px solid #1a1a1a', marginBottom: '0.375rem', height: '30px' }} />
-                            <div style={{ fontSize: '12px', fontWeight: '600', color: '#374151' }}>Mağaza Müdürü</div>
-                            <div style={{ fontSize: '11px', color: '#666' }}>{user?.name || '________________'}</div>
-                          </div>
-                        </div>
+                        {(() => {
+                          const manager = scheduled.find(s => s.role === 'MANAGER') || allStaff.find(s => s.role === 'MANAGER') || user
+                          return (
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2rem', paddingTop: '1rem' }}>
+                              <div style={{ textAlign: 'center' }}>
+                                <div style={{ width: '150px', borderBottom: '1px solid #1a1a1a', marginBottom: '0.375rem', height: '30px' }} />
+                                <div style={{ fontSize: '12px', fontWeight: '600', color: '#374151' }}>Mağaza Müdürü</div>
+                                <div style={{ fontSize: '11px', color: '#666' }}>{manager?.name || '________________'}</div>
+                              </div>
+                            </div>
+                          )
+                        })()}
 
                         {/* Alt Bilgi */}
                         <div style={{ textAlign: 'center', marginTop: '1.5rem', paddingTop: '0.75rem', borderTop: '1px solid #d1d5db', fontSize: '10px', color: '#9ca3af' }}>
