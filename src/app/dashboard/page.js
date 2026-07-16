@@ -97,6 +97,16 @@ export default function DashboardPage() {
   const fetchDashboard = async () => {
     try {
       if (!user?.uid) return
+
+      // Staff listesini de çek (sıralama için gerekli)
+      let currentStaff = allStaff
+      if (currentStaff.length === 0) {
+        try {
+          const staffSnap = await getDocs(collection(db, 'user'))
+          currentStaff = staffSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+          setAllStaff(currentStaff)
+        } catch (e) {}
+      }
       const startDate = new Date(dateRange.start)
       let endDate
       if (dateRange.end) {
