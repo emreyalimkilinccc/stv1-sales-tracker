@@ -56,7 +56,7 @@ export default function DashboardCharts({ dailyStats, staffStats, categoryStats 
 
       {/* Günlük Satışlar */}
       <div style={{ backgroundColor: '#1e293b', borderRadius: '1rem', padding: '1.25rem', border: '1px solid #334155' }}>
-        <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1.25rem' }}>📊 Günlük Satışlar</h3>
+        <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#f8fafc', marginBottom: '1.25rem' }}>📊 Günlük Cari Satış</h3>
         <div className="space-y-4">
           {dailyStats.slice(-7).map((day, index) => (
             <div key={day.date} className="flex items-center">

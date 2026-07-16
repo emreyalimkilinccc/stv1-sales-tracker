@@ -168,7 +168,8 @@ export default function DashboardPage() {
       
       let staffStats = []
       if (user.role !== 'STAFF') {
-        const staffData = sales.reduce((acc, sale) => {
+        const staffIds = allStaff.filter(s => s.role === 'STAFF').map(s => s.id)
+        const staffData = sales.filter(s => staffIds.includes(s.userId)).reduce((acc, sale) => {
           if (!acc[sale.userId]) acc[sale.userId] = { userId: sale.userId, userName: sale.userName || 'Bilinmeyen', amount: 0, count: 0 }
           acc[sale.userId].amount += parseFloat(sale.amount) || 0; acc[sale.userId].count++; return acc
         }, {})
@@ -199,7 +200,7 @@ export default function DashboardPage() {
   return (
     <div className="px-4 py-6 max-w-7xl mx-auto">
       <div className="page-header" style={{ background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)' }}>
-        <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#ffffff', marginBottom: '0.375rem' }}>📊 Satış Verileri</h1>
+        <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#ffffff', marginBottom: '0.375rem' }}>📊 Cari Satış</h1>
         <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px' }}>Hoş geldiniz, {user?.name}</p>
       </div>
 
