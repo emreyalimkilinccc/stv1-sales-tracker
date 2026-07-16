@@ -41,7 +41,8 @@ const MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz'
 export default function ActivityLogTab() {
   const [allLogs, setAllLogs] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filterDate, setFilterDate] = useState('')
+  const [filterDateStart, setFilterDateStart] = useState('')
+  const [filterDateEnd, setFilterDateEnd] = useState('')
   const [filterAction, setFilterAction] = useState('all')
   const [filterUser, setFilterUser] = useState('')
 
@@ -62,11 +63,12 @@ export default function ActivityLogTab() {
   }, [])
 
   const filteredLogs = allLogs.filter(log => {
-    if (filterDate) {
+    if (filterDateStart || filterDateEnd) {
       const logDate = log.timestamp?.toDate ? log.timestamp.toDate() : null
       if (!logDate) return false
       const logDateStr = `${logDate.getFullYear()}-${String(logDate.getMonth() + 1).padStart(2, '0')}-${String(logDate.getDate()).padStart(2, '0')}`
-      if (logDateStr !== filterDate) return false
+      if (filterDateStart && logDateStr < filterDateStart) return false
+      if (filterDateEnd && logDateStr > filterDateEnd) return false
     }
     if (filterAction !== 'all') {
       const group = ACTION_GROUPS.find(g => g.value === filterAction)
@@ -89,17 +91,29 @@ export default function ActivityLogTab() {
 
       {/* Filtreler */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
-        {/* Tarih Filtresi */}
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} style={{
-            flex: 1, padding: '0.5rem 0.75rem', borderRadius: '0.5rem', fontSize: '13px',
-            border: '1px solid #334155', backgroundColor: '#0f172a', color: '#f8fafc', colorScheme: 'dark'
-          }} />
-          {filterDate && (
-            <button onClick={() => setFilterDate('')} style={{
-              padding: '0.5rem 0.75rem', borderRadius: '0.5rem', fontSize: '12px', fontWeight: '600',
-              border: '1px solid #334155', backgroundColor: 'transparent', color: '#94a3b8', cursor: 'pointer'
-            }}>✕</button>
+        {/* Tarih Aralığı Filtresi */}
+        <div style={{ display: 'flex', gap: '0.375rem', alignItems: 'center' }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '10px', color: '#64748b', marginBottom: '0.125rem', textTransform: 'uppercase' }}>Başlangıç</div>
+            <input type="date" value={filterDateStart} onChange={(e) => setFilterDateStart(e.target.value)} style={{
+              width: '100%', padding: '0.5rem 0.5rem', borderRadius: '0.5rem', fontSize: '12px',
+              border: '1px solid #334155', backgroundColor: '#0f172a', color: '#f8fafc', colorScheme: 'dark'
+            }} />
+          </div>
+          <span style={{ color: '#64748b', fontSize: '14px', marginTop: '0.75rem' }}>→</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '10px', color: '#64748b', marginBottom: '0.125rem', textTransform: 'uppercase' }}>Bitiş</div>
+            <input type="date" value={filterDateEnd} onChange={(e) => setFilterDateEnd(e.target.value)} style={{
+              width: '100%', padding: '0.5rem 0.5rem', borderRadius: '0.5rem', fontSize: '12px',
+              border: '1px solid #334155', backgroundColor: '#0f172a', color: '#f8fafc', colorScheme: 'dark'
+            }} />
+          </div>
+          {(filterDateStart || filterDateEnd) && (
+            <button onClick={() => { setFilterDateStart(''); setFilterDateEnd('') }} style={{
+              padding: '0.375rem 0.625rem', borderRadius: '0.5rem', fontSize: '12px', fontWeight: '600',
+              border: '1px solid #334155', backgroundColor: 'transparent', color: '#94a3b8', cursor: 'pointer',
+              marginTop: '0.75rem'
+            }}>✕ Temizle</button>
           )}
         </div>
 
