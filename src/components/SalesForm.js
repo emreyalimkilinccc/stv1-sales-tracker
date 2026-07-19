@@ -56,36 +56,42 @@ export default function SalesForm({ onSubmit, initialData = null }) {
         </div>
       )}
 
-      <div className="form-group">
-        <label className="form-label">📅 Tarih</label>
-        <input type="date" name="date" value={formData.date} onChange={handleChange} required className="form-input" />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+        <div className="form-group">
+          <label className="form-label">📅 Tarih</label>
+          <input type="date" name="date" value={formData.date} onChange={handleChange} required className="form-input" />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">⏰ Saat</label>
+          <select name="hour" value={formData.hour} onChange={handleChange} required className="form-input">
+            {Array.from({ length: 24 }, (_, i) => <option key={i} value={String(i)}>{String(i).padStart(2, '0')}:00</option>)}
+          </select>
+        </div>
       </div>
 
-      <div className="form-group">
-        <label className="form-label">⏰ Saat</label>
-        <select name="hour" value={formData.hour} onChange={handleChange} required className="form-input">
-          {Array.from({ length: 24 }, (_, i) => <option key={i} value={String(i)}>{String(i).padStart(2, '0')}:00</option>)}
-        </select>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+        <div className="form-group">
+          <label className="form-label">💰 Satış Tutarı</label>
+          <input type="number" name="amount" value={formData.amount} onChange={handleChange} required step="0.01" placeholder="0" className="form-input" style={{ color: parseFloat(formData.amount) < 0 ? '#ef4444' : undefined }} />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">📦 Ürün Sayısı</label>
+          <input type="number" name="itemCount" value={formData.itemCount} onChange={handleChange} min="0" placeholder="0" className="form-input" />
+        </div>
       </div>
 
-      <div className="form-group">
-        <label className="form-label">💰 Satış Tutarı</label>
-        <input type="number" name="amount" value={formData.amount} onChange={handleChange} required step="0.01" placeholder="Eksi girerseniz iptal/iade olur" className="form-input" style={{ color: parseFloat(formData.amount) < 0 ? '#ef4444' : undefined }} />
-      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+        <div className="form-group">
+          <label className="form-label">🎁 Bonus Ürün Sayısı</label>
+          <input type="number" name="bonusItemCount" value={formData.bonusItemCount} onChange={handleChange} min="0" placeholder="0" className="form-input" />
+        </div>
 
-      <div className="form-group">
-        <label className="form-label">📦 Ürün Sayısı</label>
-        <input type="number" name="itemCount" value={formData.itemCount} onChange={handleChange} min="0" placeholder="0" className="form-input" />
-      </div>
-
-      <div className="form-group">
-        <label className="form-label">🎁 Bonus Ürün Sayısı</label>
-        <input type="number" name="bonusItemCount" value={formData.bonusItemCount} onChange={handleChange} min="0" placeholder="0" className="form-input" />
-      </div>
-
-      <div className="form-group">
-        <label className="form-label">👤 Müşteri Numarası</label>
-        <input type="text" name="customerPhone" value={formData.customerPhone} onChange={handleChange} placeholder="Müşteri numarası" className="form-input" />
+        <div className="form-group">
+          <label className="form-label">👤 Müşteri Numarası</label>
+          <input type="text" name="customerPhone" value={formData.customerPhone} onChange={handleChange} placeholder="Müşteri numarası" className="form-input" />
+        </div>
       </div>
 
       <div className="form-group">
