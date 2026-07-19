@@ -90,6 +90,7 @@ export default function Navbar() {
     { href: '/reports', label: 'Raporlar', icon: '📈' },
     { href: '/muhasebe', label: 'Muhasebe', icon: '💰', adminOnly: true },
     { href: '/temizlik', label: 'Temizlik', icon: '🧹' },
+    { href: '/transfer', label: 'Transfer', icon: '🚛' },
     { href: '/doviz', label: 'Döviz', icon: '💱' },
     { href: '/kullanim-talimati', label: 'Kullanım Talimatı', icon: '📖' },
     { href: '/lottery', label: 'Çekiliş', icon: '🎰', adminOnly: true },

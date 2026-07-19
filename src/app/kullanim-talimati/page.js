@@ -73,6 +73,18 @@ const SECTIONS = [
     ]
   },
   {
+    icon: '🚛', title: 'Transfer', color: '#8b5cf6',
+    content: [
+      '🏪 Mağaza Deposu: Mağaza içi transfer kayıtları',
+      '📦 Dış Depo: Dış depo transfer kayıtları',
+      'Mağaza adı, barkod ve araç plakası manuel girilir',
+      'Tarih/saat ve işlem yapan kişi otomatik olarak doldurulur',
+      'Kaydedilen transferler listelenir ve yazdırılabilir',
+      '🖨️ Yazdır butonu ile resmi transfer fişi oluşturulur',
+      'Tüm personel transfer ekleyebilir'
+    ]
+  },
+  {
     icon: '🗳️', title: 'Oylama', color: '#ec4899',
     content: [
       'Yeni anket oluşturulabilir (Yönetici/Müdür)',
