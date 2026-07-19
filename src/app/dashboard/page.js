@@ -178,17 +178,12 @@ export default function DashboardPage() {
       
       let staffStats = []
       if (user.role !== 'STAFF') {
-        const staffData = sales.reduce((acc, sale) => {
+        const managerIds = allStaff.filter(s => s.role === 'MANAGER' || s.role === 'ADMIN').map(s => s.id)
+        const staffData = sales.filter(s => !managerIds.includes(s.userId)).reduce((acc, sale) => {
           if (!acc[sale.userId]) acc[sale.userId] = { userId: sale.userId, userName: sale.userName || 'Bilinmeyen', amount: 0, count: 0 }
           acc[sale.userId].amount += parseFloat(sale.amount) || 0; acc[sale.userId].count++; return acc
         }, {})
-        staffStats = Object.values(staffData).sort((a, b) => {
-          const aIsManager = allStaff.some(s => s.id === a.userId && s.role !== 'STAFF')
-          const bIsManager = allStaff.some(s => s.id === b.userId && s.role !== 'STAFF')
-          if (aIsManager && !bIsManager) return 1
-          if (!aIsManager && bIsManager) return -1
-          return b.amount - a.amount
-        }).slice(0, 10)
+        staffStats = Object.values(staffData).sort((a, b) => b.amount - a.amount).slice(0, 10)
       }
 
       const categoryData = sales.reduce((acc, sale) => {
