@@ -9,6 +9,8 @@ import DashboardCharts from '@/components/DashboardCharts'
 import { useToast } from '@/components/Toast'
 import DailyMotivation from '@/components/DailyMotivation'
 import FinanceSummary from '@/components/FinanceSummary'
+import DailySummary from '@/components/DailySummary'
+import FavoritePages from '@/components/FavoritePages'
 
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -213,6 +215,9 @@ export default function DashboardPage() {
         <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#ffffff', marginBottom: '0.375rem' }}>📊 Cari Satış</h1>
         <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px' }}>Hoş geldiniz, {user?.name}</p>
       </div>
+
+      <FavoritePages />
+      <DailySummary />
 
       {/* Tarih Filtresi */}
       <DailyMotivation />

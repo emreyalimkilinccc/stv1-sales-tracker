@@ -81,7 +81,27 @@ const SECTIONS = [
       'Tarih/saat ve işlem yapan kişi otomatik olarak doldurulur',
       'Kaydedilen transferler listelenir ve yazdırılabilir',
       '🖨️ Yazdır butonu ile resmi transfer fişi oluşturulur',
-      'Tüm personel transfer ekleyebilir'
+      'Tüm personel transfer ekleyebilir',
+      '🔊 Transfer kaydedildiğinde sesli uyarı çalar'
+    ]
+  },
+  {
+    icon: '📊', title: 'Günlük Kapanış Özeti', color: '#6366f1',
+    content: [
+      'Dashboard\'da üstte günün özeti görünür',
+      'Toplam satış tutarı ve adedi',
+      'Toplam mola süresi ve sayısı',
+      'Toplam transfer sayısı',
+      'Hoş geldin mesajı ile birlikte gösterilir'
+    ]
+  },
+  {
+    icon: '⭐', title: 'Favori Sayfalar', color: '#f59e0b',
+    content: [
+      'Dashboard\'da en çok kullandığınız sayfaları favoriye alabilirsiniz',
+      'Favori sayfalar üstte hızlı erişim olarak görünür',
+      'Düzenle butonu ile favori sayfalarınızı seçebilirsiniz',
+      'Tercihleriniz kaydedilir — cihazda kalıcı olarak saklanır'
     ]
   },
   {
