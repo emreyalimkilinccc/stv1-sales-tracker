@@ -214,16 +214,17 @@ export default function DashboardPage() {
 
   return (
     <div className="px-4 py-6 max-w-7xl mx-auto">
+      <FavoritePages />
+      <WeeklyGoal />
+      <StaffNotes />
+
       <div className="page-header" style={{ background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)' }}>
         <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#ffffff', marginBottom: '0.375rem' }}>📊 Cari Satış</h1>
         <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px' }}>Hoş geldiniz, {user?.name}</p>
       </div>
 
-      <FavoritePages />
       <DailySummary />
-      <WeeklyGoal />
       <SalesSpeed />
-      <StaffNotes />
 
       {/* Tarih Filtresi */}
       <DailyMotivation />
