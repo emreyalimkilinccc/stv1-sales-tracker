@@ -11,6 +11,9 @@ import DailyMotivation from '@/components/DailyMotivation'
 import FinanceSummary from '@/components/FinanceSummary'
 import DailySummary from '@/components/DailySummary'
 import FavoritePages from '@/components/FavoritePages'
+import StaffNotes from '@/components/StaffNotes'
+import WeeklyGoal from '@/components/WeeklyGoal'
+import SalesSpeed from '@/components/SalesSpeed'
 
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -218,6 +221,9 @@ export default function DashboardPage() {
 
       <FavoritePages />
       <DailySummary />
+      <WeeklyGoal />
+      <SalesSpeed />
+      <StaffNotes />
 
       {/* Tarih Filtresi */}
       <DailyMotivation />

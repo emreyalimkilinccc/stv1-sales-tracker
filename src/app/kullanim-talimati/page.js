@@ -105,6 +105,33 @@ const SECTIONS = [
     ]
   },
   {
+    icon: '📝', title: 'Personel Not Defteri', color: '#f59e0b',
+    content: [
+      'Dashboard\'da bir sonraki personele not bırakabilirsiniz',
+      'Not yazıp "Bırak" butonuna tıklayın',
+      'Notlar 2 gün boyunca görünür',
+      'Kendi notunuzu veya yöneticinizin notunu silebilirsiniz'
+    ]
+  },
+  {
+    icon: '🎯', title: 'Haftalık Hedef', color: '#3b82f6',
+    content: [
+      'Haftalık satış hedefi belirleyebilirsiniz',
+      'İlerleme çubuğu ile hedefinize ne kadar yaklaştığınızı görün',
+      'Günlük ortalama, kalan gün ve tahmini satış gösterilir',
+      'Hedefe ulaşınca yeşile döner 🎉'
+    ]
+  },
+  {
+    icon: '⚡', title: 'Satış Hızı', color: '#06b6d4',
+    content: [
+      'Bugünkü satış hızınızı anlık olarak görün',
+      'Saatlik ortalama ve en aktif saat bilgisi',
+      '🔥 Çok Hızlı / 💪 İyi Gidiyor / 👍 Normal / 🐢 Yavaş',
+      'Saatlik satış dağılımı grafikte gösterilir'
+    ]
+  },
+  {
     icon: '🗳️', title: 'Oylama', color: '#ec4899',
     content: [
       'Yeni anket oluşturulabilir (Yönetici/Müdür)',
@@ -256,6 +283,10 @@ const TIPS = [
   { icon: '⚡', text: 'İnternet yokken bile temel verileri görebilirsiniz (çevrimdışı mod)' },
   { icon: '🔍', text: 'Satış sayfasında gelişmiş filtreleme ve arama yapabilirsiniz' },
   { icon: '📊', text: 'Dashboard\'dan CSV ile verilerinizi dışa aktarabilirsiniz' },
+  { icon: '📝', text: 'Personel Not Defteri ile bir sonraki personele not bırakabilirsiniz' },
+  { icon: '🎯', text: 'Haftalık hedef belirleyin, ilerleme çubuğunu takip edin' },
+  { icon: '⚡', text: 'Satış Hızı Göstergesi ile günün performansını anlık görün' },
+  { icon: '⭐', text: 'En çok kullandığınız sayfaları favoriye alarak hızlı erişim sağlayın' },
   { icon: '🧮', text: 'KASKO sayfasında hesap makinası ile ek hesaplama yapabilirsiniz' },
   { icon: '☕', text: 'Mola sistemi ile molalarınızı takip edebilirsiniz — yöneticiler canlı görebilir' },
   { icon: '🔧', text: 'Ayarlar menüsünden bildirim ve ses tercihlerinizi düzenleyebilirsiniz' },
