@@ -217,6 +217,7 @@ export default function DashboardPage() {
       <FavoritePages />
       <WeeklyGoal />
       <StaffNotes />
+      <SalesSpeed />
 
       <div className="page-header" style={{ background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)' }}>
         <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#ffffff', marginBottom: '0.375rem' }}>📊 Cari Satış</h1>
@@ -224,7 +225,6 @@ export default function DashboardPage() {
       </div>
 
       <DailySummary />
-      <SalesSpeed />
 
       {/* Tarih Filtresi */}
       <DailyMotivation />
